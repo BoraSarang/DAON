@@ -18,6 +18,20 @@
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
 
+    <!-- 날짜 상세 -->
+    <string name="detail_term_kicker">24절기 · %1$s</string>
+    <string name="detail_holiday_kicker">공휴일 · 대한민국</string>
+    <string name="detail_date_kicker">날짜</string>
+    <string name="detail_active_term">지금 절기</string>
+    <string name="detail_tasks">농사일</string>
+    <string name="detail_terms_this_month">이달의 절기</string>
+    <string name="detail_holidays_this_month">이달의 공휴일</string>
+    <string name="detail_holiday">공휴일</string>
+    <string name="detail_no_special">이 날은 특별한 절기나 공휴일이 없습니다.</string>
+    <string name="detail_note_term">지역과 품종에 따라 농사 시기가 다를 수 있습니다. 지역 농협·농업기술센터 안내를 함께 확인하세요.</string>
+    <string name="detail_note_holiday">공휴일 정보는 한국천문연구원 월력요항을 기준으로 합니다.</string>
+    <string name="detail_note_date">날짜를 누르면 음력, 공휴일, 24절기와 농사일을 볼 수 있습니다.</string>
+
     <!-- 대시보드 -->
     <string name="label_calendar">이번 달</string>
     <string name="label_weather">지금</string>

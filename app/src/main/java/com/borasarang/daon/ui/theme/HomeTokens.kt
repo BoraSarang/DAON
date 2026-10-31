@@ -16,6 +16,7 @@ object Home {
     val screenPadding = 27.dp
     val panelGap = 16.dp
     val panelRadius = 13.dp
+    val panelRadiusLarge = 18.dp
     val topBar = 59.dp
     val settingsHeight = 48.dp
     val dot = 7.dp
@@ -95,6 +96,62 @@ object Home {
         fontSize = 16.sp,
         lineHeight = 21.sp,
         fontWeight = FontWeight.SemiBold,
+    )
+
+    val detailKicker = TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 19.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.8.sp,
+    )
+    val detailTitle = TextStyle(
+        fontSize = 35.sp,
+        lineHeight = 38.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.7).sp,
+    )
+    val detailHanja = TextStyle(
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val detailDate = TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 21.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    val detailBody = TextStyle(
+        fontSize = 18.sp,
+        lineHeight = 27.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val detailSub = TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 19.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.8.sp,
+    )
+    val taskText = TextStyle(
+        fontSize = 17.sp,
+        lineHeight = 24.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val chipText = TextStyle(
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.Bold,
+        fontFeatureSettings = TABULAR,
+    )
+    val detailRow = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 21.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFeatureSettings = TABULAR,
+    )
+    val detailNote = TextStyle(
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Medium,
     )
 
     val clockLabel = TextStyle(

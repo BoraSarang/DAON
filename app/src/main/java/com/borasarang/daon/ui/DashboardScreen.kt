@@ -1,5 +1,6 @@
 package com.borasarang.daon.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +23,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +46,7 @@ import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -62,51 +66,66 @@ fun DashboardScreen(vm: DashboardViewModel, onOpenSettings: () -> Unit) {
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val today = now.toLocalDate()
+    var detailDate by remember { mutableStateOf<LocalDate?>(null) }
+    BackHandler(enabled = detailDate != null) { detailDate = null }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Kiosk.color.bg)
-            .padding(Home.screenPadding),
-    ) {
-        HomeTopBar(
-            now = now,
-            calendar = calendar,
-            korean = korean,
-            locale = locale,
-            onOpenSettings = onOpenSettings,
-        )
-        Spacer(Modifier.height(Home.panelGap))
-
-        Row(Modifier.fillMaxWidth().weight(1f)) {
-            CalendarPanel(
-                today = today,
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(Kiosk.color.bg)
+                .padding(Home.screenPadding),
+        ) {
+            HomeTopBar(
+                now = now,
                 calendar = calendar,
                 korean = korean,
                 locale = locale,
-                modifier = Modifier.weight(0.7f).fillMaxHeight(),
+                onOpenSettings = onOpenSettings,
             )
-            Spacer(Modifier.width(Home.panelGap))
-            Column(
-                modifier = Modifier.weight(0.3f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(Home.panelGap),
-            ) {
-                ClockCard(
-                    now = now,
-                    hour24 = vm.hour24,
+            Spacer(Modifier.height(Home.panelGap))
+
+            Row(Modifier.fillMaxWidth().weight(1f)) {
+                CalendarPanel(
+                    today = today,
+                    calendar = calendar,
                     korean = korean,
                     locale = locale,
-                    modifier = Modifier.fillMaxWidth().height(Home.clockCard),
+                    modifier = Modifier.weight(0.7f).fillMaxHeight(),
+                    onDateClick = { detailDate = it },
                 )
-                WeatherCard(
-                    city = city,
-                    state = weather,
-                    celsius = vm.celsius,
-                    locale = locale,
-                    onRefresh = { vm.refresh() },
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                )
+                Spacer(Modifier.width(Home.panelGap))
+                Column(
+                    modifier = Modifier.weight(0.3f).fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(Home.panelGap),
+                ) {
+                    ClockCard(
+                        now = now,
+                        hour24 = vm.hour24,
+                        korean = korean,
+                        locale = locale,
+                        modifier = Modifier.fillMaxWidth().height(Home.clockCard),
+                    )
+                    WeatherCard(
+                        city = city,
+                        state = weather,
+                        celsius = vm.celsius,
+                        locale = locale,
+                        onRefresh = { vm.refresh() },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    )
+                }
             }
+        }
+
+        detailDate?.let { date ->
+            DateDetailPanel(
+                date = date,
+                calendar = calendar,
+                korean = korean,
+                locale = locale,
+                onClose = { detailDate = null },
+            )
         }
     }
 }

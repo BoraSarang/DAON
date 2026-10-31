@@ -18,6 +18,20 @@
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
 
+    <!-- Date detail -->
+    <string name="detail_term_kicker">Solar term · %1$s</string>
+    <string name="detail_holiday_kicker">Public holiday · Korea</string>
+    <string name="detail_date_kicker">Date</string>
+    <string name="detail_active_term">Current term</string>
+    <string name="detail_tasks">Farming tasks</string>
+    <string name="detail_terms_this_month">Solar terms this month</string>
+    <string name="detail_holidays_this_month">Public holidays this month</string>
+    <string name="detail_holiday">Public holiday</string>
+    <string name="detail_no_special">No special solar term or holiday on this day.</string>
+    <string name="detail_note_term">Farming timing varies by region and variety. Check with your local agricultural center.</string>
+    <string name="detail_note_holiday">Holiday data follows the Korea Astronomy and Space Science Institute almanac.</string>
+    <string name="detail_note_date">Tap a date to see its lunar date, holidays, solar terms, and farming tasks.</string>
+
     <!-- Dashboard -->
     <string name="label_calendar">This month</string>
     <string name="label_weather">Now</string>
