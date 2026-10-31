@@ -26,13 +26,33 @@
     <string name="no_events">No events</string>
     <string name="today">Today</string>
     <string name="month_pattern">LLLL yyyy</string>
+    <string name="pattern_month">MMMM</string>
+    <string name="pattern_date_header">MMMM d, yyyy</string>
+    <string name="pattern_clock_date">MMM d</string>
     <string name="calendar_prev">Previous month</string>
     <string name="calendar_next">Next month</string>
+    <string name="label_now">Now</string>
+    <string name="label_today_farm">Today\'s farming</string>
+    <string name="label_seconds">%1$d sec</string>
 
     <!-- Weather -->
     <string name="feels_like">Feels %1$s</string>
     <string name="humidity">Humidity %1$d%%</string>
     <string name="wind">Wind %1$s m/s</string>
+    <string name="label_feels">Feels</string>
+    <string name="label_humidity">Humidity</string>
+    <string name="label_wind">Wind</string>
+    <string name="label_range">Range</string>
+    <string name="label_farm_advice">Farm note</string>
+    <string name="advice_snow">Snow expected — check greenhouse insulation</string>
+    <string name="advice_rain">Rain expected — postpone spraying and fertilizing</string>
+    <string name="advice_wind">Strong wind — check greenhouses and vinyl</string>
+    <string name="advice_cold">Cold — protect young seedlings</string>
+    <string name="advice_hot">Hot — avoid midday field work</string>
+    <string name="advice_range">Big temperature swing — keep a layer handy</string>
+    <string name="advice_dry">Dry — check water supply and irrigation</string>
+    <string name="advice_clear">Clear — good for ventilating and drying</string>
+    <string name="label_today_range">Today %1$s / %2$s</string>
     <string name="updated_at">Updated %1$s</string>
     <string name="label_refresh">Refresh</string>
     <string name="weather_offline">Offline — last known values</string>

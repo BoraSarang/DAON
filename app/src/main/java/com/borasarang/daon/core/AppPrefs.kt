@@ -26,8 +26,9 @@ object AppPrefs {
         get() = prefs.getString(KEY_CITY, "seoul") ?: "seoul"
         set(value) = writeString(KEY_CITY, value)
 
+    /** 70대 사용자 기준. 기본은 오전·오후가 함께 보이는 12시간제다. */
     var hour24: Boolean
-        get() = prefs.getBoolean(KEY_HOUR24, true)
+        get() = prefs.getBoolean(KEY_HOUR24, false)
         set(value) = write { putBoolean(KEY_HOUR24, value) }
 
     var celsius: Boolean

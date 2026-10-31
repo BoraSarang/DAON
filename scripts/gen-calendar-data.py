@@ -162,29 +162,34 @@ def solve_term(target: float, year: int) -> dt.datetime:
 
 def build_lunar() -> dict:
     calendar = KoreanLunarCalendar()
-    days: dict[str, list[int]] = {}
-    day = dt.date(START_YEAR, 1, 1)
+    start = dt.date(START_YEAR, 1, 1)
     end = dt.date(END_YEAR, 12, 31)
+    records: list[str] = []
+    by_date: dict[str, list[int]] = {}
+    day = start
     while day <= end:
         calendar.setSolarDate(day.year, day.month, day.day)
-        days[day.isoformat()] = [
+        values = [
             calendar.lunarYear,
             calendar.lunarMonth,
             calendar.lunarDay,
             1 if calendar.isIntercalation else 0,
         ]
+        records.append(",".join(str(value) for value in values))
+        by_date[day.isoformat()] = values
         day += dt.timedelta(days=1)
 
     for key, expected in KNOWN_LUNAR.items():
-        actual = tuple(days[key][:3]) + (bool(days[key][3]),)
+        actual = tuple(by_date[key][:3]) + (bool(by_date[key][3]),)
         if actual != expected:
             raise AssertionError(f"음력 불일치 {key}: {actual} != {expected}")
 
     return {
-        "version": 1,
+        "version": 2,
         "source": "한국천문연구원 음양력 (korean-lunar-calendar)",
-        "range": {"from": f"{START_YEAR}-01-01", "to": f"{END_YEAR}-12-31"},
-        "days": days,
+        "range": {"from": start.isoformat(), "to": end.isoformat()},
+        "count": len(records),
+        "days": ";".join(records),
     }
 
 
@@ -320,7 +325,7 @@ def main() -> int:
         return 0
 
     print("\n검증 통과:")
-    print(f"- 음력 {len(outputs[f'lunar_{START_YEAR}_{END_YEAR}.json']['days']):,}일")
+    print(f"- 음력 {outputs[f'lunar_{START_YEAR}_{END_YEAR}.json']['count']:,}일")
     print(f"- 24절기 {len(outputs[f'solar_terms_{START_YEAR}_{END_YEAR}.json']['days']):,}개")
     print(f"- 공휴일 {len(outputs['holidays_2026_2027.json']['days'])}일")
     print("- 2026년 24절기 KASI 값 일치")

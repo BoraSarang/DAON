@@ -26,13 +26,33 @@
     <string name="no_events">일정 없음</string>
     <string name="today">오늘</string>
     <string name="month_pattern">yyyy년 M월</string>
+    <string name="pattern_month">M월</string>
+    <string name="pattern_date_header">yyyy년 M월 d일</string>
+    <string name="pattern_clock_date">M월 d일</string>
     <string name="calendar_prev">이전 달</string>
     <string name="calendar_next">다음 달</string>
+    <string name="label_now">지금</string>
+    <string name="label_today_farm">오늘의 농사</string>
+    <string name="label_seconds">%1$d초</string>
 
     <!-- 날씨 -->
     <string name="feels_like">체감 %1$s</string>
     <string name="humidity">습도 %1$d%%</string>
     <string name="wind">바람 %1$s m/s</string>
+    <string name="label_feels">체감</string>
+    <string name="label_humidity">습도</string>
+    <string name="label_wind">바람</string>
+    <string name="label_range">일교차</string>
+    <string name="label_farm_advice">농사 참고</string>
+    <string name="advice_snow">눈이 옵니다 — 하우스 보온을 점검하세요</string>
+    <string name="advice_rain">비가 옵니다 — 약제·비료 살포는 미루세요</string>
+    <string name="advice_wind">바람이 강합니다 — 하우스·비닐을 점검하세요</string>
+    <string name="advice_cold">추위 — 어린 묘 보온에 주의하세요</string>
+    <string name="advice_hot">무더위 — 한낮 작업을 피하세요</string>
+    <string name="advice_range">일교차가 큽니다 — 아침저녁 여벌옷을 챙기세요</string>
+    <string name="advice_dry">건조합니다 — 저수와 관수를 점검하세요</string>
+    <string name="advice_clear">맑습니다 — 낮에 환기와 건조에 좋습니다</string>
+    <string name="label_today_range">오늘 %1$s / %2$s</string>
     <string name="updated_at">%1$s 갱신</string>
     <string name="label_refresh">새로고침</string>
     <string name="weather_offline">오프라인 — 마지막 값</string>

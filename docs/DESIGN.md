@@ -2,7 +2,7 @@
 > design_profile: **custom** · 플랫폼: android · 다크 우선(dark-first)
 > 대상: Fire HD 10 (2019) 1920×1200 가로, 거치형 상시 표시
 
-## 0. v0.2 제안 — 농사 달력 재설계 (2026-10-31, 목업 승인 대기)
+## 0. v0.2 제안 — 농사 달력 재설계 (2026-10-31, 승인 완료)
 > 목업: `docs/mockups/v0.2/index.html` · 캡처: `docs/mockups/v0.2/screens/`
 > 계획: `docs/plans/PLAN_v0.2_android.md`
 > 아래 §1~§5는 v0.1 구현 기준이다. v0.2 구현 시 이 절이 우선한다.

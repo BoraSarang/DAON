@@ -19,87 +19,88 @@ class CalendarAssetsTest {
     private fun asset(name: String): JSONObject =
         JSONObject(File(assetDir, name).readText(charset = Charsets.UTF_8))
 
-    private data class LunarDay(val year: Int, val month: Int, val day: Int, val leap: Boolean)
-
-    private fun lunarAt(days: JSONObject, key: String): LunarDay {
-        val value = days.getJSONArray(key)
-        return LunarDay(
-            year = value.getInt(0),
-            month = value.getInt(1),
-            day = value.getInt(2),
-            leap = value.getInt(3) == 1,
-        )
+    private val data: CalendarData by lazy {
+        CalendarData.parse { name ->
+            File(assetDir, name).readText(charset = Charsets.UTF_8)
+        }
     }
+
+    private data class LunarDay(val year: Int, val month: Int, val day: Int, val leap: Boolean)
 
     @Test
     fun `lunar asset covers 2025 through 2040 without gaps`() {
         val json = asset("lunar_2025_2040.json")
-        val days = json.getJSONObject("days")
+        val from = LocalDate.parse(json.getJSONObject("range").getString("from"))
+        val to = LocalDate.parse(json.getJSONObject("range").getString("to"))
 
-        assertEquals("2025-01-01", json.getJSONObject("range").getString("from"))
-        assertEquals("2040-12-31", json.getJSONObject("range").getString("to"))
-        assertEquals(5844, days.length())
+        assertEquals(LocalDate.of(2025, 1, 1), from)
+        assertEquals(LocalDate.of(2040, 12, 31), to)
+        assertEquals(2, json.getInt("version"))
+        assertEquals(5844, json.getInt("count"))
+        assertEquals(5844, json.getString("days").split(';').size)
 
-        val keys = days.keys().asSequence().sorted().toList()
-        var previousKey: String? = null
+        var date = from
         var previous: LunarDay? = null
+        while (date <= to) {
+            val lunar = data.lunarOn(date)
+            assertNotNull("missing lunar date: $date", lunar)
+            val current = LunarDay(lunar!!.year, lunar.month, lunar.day, lunar.leap)
 
-        for (key in keys) {
-            val current = lunarAt(days, key)
-            assertTrue("month: $key", current.month in 1..12)
-            assertTrue("day: $key", current.day in 1..30)
-            val solarYear = LocalDate.parse(key).year
+            assertTrue("month: $date", current.month in 1..12)
+            assertTrue("day: $date", current.day in 1..30)
             assertTrue(
-                "lunar year: $key -> ${current.year}",
-                current.year == solarYear || current.year == solarYear - 1,
+                "lunar year: $date -> ${current.year}",
+                current.year == date.year || current.year == date.year - 1,
             )
 
-            if (previousKey != null && previous != null) {
-                assertEquals(
-                    "solar day gap at $key",
-                    LocalDate.parse(previousKey).plusDays(1),
-                    LocalDate.parse(key),
-                )
+            previous?.let { before ->
                 if (current.day == 1) {
-                    val expectedMonth = if (current.leap && !previous.leap) {
-                        previous.month
+                    val expectedMonth = if (current.leap && !before.leap) {
+                        before.month
                     } else {
-                        previous.month % 12 + 1
+                        before.month % 12 + 1
                     }
-                    assertEquals("lunar month at $key", expectedMonth, current.month)
+                    assertEquals("lunar month at $date", expectedMonth, current.month)
                     assertEquals(
-                        "lunar year at $key",
-                        if (expectedMonth == 1) previous.year + 1 else previous.year,
+                        "lunar year at $date",
+                        if (expectedMonth == 1) before.year + 1 else before.year,
                         current.year,
                     )
                 } else {
-                    assertEquals("lunar day at $key", previous.day + 1, current.day)
-                    assertEquals("leap flag at $key", previous.leap, current.leap)
-                    assertEquals("lunar month at $key", previous.month, current.month)
-                    assertEquals("lunar year at $key", previous.year, current.year)
+                    assertEquals("lunar day at $date", before.day + 1, current.day)
+                    assertEquals("leap flag at $date", before.leap, current.leap)
+                    assertEquals("lunar month at $date", before.month, current.month)
+                    assertEquals("lunar year at $date", before.year, current.year)
                 }
             }
-            previousKey = key
             previous = current
+            date = date.plusDays(1)
         }
     }
 
     @Test
     fun `lunar asset matches known Korean dates`() {
-        val days = asset("lunar_2025_2040.json").getJSONObject("days")
         val known = mapOf(
-            "2025-01-29" to LunarDay(2025, 1, 1, false),
-            "2025-10-06" to LunarDay(2025, 8, 15, false),
-            "2026-02-17" to LunarDay(2026, 1, 1, false),
-            "2026-09-25" to LunarDay(2026, 8, 15, false),
-            "2026-10-31" to LunarDay(2026, 9, 21, false),
-            "2027-02-07" to LunarDay(2027, 1, 1, false),
-            "2027-09-15" to LunarDay(2027, 8, 15, false),
+            LocalDate.of(2025, 1, 29) to LunarDay(2025, 1, 1, false),
+            LocalDate.of(2025, 10, 6) to LunarDay(2025, 8, 15, false),
+            LocalDate.of(2026, 2, 17) to LunarDay(2026, 1, 1, false),
+            LocalDate.of(2026, 9, 25) to LunarDay(2026, 8, 15, false),
+            LocalDate.of(2026, 10, 31) to LunarDay(2026, 9, 21, false),
+            LocalDate.of(2027, 2, 7) to LunarDay(2027, 1, 1, false),
+            LocalDate.of(2027, 9, 15) to LunarDay(2027, 8, 15, false),
         )
-        known.forEach { (key, expected) ->
-            assertEquals(key, expected, lunarAt(days, key))
+        known.forEach { (date, expected) ->
+            val lunar = data.lunarOn(date)!!
+            assertEquals("$date", expected, LunarDay(lunar.year, lunar.month, lunar.day, lunar.leap))
         }
-        val leapDays = days.keys().asSequence().map { lunarAt(days, it) }.filter { it.leap }.toList()
+
+        var date = LocalDate.of(2025, 1, 1)
+        val leapDays = mutableListOf<LunarDay>()
+        while (date.year <= 2040) {
+            val lunar = data.lunarOn(date)!!
+            if (lunar.leap) leapDays.add(LunarDay(lunar.year, lunar.month, lunar.day, true))
+            date = date.plusDays(1)
+        }
         assertTrue("no leap month found", leapDays.isNotEmpty())
         assertTrue("2025 leap month 6 missing", leapDays.any { it.year == 2025 && it.month == 6 })
     }

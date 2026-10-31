@@ -41,4 +41,14 @@ class CalendarGridTest {
         assertEquals(listOf(null, null, null, null), cells.take(4))
         assertNull(cells.last())
     }
+
+    @Test
+    fun `month grid fills adjacent months and stays contiguous`() {
+        val days = monthGrid(YearMonth.of(2026, 10), DayOfWeek.SUNDAY)
+        assertEquals(CELL_COUNT, days.size)
+        assertEquals(LocalDate.of(2026, 9, 27), days.first())
+        assertEquals(LocalDate.of(2026, 11, 7), days.last())
+        assertTrue(days.zipWithNext().all { (a, b) -> b == a.plusDays(1) })
+        assertEquals(4, days.indexOf(LocalDate.of(2026, 10, 1)))
+    }
 }

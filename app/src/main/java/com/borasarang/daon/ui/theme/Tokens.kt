@@ -25,6 +25,10 @@ data class KioskColors(
     val accentSoft: Color,
     val ok: Color,
     val danger: Color,
+    val term: Color,
+    val sunday: Color,
+    val saturday: Color,
+    val rain: Color,
 )
 
 val DarkKioskColors = KioskColors(
@@ -39,6 +43,10 @@ val DarkKioskColors = KioskColors(
     accentSoft = Color(0x26E8B45A),
     ok = Color(0xFF57C99B),
     danger = Color(0xFFE2695C),
+    term = Color(0xFF9ADB8A),
+    sunday = Color(0xFFF07A6A),
+    saturday = Color(0xFF82B4FF),
+    rain = Color(0xFF7FB0FF),
 )
 
 object Kiosk {

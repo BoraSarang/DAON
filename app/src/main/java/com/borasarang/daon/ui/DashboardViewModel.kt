@@ -14,6 +14,8 @@ import com.borasarang.daon.data.City
 import com.borasarang.daon.data.WeatherException
 import com.borasarang.daon.data.WeatherRepository
 import com.borasarang.daon.data.WeatherSnapshot
+import com.borasarang.daon.data.calendar.CalendarData
+import com.borasarang.daon.data.calendar.CalendarRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -52,6 +54,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _city = MutableStateFlow(City.fromId(AppPrefs.cityId))
     val city: StateFlow<City> = _city.asStateFlow()
 
+    /** 번들 달력 자산. 파싱 전에는 비어 있고, 준비되면 음력·절기·공휴일이 나타난다. */
+    private val _calendar = MutableStateFlow(CalendarData.empty())
+    val calendar: StateFlow<CalendarData> = _calendar.asStateFlow()
+
     var hour24 by mutableStateOf(AppPrefs.hour24)
         private set
     var celsius by mutableStateOf(AppPrefs.celsius)
@@ -63,6 +69,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         DebugLogger.i("FEATURE", "dashboard")
+        viewModelScope.launch(Dispatchers.IO) {
+            _calendar.value = CalendarRepository.load(getApplication())
+        }
         refresh()
         viewModelScope.launch {
             while (true) {
