@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +43,6 @@ import com.borasarang.daon.data.calendar.displayName
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
 import kotlin.math.cos
@@ -102,7 +103,7 @@ private val ClockCompactSeconds = TextStyle(
  */
 @Composable
 fun ClockScreen(
-    now: LocalDateTime,
+    nowState: State<LocalDateTime>,
     hour24: Boolean,
     korean: Boolean,
     locale: Locale,
@@ -118,8 +119,9 @@ fun ClockScreen(
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
 ) {
+    val now by nowState
     val clockDatePattern = stringResource(R.string.pattern_clock_date)
-    val clockDate = now.format(DateTimeFormatter.ofPattern(clockDatePattern, locale))
+    val clockDate = now.format(Formatters.of(clockDatePattern, locale))
     val weekday = now.dayOfWeek.getDisplayName(DateTextStyle.FULL, locale)
     val lunar = calendar.lunarOn(now.toLocalDate())
     val activeTerm = calendar.activeTerm(now.toLocalDate())?.second
@@ -201,8 +203,8 @@ fun ClockScreen(
 
 @Composable
 private fun DigitalClock(now: LocalDateTime, hour24: Boolean, locale: Locale) {
-    val timeText = now.format(DateTimeFormatter.ofPattern(if (hour24) "HH:mm" else "h:mm", locale))
-    val amPm = now.format(DateTimeFormatter.ofPattern("a", locale))
+    val timeText = now.format(Formatters.of(if (hour24) "HH:mm" else "h:mm", locale))
+    val amPm = now.format(Formatters.of("a", locale))
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.Bottom) {
             if (!hour24) {
@@ -229,8 +231,8 @@ private fun DigitalClock(now: LocalDateTime, hour24: Boolean, locale: Locale) {
 
 @Composable
 private fun HybridClock(now: LocalDateTime, hour24: Boolean, locale: Locale) {
-    val timeText = now.format(DateTimeFormatter.ofPattern(if (hour24) "HH:mm" else "h:mm", locale))
-    val amPm = now.format(DateTimeFormatter.ofPattern("a", locale))
+    val timeText = now.format(Formatters.of(if (hour24) "HH:mm" else "h:mm", locale))
+    val amPm = now.format(Formatters.of("a", locale))
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(40.dp),

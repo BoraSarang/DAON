@@ -78,6 +78,38 @@ fun SettingsButton(onClick: () -> Unit) {
 }
 
 /**
+ * 상단 바의 화면 이동 버튼(라디오·TV).
+ *
+ * 자동 전환이 꺼져 있어도 이 버튼으로 들어갈 수 있다. [active] 면 지금 그 화면을
+ * 보고 있거나(라디오 재생 중) 소리가 나고 있다는 뜻이라 accent 로 강조한다.
+ */
+@Composable
+fun NavButton(label: String, active: Boolean = false, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = Modifier
+            .height(Home.settingsHeight)
+            .clip(shape)
+            .background(if (active) Kiosk.color.accentSoft else Kiosk.color.surface)
+            .border(
+                width = 1.dp,
+                color = if (active) Kiosk.color.accent.copy(alpha = 0.55f) else Kiosk.color.rule,
+                shape = shape,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            fontSize = 17.sp,
+            fontWeight = if (active) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (active) Kiosk.color.accent else Kiosk.color.textSecondary,
+        )
+    }
+}
+
+/**
  * 날씨·시계 화면의 상단 바. 달력 화면은 날짜·음력·절기를 함께 보여주므로 자체 상단 바를 쓴다.
  *
  * [onGoHome] 이 있으면 설정 왼쪽에 `달력` 버튼을 둔다. `그 화면에서 멈추기` 모드에서도

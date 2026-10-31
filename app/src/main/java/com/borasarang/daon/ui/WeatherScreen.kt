@@ -45,7 +45,6 @@ import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -215,7 +214,7 @@ private fun WeatherHero(
                 Text(
                     text = stringResource(
                         R.string.weather_updated,
-                        snapshot.fetchedAt.format(DateTimeFormatter.ofPattern("HH:mm", locale)),
+                        snapshot.fetchedAt.format(Formatters.of("HH:mm", locale)),
                     ),
                     style = Home.clockLabel,
                     color = Kiosk.color.textMuted,
@@ -467,7 +466,11 @@ private fun HourColumn(
     korean: Boolean,
     modifier: Modifier,
 ) {
-    val timeText = if (korean) "${hour.time.hour}시" else hour.time.format(DateTimeFormatter.ofPattern("HH:mm"))
+    val timeText = if (korean) {
+        "${hour.time.hour}시"
+    } else {
+        hour.time.format(Formatters.of("HH:mm", locale))
+    }
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -624,7 +627,7 @@ private fun RefreshButton(onClick: () -> Unit) {
 }
 
 private fun dayLabel(date: LocalDate, locale: Locale): String =
-    date.format(DateTimeFormatter.ofPattern("E", locale))
+    date.format(Formatters.of("E", locale))
 
 private fun formatMm(value: Double, locale: Locale): String {
     val text = if (value >= 10.0) {

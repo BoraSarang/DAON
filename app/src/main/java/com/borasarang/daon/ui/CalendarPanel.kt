@@ -46,7 +46,6 @@ import com.borasarang.daon.ui.theme.Kiosk
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as DateTextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
@@ -74,7 +73,7 @@ fun CalendarPanel(
     val days = remember(month, weekStart) { monthGrid(month, weekStart) }
     val monthPattern = stringResource(R.string.pattern_month)
     val monthText = remember(month, monthPattern, locale) {
-        month.format(DateTimeFormatter.ofPattern(monthPattern, locale))
+        month.format(Formatters.of(monthPattern, locale))
     }
     val weekdays = remember(weekStart) { (0 until 7).map { weekStart.plus(it.toLong()) } }
     val prevLabel = stringResource(R.string.calendar_prev)

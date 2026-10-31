@@ -6,12 +6,19 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-**v0.4.0-dev** — TV screen added (channel list, live video, full screen, rotation paused while watching); v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
+**v0.5.0-dev** — performance and memory pass (cold start 1.77s median, idle calendar 0 frames/20s) plus `Radio`/`TV` buttons in the calendar top bar. v0.4 added the TV screen (channel list, live video, full screen, rotation paused while watching); the v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
-| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev |
-|---|---|---|---|---|---|
-| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) |
-| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) |
+| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev | v0.5-dev |
+|---|---|---|---|---|---|---|
+| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) | 1.774s (median) |
+| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) | 100–115MB idle · 97MB radio · 126MB TV |
+
+## v0.5 — Performance and memory
+
+Startup work (calendar assets, weather, location, device calendar, stored events) moved behind the first frame, so the calendar appears sooner. The clock tick no longer lives in the ViewModel: a `rememberNow(perSecond)` helper updates the clock screen every second and the calendar/weather screens only on the minute boundary, so the 42-cell calendar is no longer recomposed every second. Repeat-event expansion runs on `Dispatchers.Default`, `DateTimeFormatter` instances are cached, and the inactive ExoPlayer is released when switching between radio and TV. The calendar top bar now also has `Radio` and `TV` buttons, so both screens stay reachable when they are excluded from the rotation (the `Radio` button is highlighted while the radio plays).
+
+- Measured on the target device: cold start 1.767–1.793s over 5 runs (median 1.774s, was 1.945–2.021s); calendar screen 0 frames in 20 idle seconds; PSS 100–115MB on the calendar, 97MB with radio playing, 126MB with TV playing.
+- The `budget=2000ms` value in the log is informational only — exceeding it never stops the app.
 
 ## v0.4 — TV
 

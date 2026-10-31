@@ -29,11 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +69,6 @@ import com.borasarang.daon.ui.theme.Kiosk
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -77,7 +79,6 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun DashboardScreen(vm: DashboardViewModel) {
-    val now by vm.now.collectAsStateWithLifecycle()
     val weather by vm.weather.collectAsStateWithLifecycle()
     val place by vm.place.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
@@ -117,7 +118,16 @@ fun DashboardScreen(vm: DashboardViewModel) {
             calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
         }
     }
-    val today = now.toLocalDate()
+    var screen by rememberSaveable { mutableStateOf(ScreenMode.CALENDAR) }
+    var detailDate by remember { mutableStateOf<LocalDate?>(null) }
+    var settingsOpen by remember { mutableStateOf(false) }
+    /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
+    var rotationStopped by remember { mutableStateOf(false) }
+
+    // 초가 필요한 화면(시계)에서만 1초마다 갱신한다. 달력·날씨는 분 경계에서만 바뀐다.
+    val nowState = rememberNow(perSecond = screen == ScreenMode.CLOCK)
+    // 날짜가 바뀔 때만 알린다. 매초 달력 42칸을 다시 그리지 않게 하는 핵심이다.
+    val today by remember { derivedStateOf { nowState.value.toLocalDate() } }
     val eventDates = remember(events) { events.mapTo(HashSet()) { it.date } }
     val todayEvents = remember(events, today) { events.filter { it.date == today } }
     val baseDensity = LocalDensity.current
@@ -125,11 +135,11 @@ fun DashboardScreen(vm: DashboardViewModel) {
         Density(baseDensity.density, baseDensity.fontScale * vm.textScale / 100f)
     }
 
-    var screen by rememberSaveable { mutableStateOf(ScreenMode.CALENDAR) }
-    var detailDate by remember { mutableStateOf<LocalDate?>(null) }
-    var settingsOpen by remember { mutableStateOf(false) }
-    /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
-    var rotationStopped by remember { mutableStateOf(false) }
+    // 날씨·위치·기기 달력은 첫 화면에 필요 없다. 첫 프레임을 그린 뒤에 시작한다.
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        vm.startBackgroundWork()
+    }
 
     /** TV 영상이 나오는 동안에는 화면을 넘기지 않는다(전체 화면 포함). */
     val tvActive = tv.playing || tv.buffering
@@ -204,7 +214,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
             Crossfade(targetState = screen, animationSpec = tween(250), label = "screen") { mode ->
                 when (mode) {
                     ScreenMode.CALENDAR -> CalendarHome(
-                        now = now,
+                        nowState = nowState,
+                        today = today,
                         weather = weather,
                         place = place,
                         calendar = calendar,
@@ -231,6 +242,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         onOpenRadio = {
                             rotationStopped = false
                             screen = ScreenMode.RADIO
+                        },
+                        onOpenTv = {
+                            rotationStopped = false
+                            screen = ScreenMode.TV
                         },
                     )
                     ScreenMode.RADIO -> RadioScreen(
@@ -285,7 +300,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         onRefresh = { vm.refresh() },
                     )
                     ScreenMode.CLOCK -> ClockScreen(
-                        now = now,
+                        nowState = nowState,
                         hour24 = vm.hour24,
                         korean = korean,
                         locale = locale,
@@ -352,7 +367,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
 /** 달력 홈. 달력 70% + 오른쪽 시계·날씨 30%. */
 @Composable
 private fun CalendarHome(
-    now: LocalDateTime,
+    nowState: State<LocalDateTime>,
+    today: LocalDate,
     weather: WeatherUiState,
     place: Place,
     calendar: CalendarData,
@@ -371,15 +387,15 @@ private fun CalendarHome(
     includeRadio: Boolean,
     includeTv: Boolean,
     onOpenRadio: () -> Unit,
+    onOpenTv: () -> Unit,
 ) {
-    val today = now.toLocalDate()
     Column(
         Modifier
             .fillMaxSize()
             .padding(Home.screenPadding),
     ) {
         HomeTopBar(
-            now = now,
+            nowState = nowState,
             calendar = calendar,
             korean = korean,
             locale = locale,
@@ -387,6 +403,7 @@ private fun CalendarHome(
             includeRadio = includeRadio,
             includeTv = includeTv,
             onOpenRadio = onOpenRadio,
+            onOpenTv = onOpenTv,
             onOpenSettings = onOpenSettings,
         )
         Spacer(Modifier.height(Home.panelGap))
@@ -408,7 +425,7 @@ private fun CalendarHome(
                 verticalArrangement = Arrangement.spacedBy(Home.panelGap),
             ) {
                 ClockCard(
-                    now = now,
+                    nowState = nowState,
                     hour24 = hour24,
                     korean = korean,
                     locale = locale,
@@ -431,7 +448,7 @@ private fun CalendarHome(
 
 @Composable
 private fun HomeTopBar(
-    now: LocalDateTime,
+    nowState: State<LocalDateTime>,
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
@@ -439,12 +456,14 @@ private fun HomeTopBar(
     includeRadio: Boolean,
     includeTv: Boolean,
     onOpenRadio: () -> Unit,
+    onOpenTv: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
+    val now by nowState
     val today = now.toLocalDate()
     val headerPattern = stringResource(R.string.pattern_date_header)
     val dateText = remember(today, headerPattern, locale) {
-        now.format(DateTimeFormatter.ofPattern(headerPattern, locale))
+        now.format(Formatters.of(headerPattern, locale))
     }
     val weekday = remember(today, locale) {
         today.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
@@ -513,25 +532,38 @@ private fun HomeTopBar(
         }
         ScreenDots(ScreenMode.CALENDAR, includeRadio, includeTv)
         Spacer(Modifier.width(18.dp))
+        // 자동 전환이 꺼져 있어도 라디오·TV 로 들어갈 길을 항상 남긴다.
+        NavButton(
+            label = stringResource(R.string.screen_radio),
+            active = radioName != null,
+            onClick = onOpenRadio,
+        )
+        Spacer(Modifier.width(8.dp))
+        NavButton(
+            label = stringResource(R.string.screen_tv),
+            onClick = onOpenTv,
+        )
+        Spacer(Modifier.width(8.dp))
         SettingsButton(onClick = onOpenSettings)
     }
 }
 
 @Composable
 private fun ClockCard(
-    now: LocalDateTime,
+    nowState: State<LocalDateTime>,
     hour24: Boolean,
     korean: Boolean,
     locale: Locale,
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
+    val now by nowState
     val timeText = now.format(
-        DateTimeFormatter.ofPattern(if (hour24) "HH:mm" else "h:mm", locale),
+        Formatters.of(if (hour24) "HH:mm" else "h:mm", locale),
     )
-    val amPm = now.format(DateTimeFormatter.ofPattern("a", locale))
+    val amPm = now.format(Formatters.of("a", locale))
     val clockDatePattern = stringResource(R.string.pattern_clock_date)
-    val clockDate = now.format(DateTimeFormatter.ofPattern(clockDatePattern, locale))
+    val clockDate = now.format(Formatters.of(clockDatePattern, locale))
     val weekday = now.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
 
     Surface(
@@ -736,7 +768,7 @@ private fun ColumnScope.WeatherContent(snapshot: WeatherSnapshot, celsius: Boole
 private fun MiniForecast(day: DailyForecast, locale: Locale, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = day.date.format(DateTimeFormatter.ofPattern("E", locale)),
+            text = day.date.format(Formatters.of("E", locale)),
             style = Home.miniDay,
             color = Kiosk.color.textSecondary,
             maxLines = 1,

@@ -59,7 +59,6 @@ import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
 
@@ -93,7 +92,7 @@ fun DateDetailPanel(
             if (korean) {
                 append(date.monthValue).append("월 ").append(date.dayOfMonth).append("일")
             } else {
-                append(date.format(DateTimeFormatter.ofPattern("MMM d", locale)))
+                append(date.format(Formatters.of("MMM d", locale)))
             }
             append(" (").append(weekday).append(")")
         } else {
@@ -121,7 +120,7 @@ fun DateDetailPanel(
     val title = term?.displayName(korean)
         ?: holiday?.displayName(korean)
         ?: if (korean) "${date.monthValue}월 ${date.dayOfMonth}일"
-        else date.format(DateTimeFormatter.ofPattern("MMM d", locale))
+        else date.format(Formatters.of("MMM d", locale))
     val hanja = term?.hanja
 
     Box(Modifier.fillMaxSize()) {
@@ -366,7 +365,7 @@ private fun HolidayCard(
                             "${date.monthValue}월 ${date.dayOfMonth}일 (" +
                                 date.dayOfWeek.getDisplayName(DateTextStyle.NARROW, locale) + ")"
                         } else {
-                            date.format(DateTimeFormatter.ofPattern("MMM d (EEE)", locale))
+                            date.format(Formatters.of("MMM d (EEE)", locale))
                         },
                         style = Home.detailRow,
                         color = Kiosk.color.textPrimary,

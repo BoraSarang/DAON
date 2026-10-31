@@ -48,13 +48,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
 data class WeatherUiState(
@@ -137,14 +136,6 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val deviceLocation = DeviceLocation(app)
     private val placeSearch = PlaceSearch()
 
-    /** 1초 주기 시계. 화면이 없을 때는 5초 후 정지한다. */
-    val now: StateFlow<LocalDateTime> = flow {
-        while (true) {
-            emit(LocalDateTime.now())
-            delay(1_000L)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), LocalDateTime.now())
-
     private val _weather = MutableStateFlow(WeatherUiState(isLoading = true))
     val weather: StateFlow<WeatherUiState> = _weather.asStateFlow()
 
@@ -169,10 +160,17 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     private val eventStore = EventStore(app)
     private val deviceCalendar = DeviceCalendar(app)
-    private val _localEvents = MutableStateFlow(eventStore.all())
+
+    /** 저장된 일정. 첫 프레임을 막지 않도록 IO 에서 읽는다. */
+    private val _localEvents = MutableStateFlow<List<CalendarEvent>>(emptyList())
     private val _deviceEvents = MutableStateFlow<List<CalendarEvent>>(emptyList())
 
-    /** 로컬 일정(반복 펼침) + 기기 캘린더 일정. 날짜·시간 순으로 정렬된다. */
+    /**
+     * 로컬 일정(반복 펼침) + 기기 캘린더 일정. 날짜·시간 순으로 정렬된다.
+     *
+     * 반복 펼침은 수천 건의 사본을 만들 수 있으므로 기본 디스패처에서 계산한다
+     * ([flowOn]). 메인 스레드에서 돌리면 첫 화면이 눈에 띄게 멈춘다.
+     */
     val events: StateFlow<List<CalendarEvent>> =
         combine(_localEvents, _deviceEvents, _calendar) { local, device, data ->
             val today = LocalDate.now()
@@ -183,7 +181,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             }
             val visibleDevice = device.filter { it.date in from..to }
             (expanded + visibleDevice).sortedWith(EventJson.ORDER)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), _localEvents.value)
+        }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     var deviceCalendarEnabled by mutableStateOf(AppPrefs.deviceCalendarEnabled)
         private set
@@ -261,6 +261,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private var locationJob: Job? = null
     private var searchJob: Job? = null
 
+    /** [startBackgroundWork] 를 한 번만 실행하기 위한 표시. */
+    private var backgroundStarted = false
+
     init {
         DebugLogger.i("FEATURE", "dashboard")
         locationStatus = when {
@@ -271,16 +274,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
         locationAccuracy = deviceLocation.cached()?.accuracyMeters?.takeIf { it > 0f }
         viewModelScope.launch(Dispatchers.IO) {
-            _calendar.value = CalendarRepository.load(getApplication())
-        }
-        refreshDeviceCalendar()
-        refresh()
-        startLocationRefresh(force = false)
-        viewModelScope.launch {
-            while (true) {
-                delay(REFRESH_INTERVAL_MS)
-                refresh()
-            }
+            _localEvents.value = eventStore.all()
         }
         radioPlayer.onBuffering = {
             _radio.update { it.copy(buffering = true, errorRes = null) }
@@ -338,6 +332,30 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
         loadRadioChannels()
         loadTvChannels()
+    }
+
+    /**
+     * 첫 프레임을 그린 뒤에 시작하는 작업.
+     *
+     * 달력 자산·날씨·위치·기기 캘린더는 첫 화면에 꼭 필요하지 않다. 콜드 스타트
+     * 예산(2.0s)을 지키려고 첫 그리기 뒤로 미룬다. 여러 번 불러도 한 번만 실행한다.
+     */
+    fun startBackgroundWork() {
+        if (backgroundStarted) return
+        backgroundStarted = true
+        DebugLogger.perf("STARTUP", "background work start")
+        viewModelScope.launch(Dispatchers.IO) {
+            _calendar.value = CalendarRepository.load(getApplication())
+        }
+        refreshDeviceCalendar()
+        refresh()
+        startLocationRefresh(force = false)
+        viewModelScope.launch {
+            while (true) {
+                delay(REFRESH_INTERVAL_MS)
+                refresh()
+            }
+        }
     }
 
     fun refresh() {
@@ -840,8 +858,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 채널을 고르면 바로 재생한다. 주소는 매번 새로 확인한다(토큰 만료 대응). */
     fun playChannel(channel: RadioChannel) {
-        // TV 와 동시에 소리가 나지 않게 먼저 멈춘다.
+        // TV 와 동시에 소리가 나지 않게 먼저 멈춘다. 쓰지 않는 플레이어는 반납해
+        // 코덱·버퍼 메모리를 돌려준다(다시 재생할 때 새로 만든다).
         if (_tv.value.playing || _tv.value.buffering) stopTv()
+        releaseTvPlayer()
         radioChannelId = channel.id
         AppPrefs.radioChannelId = channel.id
         radioJob?.cancel()
@@ -937,6 +957,16 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         DebugLogger.i("SETTINGS", "radioChannel=${channel.id}")
     }
 
+    /** 라디오 ↔ TV 를 오갈 때 쓰지 않는 플레이어를 반납한다(코덱·버퍼 해제). */
+    private fun releaseRadioPlayer() {
+        radioPlayer.release()
+    }
+
+    private fun releaseTvPlayer() {
+        tvPlayer.release()
+        tvPlayerInstance = null
+    }
+
     override fun onCleared() {
         radioPlayer.release()
         tvPlayer.release()
@@ -971,7 +1001,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 채널을 고르면 바로 재생한다. 라디오가 나오고 있으면 먼저 멈춘다. */
     fun playTvChannel(channel: TvChannel) {
+        // 라디오와 동시에 나오지 않게 멈추고, 라디오 플레이어도 반납한다.
         if (_radio.value.playing || _radio.value.buffering) stopRadio()
+        releaseRadioPlayer()
         tvChannelId = channel.id
         AppPrefs.tvChannelId = channel.id
         tvJob?.cancel()

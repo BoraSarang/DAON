@@ -2,6 +2,18 @@
 
 형식: `[platform] version — 날짜 — 요약 (error_code / perf / cache 영향)`
 
+## [android] 0.5.0-dev — 2026-11-01
+
+### 성능·메모리 정리 (T-035·T-036·T-042~T-045)
+- **달력 상단 바에 `라디오`·`TV` 버튼 추가**: 화면 점 오른쪽, `설정` 왼쪽. 설정에서 라디오·TV 를 자동 전환에서 빼 두어도 항상 들어갈 수 있다. 라디오가 재생 중이면 `라디오` 버튼이 accent 로 강조된다
+- **시작 최적화**: 달력 자산·날씨·위치·기기 캘린더·저장된 일정 읽기를 `init` 에서 빼고 첫 프레임 뒤(`withFrameNanos`) `startBackgroundWork()` 로 옮겼다. 저장된 일정은 `Dispatchers.IO`
+- **화면 갱신 최적화**: 1초 `now` StateFlow 를 없애고 `rememberNow(perSecond)` 로 대체. 초를 보여 주는 시계 화면만 1초마다 갱신하고 달력·날씨는 분 경계에서만 갱신한다. `today` 는 `derivedStateOf` 라 날짜가 바뀔 때만 42칸 달력을 다시 그린다
+- **계산 위치**: 반복 일정 펼침을 `flowOn(Dispatchers.Default)` 로 옮겨 메인 스레드에서 수천 건 사본을 만들지 않는다
+- **포매터 캐시**: `Formatters.of(pattern, locale)` 로 `DateTimeFormatter` 17곳 재사용(패턴 해석 비용 제거)
+- **메모리**: 라디오 ↔ TV 전환 시 안 쓰는 ExoPlayer 를 `release()` 하고 `tvPlayerInstance` 를 비운다(코덱·버퍼 반납)
+- 검증(실기기 Fire HD 10): 콜드 스타트 5회 **1.767–1.793s(중앙값 1.774s, 이전 1.945–2.021s)**, 달력 화면 유휴 20초 **0프레임**(이전 4프레임), PSS 달력 100–115MB · 라디오 97MB · 시계 106MB · TV 126MB(예산 250MB). 테스트 63건, i18n 261키
+- `budget=2000ms` 는 **로그 문자열일 뿐**이며 예산을 넘어도 앱을 종료하지 않는다(코드에 종료 경로 없음)
+
 ## [android] 0.4.0-dev — 2026-11-01
 
 ### TV 화면 (T-037~T-041)
