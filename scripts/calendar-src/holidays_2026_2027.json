@@ -1,0 +1,434 @@
+{
+  "version": 1,
+  "source": "우주항공청 2026·2027년 월력요항, 관공서의 공휴일에 관한 규정",
+  "updated": "2026-10-31",
+  "note": "임시공휴일과 선거일은 발표 시점에 따라 추가될 수 있습니다. 이 파일은 월력요항에 확정된 공휴일만 담습니다.",
+  "days": {
+    "2026-01-01": [
+      {
+        "name": "신정",
+        "nameEn": "New Year's Day",
+        "type": "holiday",
+        "description": "새해 첫날입니다. 한 해의 시작을 기념합니다.",
+        "descriptionEn": "The first day of the new year."
+      }
+    ],
+    "2026-02-16": [
+      {
+        "name": "설날 연휴",
+        "nameEn": "Seollal Holiday",
+        "type": "seasonal",
+        "description": "음력 1월 1일 설날을 앞둔 연휴 첫날입니다.",
+        "descriptionEn": "The first day of the Korean New Year holiday."
+      }
+    ],
+    "2026-02-17": [
+      {
+        "name": "설날",
+        "nameEn": "Seollal",
+        "type": "seasonal",
+        "description": "음력 1월 1일로, 한 해가 시작되는 명절입니다. 차례를 지내고 세배를 합니다.",
+        "descriptionEn": "Korean New Year, the first day of the lunar year. Families hold ancestral rites and exchange New Year's greetings."
+      }
+    ],
+    "2026-02-18": [
+      {
+        "name": "설날 연휴",
+        "nameEn": "Seollal Holiday",
+        "type": "seasonal",
+        "description": "설날 연휴 마지막 날입니다.",
+        "descriptionEn": "The last day of the Korean New Year holiday."
+      }
+    ],
+    "2026-03-01": [
+      {
+        "name": "삼일절",
+        "nameEn": "Independence Movement Day",
+        "type": "national",
+        "description": "1919년 3월 1일 독립운동을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the 1919 independence movement."
+      }
+    ],
+    "2026-03-02": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "삼일절",
+        "description": "삼일절이 일요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Independence Movement Day fell on a Sunday."
+      }
+    ],
+    "2026-05-01": [
+      {
+        "name": "노동절",
+        "nameEn": "Labor Day",
+        "type": "holiday",
+        "description": "근로자의 노고를 기념하는 날입니다.",
+        "descriptionEn": "A day honoring workers."
+      }
+    ],
+    "2026-05-05": [
+      {
+        "name": "어린이날",
+        "nameEn": "Children's Day",
+        "type": "holiday",
+        "description": "어린이를 사랑하고 존중하는 날입니다.",
+        "descriptionEn": "A day to celebrate and respect children."
+      }
+    ],
+    "2026-05-24": [
+      {
+        "name": "부처님오신날",
+        "nameEn": "Buddha's Birthday",
+        "type": "holiday",
+        "description": "석가모니 부처님이 태어난 날입니다.",
+        "descriptionEn": "The birthday of Gautama Buddha."
+      }
+    ],
+    "2026-05-25": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "부처님오신날",
+        "description": "부처님오신날이 일요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Buddha's Birthday fell on a Sunday."
+      }
+    ],
+    "2026-06-03": [
+      {
+        "name": "지방선거일",
+        "nameEn": "Local Election Day",
+        "type": "election",
+        "description": "시·도지사와 지방의원을 뽑는 선거일입니다.",
+        "descriptionEn": "Election day for provincial governors, mayors, and local council members."
+      }
+    ],
+    "2026-06-06": [
+      {
+        "name": "현충일",
+        "nameEn": "Memorial Day",
+        "type": "holiday",
+        "description": "나라를 위해 희생한 분들을 기리는 날입니다.",
+        "descriptionEn": "A day to honor those who died for the country."
+      }
+    ],
+    "2026-07-17": [
+      {
+        "name": "제헌절",
+        "nameEn": "Constitution Day",
+        "type": "national",
+        "description": "1948년 헌법을 제정한 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the 1948 Constitution."
+      }
+    ],
+    "2026-08-15": [
+      {
+        "name": "광복절",
+        "nameEn": "Liberation Day",
+        "type": "national",
+        "description": "1945년 광복을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating liberation in 1945."
+      }
+    ],
+    "2026-08-17": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "광복절",
+        "description": "광복절이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Liberation Day fell on a Saturday."
+      }
+    ],
+    "2026-09-24": [
+      {
+        "name": "추석 연휴",
+        "nameEn": "Chuseok Holiday",
+        "type": "seasonal",
+        "description": "음력 8월 15일 추석을 앞둔 연휴 첫날입니다.",
+        "descriptionEn": "The first day of the Chuseok holiday."
+      }
+    ],
+    "2026-09-25": [
+      {
+        "name": "추석",
+        "nameEn": "Chuseok",
+        "type": "seasonal",
+        "description": "음력 8월 15일 한가위입니다. 조상에게 차례를 지내고 송편을 먹습니다.",
+        "descriptionEn": "Korean Thanksgiving, celebrated on the 15th day of the 8th lunar month with ancestral rites and songpyeon."
+      }
+    ],
+    "2026-09-26": [
+      {
+        "name": "추석 연휴",
+        "nameEn": "Chuseok Holiday",
+        "type": "seasonal",
+        "description": "추석 연휴 마지막 날입니다.",
+        "descriptionEn": "The last day of the Chuseok holiday."
+      }
+    ],
+    "2026-10-03": [
+      {
+        "name": "개천절",
+        "nameEn": "National Foundation Day",
+        "type": "national",
+        "description": "단군이 고조선을 세운 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the founding of Gojoseon by Dangun."
+      }
+    ],
+    "2026-10-05": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "개천절",
+        "description": "개천절이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because National Foundation Day fell on a Saturday."
+      }
+    ],
+    "2026-10-09": [
+      {
+        "name": "한글날",
+        "nameEn": "Hangul Day",
+        "type": "national",
+        "description": "한글을 창제하고 반포한 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the creation and proclamation of Hangul."
+      }
+    ],
+    "2026-12-25": [
+      {
+        "name": "기독탄신일",
+        "nameEn": "Christmas Day",
+        "type": "holiday",
+        "description": "예수 그리스도의 탄생을 기념하는 날입니다.",
+        "descriptionEn": "A day celebrating the birth of Jesus Christ."
+      }
+    ],
+
+    "2027-01-01": [
+      {
+        "name": "신정",
+        "nameEn": "New Year's Day",
+        "type": "holiday",
+        "description": "새해 첫날입니다. 한 해의 시작을 기념합니다.",
+        "descriptionEn": "The first day of the new year."
+      }
+    ],
+    "2027-02-06": [
+      {
+        "name": "설날 연휴",
+        "nameEn": "Seollal Holiday",
+        "type": "seasonal",
+        "description": "음력 1월 1일 설날을 앞둔 연휴 첫날입니다.",
+        "descriptionEn": "The first day of the Korean New Year holiday."
+      }
+    ],
+    "2027-02-07": [
+      {
+        "name": "설날",
+        "nameEn": "Seollal",
+        "type": "seasonal",
+        "description": "음력 1월 1일로, 한 해가 시작되는 명절입니다. 차례를 지내고 세배를 합니다.",
+        "descriptionEn": "Korean New Year, the first day of the lunar year. Families hold ancestral rites and exchange New Year's greetings."
+      }
+    ],
+    "2027-02-08": [
+      {
+        "name": "설날 연휴",
+        "nameEn": "Seollal Holiday",
+        "type": "seasonal",
+        "description": "설날 연휴 마지막 날입니다.",
+        "descriptionEn": "The last day of the Korean New Year holiday."
+      }
+    ],
+    "2027-02-09": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "설날",
+        "description": "설날이 일요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Seollal fell on a Sunday."
+      }
+    ],
+    "2027-03-01": [
+      {
+        "name": "삼일절",
+        "nameEn": "Independence Movement Day",
+        "type": "national",
+        "description": "1919년 3월 1일 독립운동을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the 1919 independence movement."
+      }
+    ],
+    "2027-05-01": [
+      {
+        "name": "노동절",
+        "nameEn": "Labor Day",
+        "type": "holiday",
+        "description": "근로자의 노고를 기념하는 날입니다.",
+        "descriptionEn": "A day honoring workers."
+      }
+    ],
+    "2027-05-03": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "노동절",
+        "description": "노동절이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Labor Day fell on a Saturday."
+      }
+    ],
+    "2027-05-05": [
+      {
+        "name": "어린이날",
+        "nameEn": "Children's Day",
+        "type": "holiday",
+        "description": "어린이를 사랑하고 존중하는 날입니다.",
+        "descriptionEn": "A day to celebrate and respect children."
+      }
+    ],
+    "2027-05-13": [
+      {
+        "name": "부처님오신날",
+        "nameEn": "Buddha's Birthday",
+        "type": "holiday",
+        "description": "석가모니 부처님이 태어난 날입니다.",
+        "descriptionEn": "The birthday of Gautama Buddha."
+      }
+    ],
+    "2027-06-06": [
+      {
+        "name": "현충일",
+        "nameEn": "Memorial Day",
+        "type": "holiday",
+        "description": "나라를 위해 희생한 분들을 기리는 날입니다.",
+        "descriptionEn": "A day to honor those who died for the country."
+      }
+    ],
+    "2027-07-17": [
+      {
+        "name": "제헌절",
+        "nameEn": "Constitution Day",
+        "type": "national",
+        "description": "1948년 헌법을 제정한 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the 1948 Constitution."
+      }
+    ],
+    "2027-07-19": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "제헌절",
+        "description": "제헌절이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Constitution Day fell on a Saturday."
+      }
+    ],
+    "2027-08-15": [
+      {
+        "name": "광복절",
+        "nameEn": "Liberation Day",
+        "type": "national",
+        "description": "1945년 광복을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating liberation in 1945."
+      }
+    ],
+    "2027-08-16": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "광복절",
+        "description": "광복절이 일요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Liberation Day fell on a Sunday."
+      }
+    ],
+    "2027-09-14": [
+      {
+        "name": "추석 연휴",
+        "nameEn": "Chuseok Holiday",
+        "type": "seasonal",
+        "description": "음력 8월 15일 추석을 앞둔 연휴 첫날입니다.",
+        "descriptionEn": "The first day of the Chuseok holiday."
+      }
+    ],
+    "2027-09-15": [
+      {
+        "name": "추석",
+        "nameEn": "Chuseok",
+        "type": "seasonal",
+        "description": "음력 8월 15일 한가위입니다. 조상에게 차례를 지내고 송편을 먹습니다.",
+        "descriptionEn": "Korean Thanksgiving, celebrated on the 15th day of the 8th lunar month with ancestral rites and songpyeon."
+      }
+    ],
+    "2027-09-16": [
+      {
+        "name": "추석 연휴",
+        "nameEn": "Chuseok Holiday",
+        "type": "seasonal",
+        "description": "추석 연휴 마지막 날입니다.",
+        "descriptionEn": "The last day of the Chuseok holiday."
+      }
+    ],
+    "2027-10-03": [
+      {
+        "name": "개천절",
+        "nameEn": "National Foundation Day",
+        "type": "national",
+        "description": "단군이 고조선을 세운 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the founding of Gojoseon by Dangun."
+      }
+    ],
+    "2027-10-04": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "개천절",
+        "description": "개천절이 일요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because National Foundation Day fell on a Sunday."
+      }
+    ],
+    "2027-10-09": [
+      {
+        "name": "한글날",
+        "nameEn": "Hangul Day",
+        "type": "national",
+        "description": "한글을 창제하고 반포한 것을 기념하는 국경일입니다.",
+        "descriptionEn": "A national holiday commemorating the creation and proclamation of Hangul."
+      }
+    ],
+    "2027-10-11": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "한글날",
+        "description": "한글날이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Hangul Day fell on a Saturday."
+      }
+    ],
+    "2027-12-25": [
+      {
+        "name": "기독탄신일",
+        "nameEn": "Christmas Day",
+        "type": "holiday",
+        "description": "예수 그리스도의 탄생을 기념하는 날입니다.",
+        "descriptionEn": "A day celebrating the birth of Jesus Christ."
+      }
+    ],
+    "2027-12-27": [
+      {
+        "name": "대체공휴일",
+        "nameEn": "Substitute Holiday",
+        "type": "substitute",
+        "substituteFor": "기독탄신일",
+        "description": "기독탄신일이 토요일과 겹쳐 지정된 대체공휴일입니다.",
+        "descriptionEn": "A substitute holiday because Christmas Day fell on a Saturday."
+      }
+    ]
+  }
+}

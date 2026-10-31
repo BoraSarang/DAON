@@ -14,6 +14,19 @@
 - 계획: `docs/plans/PLAN_v0.2_android.md`, TODO T-013~T-023
 - perf/error_code/cache 영향: 없음(설계 단계)
 
+### 달력 데이터 자산 (T-014)
+- `app/src/main/assets/calendar/` 번들 약 230KB (시작 시 1회 로드 예산 <300KB)
+  - `lunar_2025_2040.json` 154KB — 5,844일 음력 연·월·일·윤달
+  - `solar_terms_2025_2040.json` 49KB — 24절기 384개(날짜·시각·한자·황경)
+  - `holidays_2026_2027.json` 11KB — 확정 공휴일 46일 ko/en
+  - `term_details_ko/en.json` 15.8KB — 24절기 설명·농사일 각 3개
+- 생성기 `scripts/gen-calendar-data.py` + 원본 `scripts/calendar-src/` (재생성 `--check` 지원)
+- 2026년 24절기는 우주항공청 월력요항과 분 단위 일치, 그 외 연도는 PyEphem 계산(±2분 대조)
+- 공휴일은 월력요항 확정 값만 사용(대체공휴일 규칙 추정 없음). 노동절·제헌절 포함, 2027년 대체공휴일 반영
+- 테스트 6건 추가 `CalendarAssetsTest` — 총 13건 통과
+- 문서 `docs/api/CALENDAR_DATA.md` (출처·형식·검증·T-023 갱신 절차)
+- perf/error_code/cache 영향: APK +230KB, 시작 시 JSON 파싱 1회(측정 예정)
+
 ## [android] 0.1.0 — 2026-10-31
 
 ### 구현
