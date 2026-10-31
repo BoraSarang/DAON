@@ -13,6 +13,10 @@ Early scaffold (v0.1.0) — **verified on the target device**: Fire HD 10 (2019)
 | Cold start | ≤ 2.0s | 1.54s |
 | Memory (PSS) | ≤ 250MB | 65.5MB |
 
+## v0.2 design proposal (approval pending)
+
+A calendar-first redesign for a 70s farmer: **calendar 70%**, clock and weather 30%, lunar dates, Korean public holidays, 24 solar terms with farming notes, and an idle rotation across calendar → weather → clock. The interactive mockup is in [`docs/mockups/v0.2/index.html`](docs/mockups/v0.2/index.html), with captures in `docs/mockups/v0.2/screens/`. No v0.2 code has been written yet.
+
 ## Screenshots
 
 | Korean | English | Settings |
@@ -68,7 +72,9 @@ scripts/check-i18n.sh
 
 ## Documentation
 
-- `docs/plans/PLAN_v0.1_android.md` — scope, budgets, milestones
+- `docs/plans/PLAN_v0.1_android.md` — v0.1 scope, budgets, milestones
+- `docs/plans/PLAN_v0.2_android.md` — v0.2 redesign proposal
+- `docs/mockups/v0.2/` — interactive mockup and captures
 - `docs/DESIGN.md` — design tokens and kiosk layout
 - `docs/TODO.md` — follow-up work
 - `docs/CHANGELOG.md` — change log

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAON v0.2 목업 — 전체 보기</title>
+<style>
+  :root{--bg:#0B0D10;--surface:#12151A;--rule:#2A313C;--text:#F5F7FA;--muted:#8E98A6;--accent:#F0B45E}
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px;background:var(--bg);color:var(--text);
+    font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
+  h1{font-size:34px;margin:0 0 6px}
+  p{color:var(--muted);font-size:17px;line-height:1.5;margin:0 0 28px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  figure{margin:0;background:var(--surface);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+  figure img{display:block;width:100%;height:auto}
+  figcaption{padding:12px 16px;font-size:16px;color:var(--text);font-weight:700}
+  figcaption span{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:3px}
+  a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+  <h1>DAON v0.2 — 농사 달력 키오스크</h1>
+  <p>70대 어르신 / 1920×1200 가로 / 달력 70% · 3화면 로테이션 · 음력·공휴일·24절기·농사일<br>
+  상호작용 목업: <a href="index.html">index.html</a> · 계획: <a href="../../plans/PLAN_v0.2_android.md">PLAN_v0.2_android.md</a></p>
+  <div class="grid">
+    <figure><a href="screens/01-calendar.png"><img src="screens/01-calendar.png" alt="달력 홈"></a><figcaption>1. 달력 홈<span>달력 70% · 오른쪽 시계·날씨 30%</span></figcaption></figure>
+    <figure><a href="screens/02-weather.png"><img src="screens/02-weather.png" alt="날씨 메인"></a><figcaption>2. 날씨 메인<span>시간별 · 7일 · 농사 참고 · 비 효과</span></figcaption></figure>
+    <figure><a href="screens/03-clock.png"><img src="screens/03-clock.png" alt="시계 메인"></a><figcaption>3. 시계 메인<span>둥근 아날로그(기본)</span></figcaption></figure>
+    <figure><a href="screens/04-settings.png"><img src="screens/04-settings.png" alt="설정"></a><figcaption>4. 설정<span>자동 전환 · 시계 모양 · 글씨 크기</span></figcaption></figure>
+    <figure><a href="screens/05-term.png"><img src="screens/05-term.png" alt="절기 상세"></a><figcaption>5. 절기 상세<span>상강 · 농사일 · 이달의 공휴일</span></figcaption></figure>
+    <figure><a href="screens/06-clock-digital.png"><img src="screens/06-clock-digital.png" alt="디지털 시계"></a><figcaption>6. 큰 디지털 시계<span>설정에서 선택</span></figcaption></figure>
+    <figure><a href="screens/07-clock-hybrid.png"><img src="screens/07-clock-hybrid.png" alt="혼합 시계"></a><figcaption>7. 혼합 시계<span>아날로그 + 디지털</span></figcaption></figure>
+  </div>
+</body>
+</html>

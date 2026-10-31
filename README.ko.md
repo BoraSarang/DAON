@@ -13,6 +13,10 @@
 | 콜드 스타트 | ≤ 2.0s | 1.54s |
 | 메모리(PSS) | ≤ 250MB | 65.5MB |
 
+## v0.2 설계 제안 (승인 대기)
+
+70대 농사 사용자를 위한 **달력 중심** 재설계입니다. 달력 70%, 시계·날씨 30%, 음력·한국 공휴일·24절기·농사일, 달력 → 날씨 → 시계 자동 전환을 담았습니다. 상호작용 목업은 [`docs/mockups/v0.2/index.html`](docs/mockups/v0.2/index.html), 캡처는 `docs/mockups/v0.2/screens/`에 있습니다. v0.2 코드는 아직 작성하지 않았습니다.
+
 ## 스크린샷
 
 | 한국어 | English | 설정 |
@@ -68,7 +72,9 @@ scripts/check-i18n.sh
 
 ## 문서
 
-- `docs/plans/PLAN_v0.1_android.md` — 범위·예산·마일스톤
+- `docs/plans/PLAN_v0.1_android.md` — v0.1 범위·예산·마일스톤
+- `docs/plans/PLAN_v0.2_android.md` — v0.2 재설계 제안
+- `docs/mockups/v0.2/` — 상호작용 목업·캡처
 - `docs/DESIGN.md` — 디자인 토큰·키오스크 레이아웃
 - `docs/TODO.md` — 후속 작업
 - `docs/CHANGELOG.md` — 변경 기록
