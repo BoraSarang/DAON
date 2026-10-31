@@ -19,6 +19,7 @@
 
 - 실기기 측정: 콜드 스타트 5회 1.767–1.793s(중앙값 1.774s, 이전 1.945–2.021s), 달력 화면 유휴 20초 0프레임, PSS 달력 100–115MB · 라디오 97MB · TV 126MB.
 - 로그의 `budget=2000ms` 는 참고 값일 뿐이며, 넘어도 앱이 멈추거나 종료되지 않습니다.
+- 캡처: [`19-v0.5-dashboard-nav-ko.png`](docs/screenshots/19-v0.5-dashboard-nav-ko.png)(상단 바 `라디오`·`TV` 버튼) · [`20-v0.5-radio-active-nav-ko.png`](docs/screenshots/20-v0.5-radio-active-nav-ko.png)(라디오 재생 중 `라디오` 버튼 강조)
 
 ## v0.4 — TV
 

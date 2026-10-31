@@ -13,6 +13,7 @@
 - **메모리**: 라디오 ↔ TV 전환 시 안 쓰는 ExoPlayer 를 `release()` 하고 `tvPlayerInstance` 를 비운다(코덱·버퍼 반납)
 - 검증(실기기 Fire HD 10): 콜드 스타트 5회 **1.767–1.793s(중앙값 1.774s, 이전 1.945–2.021s)**, 달력 화면 유휴 20초 **0프레임**(이전 4프레임), PSS 달력 100–115MB · 라디오 97MB · 시계 106MB · TV 126MB(예산 250MB). 테스트 63건, i18n 261키
 - `budget=2000ms` 는 **로그 문자열일 뿐**이며 예산을 넘어도 앱을 종료하지 않는다(코드에 종료 경로 없음)
+- 캡처: `docs/screenshots/19-v0.5-dashboard-nav-ko.png`(상단 바 버튼) · `20-v0.5-radio-active-nav-ko.png`(라디오 재생 중 강조)
 
 ## [android] 0.4.0-dev — 2026-11-01
 

@@ -19,6 +19,7 @@ Startup work (calendar assets, weather, location, device calendar, stored events
 
 - Measured on the target device: cold start 1.767–1.793s over 5 runs (median 1.774s, was 1.945–2.021s); calendar screen 0 frames in 20 idle seconds; PSS 100–115MB on the calendar, 97MB with radio playing, 126MB with TV playing.
 - The `budget=2000ms` value in the log is informational only — exceeding it never stops the app.
+- Captures: [`19-v0.5-dashboard-nav-ko.png`](docs/screenshots/19-v0.5-dashboard-nav-ko.png) (Radio/TV buttons in the top bar) · [`20-v0.5-radio-active-nav-ko.png`](docs/screenshots/20-v0.5-radio-active-nav-ko.png) (Radio button highlighted while the radio plays)
 
 ## v0.4 — TV
 
