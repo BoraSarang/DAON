@@ -43,7 +43,7 @@
 | `RECEIVE_BOOT_COMPLETED` | 선택 | 부팅 시 대시보드 자동 시작(설정에서 켤 때) | 자동 시작 안 함 |
 
 - 위치·캘린더 권한은 첫 사용 시 한 번만 요청하고, 거부하면 다시 자동으로 묻지 않는다.
-- Fire OS 에는 캘린더 앱/provider 가 없어 `READ_CALENDAR` 는 실제로 요청되지 않는다.
+- Fire OS 7 에도 캘린더 provider(`com.android.providers.calendar`)가 있어 `READ_CALENDAR` 를 허용하면 기기 일정을 읽는다. 캘린더 계정이 없으면 0건으로 표시되고, provider 자체가 없는 기기만 `UNAVAILABLE` 이다.
 
 ## 5. 키오스크 설정 (Device Owner, 선택)
 일반 화면 고정(스크린 피닝)은 설정 → 키오스크 → `이 앱에 고정` 으로 켠다. 처음 한 번 시스템 확인 창이 뜬다.

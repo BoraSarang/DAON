@@ -23,7 +23,7 @@
     <string name="touch_dashboard">대시보드로 복귀</string>
     <string name="touch_pause">그 화면에서 멈추기</string>
     <string name="touch_note_dashboard">날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.</string>
-    <string name="touch_note_pause">날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작됩니다.</string>
+    <string name="touch_note_pause">날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작되고, `달력` 버튼을 누르면 대시보드로 돌아갑니다.</string>
     <string name="settings_text_size">글씨 크기</string>
     <string name="settings_text_size_desc">멀리서도 잘 보이도록 화면 글씨를 키웁니다.</string>
     <string name="settings_clock_face">시계 모양</string>
@@ -121,6 +121,16 @@
     <string name="detail_event_remove">일정 지우기</string>
     <string name="detail_event_device_source">기기 캘린더 · %1$s</string>
     <string name="detail_event_local_source">이 태블릿에서 추가</string>
+    <string name="detail_event_date_basis">날짜</string>
+    <string name="detail_event_solar">양력 %1$d월 %2$d일</string>
+    <string name="detail_event_lunar">음력 %1$d월 %2$d일</string>
+    <string name="detail_event_lunar_note">매년 음력 %1$d월 %2$d일로 반복합니다.</string>
+    <string name="detail_event_lunar_yearly">매년 음력 %1$d월 %2$d일</string>
+    <string name="detail_event_repeat">반복</string>
+    <string name="repeat_none">없음</string>
+    <string name="repeat_weekly">매주</string>
+    <string name="repeat_monthly">매월</string>
+    <string name="repeat_yearly">매년</string>
 
     <!-- 대시보드 -->
     <string name="label_calendar">이번 달</string>

@@ -86,6 +86,28 @@ class CalendarData internal constructor(
         )
     }
 
+    /**
+     * (음력 월, 일, 윤달) → 번들 범위 안의 양력 날짜 목록.
+     * 음력 반복 일정(제사·생일)을 매년 펼칠 때 쓴다. 첫 조회 때 한 번만 만든다.
+     */
+    private val lunarByMonthDay: Map<Int, List<LocalDate>> by lazy {
+        val map = HashMap<Int, MutableList<LocalDate>>(512)
+        for (index in 0 until lunarCount) {
+            val cursor = index * 4
+            val key = lunarKey(
+                month = lunarValues[cursor + 1],
+                day = lunarValues[cursor + 2],
+                leap = lunarValues[cursor + 3] == 1,
+            )
+            map.getOrPut(key) { ArrayList(2) }.add(lunarStart.plusDays(index.toLong()))
+        }
+        map
+    }
+
+    /** 같은 음력 날짜의 양력 날짜들(보통 1년에 1개, 윤달은 드물게). 범위 밖이면 빈 목록. */
+    fun lunarDates(month: Int, day: Int, leap: Boolean = false): List<LocalDate> =
+        lunarByMonthDay[lunarKey(month, day, leap)] ?: emptyList()
+
     fun termsOn(date: LocalDate): List<SolarTerm> =
         termsByDate[date]?.let { listOf(it) } ?: emptyList()
 
@@ -116,6 +138,9 @@ class CalendarData internal constructor(
             .filterKeys { YearMonth.from(it) == month }
             .toSortedMap()
             .map { it.key to it.value }
+
+    private fun lunarKey(month: Int, day: Int, leap: Boolean): Int =
+        month * 1_000 + day * 10 + if (leap) 1 else 0
 
     companion object {
         const val LUNAR_ASSET = "lunar_2025_2040.json"

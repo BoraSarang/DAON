@@ -14,11 +14,14 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /**
- * 기기 캘린더 읽기(READ_CALENDAR). Fire OS 에는 캘린더 앱이 없어 provider 가 없을 수 있고,
- * 그때는 [isAvailable] 이 false 를 돌려주고 앱은 로컬 일정만 쓴다.
+ * 기기 캘린더 읽기(READ_CALENDAR).
  *
- * 일정은 [from]~[to] 범위만 읽는다. 앱은 이 범위를 벗어난 달을 넘겨도 점 표시가 없을 뿐,
- * 달력 자체는 정상 동작한다.
+ * Fire OS 7 에도 캘린더 provider(`com.android.providers.calendar`)가 있으므로
+ * 권한만 받으면 일정을 읽을 수 있다. provider 가 정말 없는 기기(일부 커스텀 롬)에서는
+ * [isAvailable] 이 false 를 돌려주고 앱은 로컬 일정만 쓴다.
+ *
+ * 권한이 없을 때는 provider 조회가 `SecurityException` 이므로 패키지 정보로 존재 여부를 확인한다.
+ * 일정은 [events] 의 [from]~[to] 범위만 읽는다. 범위 밖 달은 점 표시가 없을 뿐 달력은 정상 동작한다.
  */
 class DeviceCalendar(private val context: Context) {
 
@@ -26,17 +29,36 @@ class DeviceCalendar(private val context: Context) {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
 
-    /** 캘린더 provider 가 있고 일정을 하나라도 담고 있는지. */
-    fun isAvailable(): Boolean = try {
-        context.contentResolver.query(
-            CalendarContract.Calendars.CONTENT_URI,
-            arrayOf(CalendarContract.Calendars._ID),
-            null,
-            null,
-            null,
-        )?.use { it.count > 0 } ?: false
+    /** 캘린더 provider 가 있는지. 권한이 없으면 provider 조회가 SecurityException 이라 패키지 정보로 확인한다. */
+    fun isAvailable(): Boolean {
+        if (hasPermission()) {
+            return try {
+                // 일정이 0건이어도 provider 가 응답하면 사용 가능한 기기다.
+                context.contentResolver.query(
+                    CalendarContract.Calendars.CONTENT_URI,
+                    arrayOf(CalendarContract.Calendars._ID),
+                    null,
+                    null,
+                    null,
+                )?.close()
+                true
+            } catch (t: Throwable) {
+                DebugLogger.i("CALENDAR", "provider query failed: ${t.javaClass.simpleName}")
+                hasCalendarProvider()
+            }
+        }
+        return hasCalendarProvider()
+    }
+
+    /** READ_CALENDAR 없이도 캘린더 content provider 보유 패키지를 찾는다. */
+    private fun hasCalendarProvider(): Boolean = try {
+        context.packageManager.getInstalledPackages(PackageManager.GET_PROVIDERS).any { info ->
+            info.providers?.any { provider ->
+                provider.authority?.contains("calendar", ignoreCase = true) == true
+            } == true
+        }
     } catch (t: Throwable) {
-        DebugLogger.i("CALENDAR", "provider unavailable: ${t.javaClass.simpleName}")
+        DebugLogger.i("CALENDAR", "provider scan failed: ${t.javaClass.simpleName}")
         false
     }
 

@@ -54,6 +54,7 @@ import com.borasarang.daon.data.calendar.descriptionFor
 import com.borasarang.daon.data.calendar.displayName
 import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.data.event.EventSource
+import com.borasarang.daon.data.event.RepeatRule
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.LocalDate
@@ -75,7 +76,7 @@ fun DateDetailPanel(
     events: List<CalendarEvent>,
     calendarEnabled: Boolean,
     calendarStatus: CalendarStatus,
-    onAddEvent: (String) -> Unit,
+    onAddEvent: (String, RepeatRule, Boolean) -> Unit,
     onRemoveEvent: (String) -> Unit,
     onRequestCalendarPermission: () -> Unit,
     onClose: () -> Unit,
@@ -156,6 +157,7 @@ fun DateDetailPanel(
 
                 EventSection(
                     date = date,
+                    calendar = calendar,
                     events = events,
                     calendarEnabled = calendarEnabled,
                     calendarStatus = calendarStatus,
@@ -405,20 +407,24 @@ private fun SubTitle(text: String) {
 @Composable
 private fun EventSection(
     date: LocalDate,
+    calendar: CalendarData,
     events: List<CalendarEvent>,
     calendarEnabled: Boolean,
     calendarStatus: CalendarStatus,
-    onAdd: (String) -> Unit,
+    onAdd: (String, RepeatRule, Boolean) -> Unit,
     onRemove: (String) -> Unit,
     onRequestCalendarPermission: () -> Unit,
 ) {
     var draft by remember(date) { mutableStateOf("") }
+    var lunar by remember(date) { mutableStateOf(false) }
+    var repeat by remember(date) { mutableStateOf(RepeatRule.NONE) }
+    val lunarDate = calendar.lunarOn(date)
     val focusManager = LocalFocusManager.current
     val hint = stringResource(R.string.detail_event_hint)
     val submit = {
         val text = draft.trim()
         if (text.isNotEmpty()) {
-            onAdd(text)
+            onAdd(text, if (lunar) RepeatRule.YEARLY else repeat, lunar)
             draft = ""
             focusManager.clearFocus()
         }
@@ -434,6 +440,71 @@ private fun EventSection(
         } else {
             events.forEach { event -> EventRow(event, onRemove) }
         }
+
+        // 날짜 기준: 같은 날을 양력으로 볼지 음력으로 볼지. 음력은 매년 반복된다.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.detail_event_date_basis),
+                style = Home.detailNote,
+                color = Kiosk.color.textMuted,
+            )
+            OptionChip(
+                label = stringResource(
+                    R.string.detail_event_solar,
+                    date.monthValue,
+                    date.dayOfMonth,
+                ),
+                selected = !lunar,
+                onClick = { lunar = false },
+            )
+            if (lunarDate != null) {
+                OptionChip(
+                    label = stringResource(
+                        R.string.detail_event_lunar,
+                        lunarDate.month,
+                        lunarDate.day,
+                    ),
+                    selected = lunar,
+                    onClick = { lunar = true },
+                )
+            }
+        }
+
+        if (lunar) {
+            Text(
+                text = stringResource(
+                    R.string.detail_event_lunar_note,
+                    lunarDate?.month ?: 0,
+                    lunarDate?.day ?: 0,
+                ),
+                style = Home.detailNote,
+                color = Kiosk.color.accent,
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.detail_event_repeat),
+                    style = Home.detailNote,
+                    color = Kiosk.color.textMuted,
+                )
+                RepeatRule.entries.forEach { rule ->
+                    OptionChip(
+                        label = stringResource(repeatLabelRes(rule)),
+                        selected = repeat == rule,
+                        onClick = { repeat = rule },
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -511,9 +582,58 @@ private fun EventSection(
     }
 }
 
+/** 일정 입력의 선택 칩. 터치 영역은 40dp 이상으로 둔다. */
+@Composable
+private fun OptionChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) Kiosk.color.accentSoft else Color.Transparent)
+            .border(
+                1.dp,
+                if (selected) Kiosk.color.accent.copy(alpha = 0.7f) else Kiosk.color.rule,
+                RoundedCornerShape(8.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = label,
+            style = Home.chipText,
+            color = if (selected) Kiosk.color.accent else Kiosk.color.textSecondary,
+            maxLines = 1,
+        )
+    }
+}
+
+private fun repeatLabelRes(rule: RepeatRule): Int = when (rule) {
+    RepeatRule.NONE -> R.string.repeat_none
+    RepeatRule.WEEKLY -> R.string.repeat_weekly
+    RepeatRule.MONTHLY -> R.string.repeat_monthly
+    RepeatRule.YEARLY -> R.string.repeat_yearly
+}
+
 @Composable
 private fun EventRow(event: CalendarEvent, onRemove: (String) -> Unit) {
     val removeLabel = stringResource(R.string.detail_event_remove)
+    val sourceText = if (event.source == EventSource.DEVICE) {
+        stringResource(
+            R.string.detail_event_device_source,
+            event.calendarName ?: stringResource(R.string.screen_calendar),
+        )
+    } else {
+        stringResource(R.string.detail_event_local_source)
+    }
+    val repeatText = when {
+        event.lunar -> stringResource(
+            R.string.detail_event_lunar_yearly,
+            event.lunarMonth,
+            event.lunarDay,
+        )
+        event.repeat != RepeatRule.NONE -> stringResource(repeatLabelRes(event.repeat))
+        else -> null
+    }
+    val meta = listOfNotNull(sourceText, repeatText).joinToString(" · ")
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -540,14 +660,7 @@ private fun EventRow(event: CalendarEvent, onRemove: (String) -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = if (event.source == EventSource.DEVICE) {
-                    stringResource(
-                        R.string.detail_event_device_source,
-                        event.calendarName ?: stringResource(R.string.screen_calendar),
-                    )
-                } else {
-                    stringResource(R.string.detail_event_local_source)
-                },
+                text = meta,
                 style = Home.detailNote,
                 color = Kiosk.color.textMuted,
                 maxLines = 1,

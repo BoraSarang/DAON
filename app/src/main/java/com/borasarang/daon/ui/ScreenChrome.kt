@@ -69,6 +69,9 @@ fun SettingsButton(onClick: () -> Unit) {
 
 /**
  * 날씨·시계 화면의 상단 바. 달력 화면은 날짜·음력·절기를 함께 보여주므로 자체 상단 바를 쓴다.
+ *
+ * [onGoHome] 이 있으면 설정 왼쪽에 `달력` 버튼을 둔다. `그 화면에서 멈추기` 모드에서도
+ * 대시보드로 돌아갈 길이 항상 보이게 하기 위해서다.
  */
 @Composable
 fun ScreenHeader(
@@ -76,6 +79,7 @@ fun ScreenHeader(
     subtitle: String?,
     current: ScreenMode,
     onOpenSettings: () -> Unit,
+    onGoHome: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
@@ -99,9 +103,34 @@ fun ScreenHeader(
                 )
             }
         }
+        if (onGoHome != null) {
+            HomeButton(onClick = onGoHome)
+            Spacer(Modifier.width(10.dp))
+        }
         ScreenDots(current)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
+    }
+}
+
+/** 날씨·시계 화면에서 달력 홈으로 돌아가는 버튼. */
+@Composable
+private fun HomeButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .height(Home.settingsHeight)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Kiosk.color.accentSoft)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.screen_calendar),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = Kiosk.color.accent,
+        )
     }
 }
 

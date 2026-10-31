@@ -114,6 +114,7 @@ fun ClockScreen(
     touchStop: Boolean,
     stopped: Boolean,
     onOpenSettings: () -> Unit,
+    onGoHome: () -> Unit,
 ) {
     val clockDatePattern = stringResource(R.string.pattern_clock_date)
     val clockDate = now.format(DateTimeFormatter.ofPattern(clockDatePattern, locale))
@@ -149,6 +150,7 @@ fun ClockScreen(
             subtitle = null,
             current = ScreenMode.CLOCK,
             onOpenSettings = onOpenSettings,
+            onGoHome = onGoHome,
         )
         Spacer(Modifier.height(Home.panelGap))
 

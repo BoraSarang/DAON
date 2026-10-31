@@ -113,6 +113,7 @@ fun WeatherScreen(
     touchStop: Boolean,
     stopped: Boolean,
     onOpenSettings: () -> Unit,
+    onGoHome: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val snapshot = state.snapshot
@@ -135,6 +136,7 @@ fun WeatherScreen(
                 subtitle = subtitle,
                 current = ScreenMode.WEATHER,
                 onOpenSettings = onOpenSettings,
+                onGoHome = onGoHome,
             )
             Spacer(Modifier.height(Home.panelGap))
 

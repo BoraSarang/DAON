@@ -23,7 +23,7 @@
     <string name="touch_dashboard">Return to dashboard</string>
     <string name="touch_pause">Pause on this screen</string>
     <string name="touch_note_dashboard">Tapping the weather or clock screen returns to the calendar and restarts auto-rotation.</string>
-    <string name="touch_note_pause">Tapping the weather or clock screen pauses there. Tap again to resume auto-rotation.</string>
+    <string name="touch_note_pause">Tapping the weather or clock screen pauses there. Tap again to resume auto-rotation, or tap the Calendar button to return to the dashboard.</string>
     <string name="settings_text_size">Text size</string>
     <string name="settings_text_size_desc">Make the text larger so it is easy to read from a distance.</string>
     <string name="settings_clock_face">Clock face</string>
@@ -121,6 +121,16 @@
     <string name="detail_event_remove">Delete event</string>
     <string name="detail_event_device_source">Device calendar · %1$s</string>
     <string name="detail_event_local_source">Added on this tablet</string>
+    <string name="detail_event_date_basis">Date</string>
+    <string name="detail_event_solar">Solar %1$d/%2$d</string>
+    <string name="detail_event_lunar">Lunar %1$d/%2$d</string>
+    <string name="detail_event_lunar_note">Repeats every year on lunar %1$d/%2$d.</string>
+    <string name="detail_event_lunar_yearly">Yearly · lunar %1$d/%2$d</string>
+    <string name="detail_event_repeat">Repeat</string>
+    <string name="repeat_none">Once</string>
+    <string name="repeat_weekly">Weekly</string>
+    <string name="repeat_monthly">Monthly</string>
+    <string name="repeat_yearly">Yearly</string>
 
     <!-- Dashboard -->
     <string name="label_calendar">This month</string>

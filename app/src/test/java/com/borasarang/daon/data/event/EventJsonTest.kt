@@ -60,4 +60,63 @@ class EventJsonTest {
 
         assertEquals(listOf("timed", "all-day"), decoded.map { it.id })
     }
+
+    @Test
+    fun `round trip keeps repeat and lunar fields`() {
+        val day = LocalDate.of(2026, 10, 31)
+        val events = listOf(
+            CalendarEvent(
+                id = "weekly",
+                date = day,
+                title = "매주 밭 점검",
+                repeat = RepeatRule.WEEKLY,
+            ),
+            CalendarEvent(
+                id = "lunar",
+                date = day,
+                title = "제사",
+                repeat = RepeatRule.YEARLY,
+                lunar = true,
+                lunarMonth = 9,
+                lunarDay = 21,
+            ),
+        )
+
+        val decoded = EventJson.decode(EventJson.encode(events))
+
+        val weekly = decoded.first { it.id == "weekly" }
+        assertEquals(RepeatRule.WEEKLY, weekly.repeat)
+        assertEquals(false, weekly.lunar)
+
+        val lunar = decoded.first { it.id == "lunar" }
+        assertEquals(RepeatRule.YEARLY, lunar.repeat)
+        assertEquals(true, lunar.lunar)
+        assertEquals(9, lunar.lunarMonth)
+        assertEquals(21, lunar.lunarDay)
+    }
+
+    @Test
+    fun `legacy entries without repeat fields read as single solar events`() {
+        val text = """[{"id":"old","date":"2026-11-01","title":"예전 일정"}]"""
+
+        val decoded = EventJson.decode(text)
+
+        assertEquals(1, decoded.size)
+        assertEquals(RepeatRule.NONE, decoded.first().repeat)
+        assertEquals(false, decoded.first().lunar)
+    }
+
+    @Test
+    fun `lunar flag without a valid lunar date falls back to a solar event`() {
+        val text = """
+            [{"id":"bad","date":"2026-11-01","title":"깨진 음력","lunar":true,
+              "lunarMonth":0,"lunarDay":40,"repeat":"WEEKLY"}]
+        """.trimIndent()
+
+        val decoded = EventJson.decode(text)
+
+        assertEquals(1, decoded.size)
+        assertEquals(false, decoded.first().lunar)
+        assertEquals(RepeatRule.WEEKLY, decoded.first().repeat)
+    }
 }

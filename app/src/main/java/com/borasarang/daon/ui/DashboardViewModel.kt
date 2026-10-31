@@ -24,7 +24,9 @@ import com.borasarang.daon.data.calendar.CalendarRepository
 import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.data.event.DeviceCalendar
 import com.borasarang.daon.data.event.EventJson
+import com.borasarang.daon.data.event.EventOccurrences
 import com.borasarang.daon.data.event.EventStore
+import com.borasarang.daon.data.event.RepeatRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -129,10 +131,18 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _localEvents = MutableStateFlow(eventStore.all())
     private val _deviceEvents = MutableStateFlow<List<CalendarEvent>>(emptyList())
 
-    /** 로컬 일정 + 기기 캘린더 일정. 날짜·시간 순으로 정렬된다. */
-    val events: StateFlow<List<CalendarEvent>> = combine(_localEvents, _deviceEvents) { local, device ->
-        (local + device).sortedWith(EventJson.ORDER)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), _localEvents.value)
+    /** 로컬 일정(반복 펼침) + 기기 캘린더 일정. 날짜·시간 순으로 정렬된다. */
+    val events: StateFlow<List<CalendarEvent>> =
+        combine(_localEvents, _deviceEvents, _calendar) { local, device, data ->
+            val today = LocalDate.now()
+            val from = today.minusMonths(EVENT_WINDOW_BACK_MONTHS)
+            val to = today.plusMonths(EVENT_WINDOW_FORWARD_MONTHS)
+            val expanded = local.flatMap { event ->
+                EventOccurrences.expand(event, data, from, to)
+            }
+            val visibleDevice = device.filter { it.date in from..to }
+            (expanded + visibleDevice).sortedWith(EventJson.ORDER)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), _localEvents.value)
 
     var deviceCalendarEnabled by mutableStateOf(AppPrefs.deviceCalendarEnabled)
         private set
@@ -387,10 +397,20 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     fun hasCalendarPermission(): Boolean = deviceCalendar.hasPermission()
 
-    fun addEvent(date: LocalDate, title: String) {
+    fun addEvent(
+        date: LocalDate,
+        title: String,
+        repeat: RepeatRule = RepeatRule.NONE,
+        lunar: Boolean = false,
+    ) {
         if (title.isBlank()) return
-        _localEvents.value = eventStore.add(date, title)
-        DebugLogger.i("EVENT", "added date=$date")
+        // 음력 일정은 그 날의 음력 월·일을 저장해 매년 같은 음력 날짜에 다시 보여 준다.
+        val lunarDate = if (lunar) _calendar.value.lunarOn(date) else null
+        _localEvents.value = eventStore.add(date, title, repeat, lunarDate)
+        DebugLogger.i(
+            "EVENT",
+            "added date=$date repeat=${repeat.name} lunar=${lunarDate != null}",
+        )
     }
 
     fun removeEvent(id: String) {
@@ -648,5 +668,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         /** 기기 캘린더를 읽는 범위(오늘 기준 개월). 달력 이동 시 점 표시 범위다. */
         private const val DEVICE_CALENDAR_MONTHS_BACK = 12L
         private const val DEVICE_CALENDAR_MONTHS_FORWARD = 12L
+
+        /** 반복 일정을 미리 펼치는 범위. 달력을 몇 년 넘겨도 점이 보이도록 넉넉히 잡는다. */
+        private const val EVENT_WINDOW_BACK_MONTHS = 24L
+        private const val EVENT_WINDOW_FORWARD_MONTHS = 120L
     }
 }

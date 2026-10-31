@@ -17,11 +17,11 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 Calendar 70% + clock/weather 30%, lunar dates, Korean public holidays, 24 solar terms with farming notes, and an idle rotation calendar → weather → clock. Tap a date for a 520dp panel with the solar term, farming tasks, holidays, and events. Weather shows current, 3-hourly, and 7-day forecasts with rain chance and rain/snow/thunder effects. The clock face can be a round analog, large digital, or combined.
 
-Events can be added on the tablet and, when the device has a calendar app, read from the device calendar (read-only). Kiosk settings add screen pinning and optional start-on-boot.
+Events can be added on the tablet with a **solar or lunar date basis** and an optional **weekly / monthly / yearly repeat** (lunar events repeat yearly on the same lunar day). When the device has a calendar provider, its events are shown read-only. Tap the clock or weather card to open that screen; a `Calendar` button on those screens returns to the dashboard even in pause-on-this-screen mode. Kiosk settings add screen pinning and optional start-on-boot.
 
 - Interactive mockup: [`docs/mockups/v0.2/index.html`](docs/mockups/v0.2/index.html)
 - v0.2 captures: [`docs/screenshots/04-v0.2-dashboard-ko.png`](docs/screenshots/04-v0.2-dashboard-ko.png) … `10-v0.2-settings-ko.png`
-- Local events: SharedPreferences JSON. Device calendar: `READ_CALENDAR`, ±12 months, unavailable on Fire OS without a calendar app.
+- Local events: SharedPreferences JSON, with weekly/monthly/yearly repeats and a lunar date basis. Device calendar: `READ_CALENDAR`, ±12 months; Fire OS 7 has a calendar provider, so events show once the permission is granted (0 events when no account is set up).
 - Kiosk: Android screen pinning; device owner is optional (`adb shell dpm set-device-owner com.borasarang.daon/.admin.AdminReceiver`).
 
 ## Screenshots
@@ -49,9 +49,9 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Clock: large time with seconds, weekday and date; 12/24-hour option; round analog / large digital / combined face
 - Calendar: month grid with lunar dates, Korean public holidays, 24 solar terms, and farming notes; today highlighted; month navigation
 - Date detail: 520dp panel with the solar term, farming tasks, holidays, and that day's events
-- Events: add/delete local events per day; read device-calendar events when the tablet has a calendar app
+- Events: add/delete local events per day, with weekly/monthly/yearly repeats and a solar/lunar date basis; read device-calendar events when the tablet has a calendar provider
 - Weather: current, feels-like, humidity, wind, rain chance, 3-hourly and 7-day forecasts, farming note, rain/snow/thunder effects, 15-minute refresh
-- Rotation: calendar → weather → clock with per-screen dwell time and two tap behaviours
+- Rotation: calendar → weather → clock with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock returns home
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on, optional screen pinning and start-on-boot
 - Settings panel (in-app): weather point (device location or saved neighborhood), events, clock face, text size, rotation, °C/°F, 12/24-hour, language (System / English / 한국어)
 

@@ -177,6 +177,14 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         eventDates = eventDates,
                         todayEvents = todayEvents,
                         onDateClick = { detailDate = it },
+                        onOpenClock = {
+                            rotationStopped = false
+                            screen = ScreenMode.CLOCK
+                        },
+                        onOpenWeather = {
+                            rotationStopped = false
+                            screen = ScreenMode.WEATHER
+                        },
                         onOpenSettings = { settingsOpen = true },
                         onRefreshWeather = { vm.refresh() },
                     )
@@ -189,6 +197,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
                         onOpenSettings = { settingsOpen = true },
+                        onGoHome = {
+                            rotationStopped = false
+                            screen = ScreenMode.CALENDAR
+                        },
                         onRefresh = { vm.refresh() },
                     )
                     ScreenMode.CLOCK -> ClockScreen(
@@ -204,6 +216,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
                         onOpenSettings = { settingsOpen = true },
+                        onGoHome = {
+                            rotationStopped = false
+                            screen = ScreenMode.CALENDAR
+                        },
                     )
                 }
             }
@@ -223,7 +239,9 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     events = events.filter { it.date == date },
                     calendarEnabled = vm.deviceCalendarEnabled,
                     calendarStatus = vm.calendarStatus,
-                    onAddEvent = { title -> vm.addEvent(date, title) },
+                    onAddEvent = { title, repeat, lunar ->
+                        vm.addEvent(date, title, repeat, lunar)
+                    },
                     onRemoveEvent = { id -> vm.removeEvent(id) },
                     onRequestCalendarPermission = {
                         calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
@@ -262,6 +280,8 @@ private fun CalendarHome(
     eventDates: Set<LocalDate>,
     todayEvents: List<CalendarEvent>,
     onDateClick: (LocalDate) -> Unit,
+    onOpenClock: () -> Unit,
+    onOpenWeather: () -> Unit,
     onOpenSettings: () -> Unit,
     onRefreshWeather: () -> Unit,
 ) {
@@ -301,6 +321,7 @@ private fun CalendarHome(
                     hour24 = hour24,
                     korean = korean,
                     locale = locale,
+                    onClick = onOpenClock,
                     modifier = Modifier.fillMaxWidth().height(Home.clockCard),
                 )
                 WeatherCard(
@@ -308,6 +329,7 @@ private fun CalendarHome(
                     state = weather,
                     celsius = celsius,
                     locale = locale,
+                    onClick = onOpenWeather,
                     onRefresh = onRefreshWeather,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 )
@@ -402,6 +424,7 @@ private fun ClockCard(
     hour24: Boolean,
     korean: Boolean,
     locale: Locale,
+    onClick: () -> Unit,
     modifier: Modifier,
 ) {
     val timeText = now.format(
@@ -413,7 +436,9 @@ private fun ClockCard(
     val weekday = now.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
 
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .clip(RoundedCornerShape(Home.panelRadius))
+            .clickable(onClick = onClick),
         color = Kiosk.color.surface,
         shape = RoundedCornerShape(Home.panelRadius),
         border = androidx.compose.foundation.BorderStroke(1.dp, Kiosk.color.rule),
@@ -466,11 +491,14 @@ private fun WeatherCard(
     state: WeatherUiState,
     celsius: Boolean,
     locale: Locale,
+    onClick: () -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier,
 ) {
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .clip(RoundedCornerShape(Home.panelRadius))
+            .clickable(onClick = onClick),
         color = Kiosk.color.surface,
         shape = RoundedCornerShape(Home.panelRadius),
         border = androidx.compose.foundation.BorderStroke(1.dp, Kiosk.color.rule),
