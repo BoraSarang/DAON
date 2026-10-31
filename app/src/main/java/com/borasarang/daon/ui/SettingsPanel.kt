@@ -1,6 +1,9 @@
 package com.borasarang.daon.ui
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -27,16 +34,21 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,7 +57,10 @@ import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.ClockFace
 import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.data.City
+import com.borasarang.daon.data.PlaceResult
 import com.borasarang.daon.ui.theme.Kiosk
+import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 /**
  * v0.2 설정 패널. 자동 전환·화면별 시간·터치 동작·글씨 크기·날씨 움직임을 더했다.
@@ -53,9 +68,14 @@ import com.borasarang.daon.ui.theme.Kiosk
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsPanel(vm: DashboardViewModel, onDismiss: () -> Unit) {
+fun SettingsPanel(
+    vm: DashboardViewModel,
+    onDismiss: () -> Unit,
+    onRequestLocationPermission: () -> Unit,
+) {
     val activity = LocalContext.current as Activity
     val city by vm.city.collectAsStateWithLifecycle()
+    val settingsScroll = rememberScrollState()
 
     Box(Modifier.fillMaxSize()) {
         Box(
@@ -97,7 +117,7 @@ fun SettingsPanel(vm: DashboardViewModel, onDismiss: () -> Unit) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(settingsScroll),
                     verticalArrangement = Arrangement.spacedBy(Kiosk.lg),
                 ) {
                     SettingsGroup {
@@ -237,14 +257,71 @@ fun SettingsPanel(vm: DashboardViewModel, onDismiss: () -> Unit) {
                         }
                     }
 
-                    SettingsSection(stringResource(R.string.label_city)) {
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
-                            City.entries.forEach { item ->
-                                SettingChip(
-                                    selected = city == item,
-                                    label = stringResource(item.labelRes),
-                                    onClick = { vm.setCity(item) },
-                                )
+                    SettingsSection(stringResource(R.string.label_location)) {
+                        ToggleRow(
+                            title = stringResource(R.string.settings_location_use),
+                            desc = stringResource(R.string.settings_location_desc),
+                            checked = vm.locationEnabled,
+                            onToggle = { vm.updateLocationEnabled(it) },
+                            stateText = stringResource(
+                                if (vm.locationEnabled) {
+                                    R.string.settings_location_on
+                                } else {
+                                    R.string.settings_location_off
+                                },
+                            ),
+                        )
+                        Text(
+                            text = locationStatusText(vm, city),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                        if (vm.locationEnabled) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                                if (vm.locationStatus == LocationStatus.NO_PERMISSION) {
+                                    SettingChip(
+                                        selected = false,
+                                        label = stringResource(R.string.location_grant),
+                                        onClick = onRequestLocationPermission,
+                                    )
+                                    SettingChip(
+                                        selected = false,
+                                        label = stringResource(R.string.location_open_settings),
+                                        onClick = {
+                                            val intent = Intent(
+                                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                                Uri.parse("package:${activity.packageName}"),
+                                            )
+                                            activity.startActivity(intent)
+                                        },
+                                    )
+                                } else {
+                                    SettingChip(
+                                        selected = false,
+                                        label = stringResource(R.string.location_retry),
+                                        onClick = { vm.refreshLocation() },
+                                    )
+                                }
+                            }
+                        }
+                        PlaceSearchBlock(vm, settingsScroll)
+
+                        if (!vm.locationEnabled || vm.locationStatus in FALLBACK_STATUSES) {
+                            Text(
+                                text = stringResource(R.string.settings_fallback_city),
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = Kiosk.color.textMuted,
+                            )
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                                City.entries.forEach { item ->
+                                    SettingChip(
+                                        selected = city == item && vm.savedPlaceName == null,
+                                        label = stringResource(item.labelRes),
+                                        onClick = { vm.setCity(item) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -276,6 +353,39 @@ private val ClockFace.labelRes: Int
         ClockFace.ANALOG -> R.string.clock_face_analog
         ClockFace.DIGITAL -> R.string.clock_face_digital
         ClockFace.HYBRID -> R.string.clock_face_hybrid
+    }
+
+/** 위치를 못 찾아 도시로 대신 보여 주는 상태. 이때만 도시 선택을 노출한다. */
+private val FALLBACK_STATUSES = setOf(
+    LocationStatus.NO_PERMISSION,
+    LocationStatus.SERVICE_OFF,
+    LocationStatus.UNAVAILABLE,
+)
+
+@Composable
+private fun locationStatusText(vm: DashboardViewModel, fallbackCity: City): String {
+    // 실제로 쓰는 지점을 알려 준다. 저장한 동네가 있으면 도시가 아니라 그 이름이다.
+    val placeName = vm.savedPlaceName ?: stringResource(fallbackCity.labelRes)
+    val accuracy = vm.locationAccuracy
+    return when (vm.locationStatus) {
+        LocationStatus.OFF -> stringResource(R.string.location_status_off, placeName)
+        LocationStatus.SEARCHING -> stringResource(R.string.location_status_searching)
+        LocationStatus.READY -> if (accuracy != null && accuracy > 0f) {
+            stringResource(R.string.location_status_ready, formatAccuracy(accuracy))
+        } else {
+            stringResource(R.string.location_status_ready_unknown)
+        }
+        LocationStatus.NO_PERMISSION -> stringResource(R.string.location_status_permission, placeName)
+        LocationStatus.SERVICE_OFF -> stringResource(R.string.location_status_service_off, placeName)
+        LocationStatus.UNAVAILABLE -> stringResource(R.string.location_status_unavailable, placeName)
+    }
+}
+
+private fun formatAccuracy(meters: Float): String =
+    if (meters < 1_000f) {
+        "${meters.roundToInt()}m"
+    } else {
+        String.format(java.util.Locale.getDefault(), "%.1fkm", meters / 1_000f)
     }
 
 @Composable
@@ -431,5 +541,137 @@ private fun SettingsSection(title: String, content: @Composable () -> Unit) {
             color = Kiosk.color.textMuted,
         )
         content()
+    }
+}
+
+/**
+ * 동네 직접 찾기. Fire 태블릿은 GPS·네트워크 위치가 모두 동작하지 않아
+ * 사용자가 한 번 검색해 좌표를 저장한다. 검색은 누를 때만 호출한다.
+ */
+@Composable
+private fun PlaceSearchBlock(vm: DashboardViewModel, settingsScroll: ScrollState) {
+    val hint = stringResource(R.string.place_hint)
+    val focusManager = LocalFocusManager.current
+    // 검색이 끝나면 키보드를 내리고 결과가 보이도록 설정 화면을 끝까지 내린다.
+    LaunchedEffect(vm.placeResults, vm.placeSearchError) {
+        if (vm.placeResults.isNotEmpty() || vm.placeSearchError != null) {
+            focusManager.clearFocus()
+            delay(120)
+            settingsScroll.animateScrollTo(settingsScroll.maxValue)
+        }
+    }
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.settings_place_desc),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            color = Kiosk.color.textMuted,
+        )
+        Spacer(Modifier.height(Kiosk.sm))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Kiosk.sm),
+        ) {
+            BasicTextField(
+                value = vm.placeQuery,
+                onValueChange = vm::updatePlaceQuery,
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 19.sp, color = Kiosk.color.textPrimary),
+                cursorBrush = SolidColor(Kiosk.color.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { vm.searchPlace() }),
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Kiosk.color.surfaceAlt, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp, vertical = 14.dp)
+                    .semantics { contentDescription = hint },
+                decorationBox = { innerTextField ->
+                    if (vm.placeQuery.isEmpty()) {
+                        Text(hint, fontSize = 19.sp, color = Kiosk.color.textMuted)
+                    }
+                    innerTextField()
+                },
+            )
+            SettingChip(
+                selected = false,
+                label = stringResource(
+                    if (vm.placeSearching) R.string.place_searching else R.string.place_search,
+                ),
+                onClick = { vm.searchPlace() },
+            )
+        }
+        vm.placeSearchError?.let { messageRes ->
+            Spacer(Modifier.height(Kiosk.sm))
+            Text(
+                text = stringResource(messageRes),
+                fontSize = 15.sp,
+                color = Kiosk.color.danger,
+            )
+        }
+        if (vm.placeResults.isNotEmpty()) {
+            Spacer(Modifier.height(Kiosk.sm))
+            Column(verticalArrangement = Arrangement.spacedBy(Kiosk.xs)) {
+                vm.placeResults.forEach { result ->
+                    PlaceResultRow(result) { vm.saveSearchedPlace(result) }
+                }
+            }
+        }
+        vm.savedPlaceName?.let { name ->
+            Spacer(Modifier.height(Kiosk.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Kiosk.sm),
+            ) {
+                Text(
+                    text = stringResource(R.string.place_saved, name),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Kiosk.color.ok,
+                    modifier = Modifier.weight(1f),
+                )
+                SettingChip(
+                    selected = false,
+                    label = stringResource(R.string.place_clear),
+                    onClick = { vm.clearSavedPlace() },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceResultRow(result: PlaceResult, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Kiosk.color.surfaceAlt)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = result.name,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Kiosk.color.textPrimary,
+            )
+            if (result.detail.isNotBlank()) {
+                Text(
+                    text = result.detail,
+                    fontSize = 14.sp,
+                    color = Kiosk.color.textMuted,
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.place_use),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Kiosk.color.accent,
+        )
     }
 }

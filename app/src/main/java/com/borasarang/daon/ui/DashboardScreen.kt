@@ -1,6 +1,9 @@
 package com.borasarang.daon.ui
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -46,8 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.borasarang.daon.R
-import com.borasarang.daon.data.City
+import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.data.DailyForecast
+import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
@@ -70,10 +74,23 @@ import kotlin.math.roundToInt
 fun DashboardScreen(vm: DashboardViewModel) {
     val now by vm.now.collectAsStateWithLifecycle()
     val weather by vm.weather.collectAsStateWithLifecycle()
-    val city by vm.city.collectAsStateWithLifecycle()
+    val place by vm.place.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        vm.onLocationPermissionResult(granted)
+    }
+    LaunchedEffect(Unit) {
+        // 첫 실행 때 한 번만 묻는다. 거부하면 설정의 `권한 허용`으로 다시 요청할 수 있다.
+        if (vm.locationEnabled && !vm.hasLocationPermission() && !AppPrefs.locationAsked) {
+            AppPrefs.locationAsked = true
+            DebugLogger.i("LOCATION", "request coarse permission")
+            permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+    }
     val baseDensity = LocalDensity.current
     val scaledDensity = remember(baseDensity, vm.textScale) {
         Density(baseDensity.density, baseDensity.fontScale * vm.textScale / 100f)
@@ -112,8 +129,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
             Modifier
                 .fillMaxSize()
                 .background(Kiosk.color.bg)
-                .pointerInput(vm.touchStop, screen) {
+                .pointerInput(vm.touchStop, screen, settingsOpen, detailDate) {
                     detectTapGestures {
+                        // 설정·날짜 상세가 열려 있으면 화면 전환 터치로 보지 않는다.
+                        if (settingsOpen || detailDate != null) return@detectTapGestures
                         DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
                         if (vm.touchStop) {
                             rotationStopped = !rotationStopped
@@ -128,7 +147,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     ScreenMode.CALENDAR -> CalendarHome(
                         now = now,
                         weather = weather,
-                        city = city,
+                        place = place,
                         calendar = calendar,
                         korean = korean,
                         locale = locale,
@@ -139,7 +158,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         onRefreshWeather = { vm.refresh() },
                     )
                     ScreenMode.WEATHER -> WeatherScreen(
-                        city = city,
+                        place = place,
                         state = weather,
                         celsius = vm.celsius,
                         locale = locale,
@@ -155,7 +174,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         korean = korean,
                         locale = locale,
                         calendar = calendar,
-                        city = city,
+                        place = place,
                         weather = weather,
                         celsius = vm.celsius,
                         clockFace = vm.clockFace,
@@ -183,7 +202,13 @@ fun DashboardScreen(vm: DashboardViewModel) {
             }
 
             if (settingsOpen) {
-                SettingsPanel(vm = vm, onDismiss = { settingsOpen = false })
+                SettingsPanel(
+                    vm = vm,
+                    onDismiss = { settingsOpen = false },
+                    onRequestLocationPermission = {
+                        permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    },
+                )
             }
         }
     }
@@ -194,7 +219,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
 private fun CalendarHome(
     now: LocalDateTime,
     weather: WeatherUiState,
-    city: City,
+    place: Place,
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
@@ -241,7 +266,7 @@ private fun CalendarHome(
                     modifier = Modifier.fillMaxWidth().height(Home.clockCard),
                 )
                 WeatherCard(
-                    city = city,
+                    place = place,
                     state = weather,
                     celsius = celsius,
                     locale = locale,
@@ -399,7 +424,7 @@ private fun ClockCard(
 
 @Composable
 private fun WeatherCard(
-    city: City,
+    place: Place,
     state: WeatherUiState,
     celsius: Boolean,
     locale: Locale,
@@ -415,7 +440,7 @@ private fun WeatherCard(
         Column(Modifier.fillMaxSize().padding(Home.cardPadding)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${stringResource(city.labelRes)} · ${stringResource(R.string.label_now)}",
+                    text = "${place.label()} · ${stringResource(R.string.label_now)}",
                     style = Home.clockLabel,
                     color = Kiosk.color.textMuted,
                     maxLines = 1,

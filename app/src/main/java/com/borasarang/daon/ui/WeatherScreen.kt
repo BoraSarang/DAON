@@ -38,7 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
-import com.borasarang.daon.data.City
+import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.DailyForecast
 import com.borasarang.daon.data.HourlyForecast
 import com.borasarang.daon.data.WeatherSnapshot
@@ -105,7 +105,7 @@ private val SmallNote = TextStyle(
  */
 @Composable
 fun WeatherScreen(
-    city: City,
+    place: Place,
     state: WeatherUiState,
     celsius: Boolean,
     locale: Locale,
@@ -116,7 +116,7 @@ fun WeatherScreen(
     onRefresh: () -> Unit,
 ) {
     val snapshot = state.snapshot
-    val cityName = stringResource(city.labelRes)
+    val cityName = place.label()
     val korean = locale.language == "ko"
     val subtitle = "$cityName · " + stringResource(
         if (state.isOffline) R.string.weather_offline else R.string.label_now,

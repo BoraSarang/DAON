@@ -23,6 +23,15 @@ object AppPrefs {
     private const val KEY_TEXT_SCALE = "text_scale"
     private const val KEY_WEATHER_MOTION = "weather_motion"
     private const val KEY_CLOCK_FACE = "clock_face"
+    private const val KEY_LOCATION_ENABLED = "location_enabled"
+    private const val KEY_LOCATION_ASKED = "location_asked"
+    private const val KEY_LOCATION_LAT = "location_lat"
+    private const val KEY_LOCATION_LON = "location_lon"
+    private const val KEY_LOCATION_ACCURACY = "location_accuracy"
+    private const val KEY_LOCATION_TIME = "location_time"
+    private const val KEY_PLACE_NAME = "place_name"
+    private const val KEY_PLACE_LAT = "place_lat"
+    private const val KEY_PLACE_LON = "place_lon"
 
     private lateinit var prefs: SharedPreferences
 
@@ -84,6 +93,82 @@ object AppPrefs {
     var clockFace: String
         get() = prefs.getString(KEY_CLOCK_FACE, ClockFace.ANALOG.name) ?: ClockFace.ANALOG.name
         set(value) = writeString(KEY_CLOCK_FACE, value)
+
+    /** 현재 위치로 날씨를 조회할지. 기본 켬. 끄면 [cityId] 도시를 쓴다. */
+    var locationEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LOCATION_ENABLED, true)
+        set(value) = write { putBoolean(KEY_LOCATION_ENABLED, value) }
+
+    /** 위치 권한을 한 번이라도 요청했는지. 거부 후 자동 팝업을 반복하지 않는다. */
+    var locationAsked: Boolean
+        get() = prefs.getBoolean(KEY_LOCATION_ASKED, false)
+        set(value) = write { putBoolean(KEY_LOCATION_ASKED, value) }
+
+    /** 마지막 위치 좌표를 저장한다. Double 은 비트 그대로 보존한다. */
+    fun saveLocation(latitude: Double, longitude: Double, accuracyMeters: Float, timeMs: Long) {
+        write {
+            putLong(KEY_LOCATION_LAT, latitude.toRawBits())
+            putLong(KEY_LOCATION_LON, longitude.toRawBits())
+            putFloat(KEY_LOCATION_ACCURACY, accuracyMeters)
+            putLong(KEY_LOCATION_TIME, timeMs)
+        }
+    }
+
+    fun cachedLatitude(): Double? = readDouble(KEY_LOCATION_LAT)
+
+    fun cachedLongitude(): Double? = readDouble(KEY_LOCATION_LON)
+
+    fun cachedAccuracy(): Float =
+        if (prefs.contains(KEY_LOCATION_ACCURACY)) prefs.getFloat(KEY_LOCATION_ACCURACY, -1f) else -1f
+
+    fun cachedLocationTime(): Long =
+        if (prefs.contains(KEY_LOCATION_TIME)) prefs.getLong(KEY_LOCATION_TIME, 0L) else 0L
+
+    fun clearLocation() {
+        write {
+            remove(KEY_LOCATION_LAT)
+            remove(KEY_LOCATION_LON)
+            remove(KEY_LOCATION_ACCURACY)
+            remove(KEY_LOCATION_TIME)
+        }
+    }
+
+    /**
+     * 설정에서 검색해 저장한 동네 이름. 없으면 null.
+     * 기기 위치를 못 얻는 Fire 태블릿에서 쓰는 실제 좌표원이다.
+     */
+    var placeName: String?
+        get() = prefs.getString(KEY_PLACE_NAME, null)
+        set(value) = write {
+            if (value == null) {
+                remove(KEY_PLACE_NAME)
+            } else {
+                putString(KEY_PLACE_NAME, value)
+            }
+        }
+
+    fun savePlace(name: String, latitude: Double, longitude: Double) {
+        write {
+            putString(KEY_PLACE_NAME, name)
+            putLong(KEY_PLACE_LAT, latitude.toRawBits())
+            putLong(KEY_PLACE_LON, longitude.toRawBits())
+        }
+    }
+
+    fun savedPlaceLatitude(): Double? = readDouble(KEY_PLACE_LAT)
+
+    fun savedPlaceLongitude(): Double? = readDouble(KEY_PLACE_LON)
+
+    fun clearPlace() {
+        write {
+            remove(KEY_PLACE_NAME)
+            remove(KEY_PLACE_LAT)
+            remove(KEY_PLACE_LON)
+        }
+    }
+
+    private fun readDouble(key: String): Double? =
+        if (prefs.contains(key)) Double.fromBits(prefs.getLong(key, 0L)) else null
 
     private fun writeString(key: String, value: String) = write { putString(key, value) }
 

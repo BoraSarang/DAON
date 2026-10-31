@@ -84,6 +84,18 @@
 - 검증: `fetched days=7 hours=8`, 비/눈/천둥 화면 녹화 확인, 움직임 끄기 미표시, 오프라인 배지 표시
 - perf: 콜드 스타트 **1830–1864ms**(예산 2000ms), 달력 로드 235–242ms
 
+### 날씨 지점: 현재 위치 → 동네 검색 저장 (T-024)
+- 지점 결정 순서: 기기 위치(프레임워크 `LocationManager`, GMS 불필요) → 설정에서 검색해 저장한 동네 → 도시 칩
+- 위치 권한(`ACCESS_COARSE_LOCATION`)은 첫 실행 때 한 번만 요청. 거부·실패해도 앱은 계속 동작하고 설정에 이유와 현재 지점을 표시
+- 설정 → `날씨 지점`: 동네 이름 검색(Nominatim, 1초 디바운스·초당 1회 준수), 결과 `사용`, 저장된 곳 `지우기`, `다시 찾기`
+- 새 파일 `data/DeviceLocation.kt`(20초 fix 제한·24시간 캐시), `data/Place.kt`(`auto`/저장한 곳/도시), `data/PlaceSearch.kt`, `ui/PlaceLabel.kt`
+- `WeatherRepository.fetch`가 도시 대신 위·경도를 받는다. 요청 URL 은 그대로 `forecast_days=7`
+- 저장 값은 SharedPreferences `place_name`/`place_lat`/`place_lon`. 도시 칩을 고르면 저장한 곳은 지워진다
+- 실기기 실측: 이 Fire HD 10 은 GPS 하드웨어가 없고 HERE 네트워크 위치도 좌표를 주지 않는다(`location_mode` 유지 불가, 백엔드 TLS 사설 CA 실패) → **저장한 동네가 기본**
+- 검증: `chungju` 검색 → `[PLACE] search results=1` → `[SETTINGS] place saved` → `[WEATHER] fetch lat=36.991 lon=127.926`. 세 화면 모두 `충주시, 충청북도` 표시
+- 문자열 en/ko 11키 추가(현재 162키 일치), 테스트 3건 추가(Nominatim 파싱) 총 23건 통과, 오류 코드 `E-AND-PERM-0001`
+- perf: 콜드 스타트 **1849–1896ms**(예산 2000ms), 달력 로드 249ms
+
 ## [android] 0.1.0 — 2026-10-31
 
 ### 구현

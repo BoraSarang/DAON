@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
 import com.borasarang.daon.core.ClockFace
-import com.borasarang.daon.data.City
+import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
 import com.borasarang.daon.ui.theme.Home
@@ -107,7 +107,7 @@ fun ClockScreen(
     korean: Boolean,
     locale: Locale,
     calendar: CalendarData,
-    city: City,
+    place: Place,
     weather: WeatherUiState,
     celsius: Boolean,
     clockFace: ClockFace,
@@ -181,7 +181,7 @@ fun ClockScreen(
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(14.dp))
-            WeatherLine(city, weather, celsius)
+            WeatherLine(place, weather, celsius)
         }
         Spacer(Modifier.height(12.dp))
 
@@ -347,7 +347,7 @@ private fun AnalogClock(now: LocalDateTime, modifier: Modifier) {
 }
 
 @Composable
-private fun WeatherLine(city: City, state: WeatherUiState, celsius: Boolean) {
+private fun WeatherLine(place: Place, state: WeatherUiState, celsius: Boolean) {
     val snapshot = state.snapshot ?: return
     val current = snapshot.current
     val unit = stringResource(if (celsius) R.string.unit_celsius else R.string.unit_fahrenheit)
@@ -360,7 +360,7 @@ private fun WeatherLine(city: City, state: WeatherUiState, celsius: Boolean) {
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            text = stringResource(city.labelRes),
+            text = place.label(),
             style = Home.condition,
             color = Kiosk.color.textSecondary,
         )

@@ -57,8 +57,8 @@ class WeatherException(
  */
 class WeatherRepository {
 
-    fun fetch(city: City, celsius: Boolean): WeatherSnapshot {
-        val url = buildUrl(city, celsius)
+    fun fetch(latitude: Double, longitude: Double, celsius: Boolean): WeatherSnapshot {
+        val url = buildUrl(latitude, longitude, celsius)
         val body = request(url)
         return try {
             parse(body)
@@ -68,11 +68,11 @@ class WeatherRepository {
         }
     }
 
-    private fun buildUrl(city: City, celsius: Boolean): String {
+    private fun buildUrl(latitude: Double, longitude: Double, celsius: Boolean): String {
         val unit = if (celsius) "celsius" else "fahrenheit"
         return "https://api.open-meteo.com/v1/forecast" +
-            "?latitude=${city.latitude}" +
-            "&longitude=${city.longitude}" +
+            "?latitude=$latitude" +
+            "&longitude=$longitude" +
             "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m" +
             "&hourly=temperature_2m,weather_code,precipitation_probability,precipitation,is_day" +
             "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max" +

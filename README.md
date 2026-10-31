@@ -33,7 +33,7 @@ A calendar-first redesign for a 70s farmer: **calendar 70%**, clock and weather 
 | Display | 1920×1200, landscape, always-on |
 | Google services | **Not available** (no GMS) |
 
-The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](https://open-meteo.com/) (no API key), and the city is chosen manually instead of using location services.
+The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](https://open-meteo.com/) (no API key). Weather uses the device's own location when the tablet can provide one; when it cannot, a neighborhood searched once in Settings (via [Nominatim](https://nominatim.openstreetmap.org/)) is used instead. The Fire HD 10 (2019) has no GPS and its network location provider never returns a fix, so on that unit the saved neighborhood is what drives the weather.
 
 ## Features (v0.1)
 
@@ -41,7 +41,7 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Calendar: current month grid, today highlighted, previous/next month navigation
 - Weather: current temperature, feels-like, humidity, wind, plus a 3-day forecast, refreshed every 15 minutes
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on
-- Settings panel (in-app): city, 12/24-hour, °C/°F, language (System / English / 한국어)
+- Settings panel (in-app): weather point (device location or saved neighborhood), 12/24-hour, °C/°F, language (System / English / 한국어)
 
 ## Requirements
 

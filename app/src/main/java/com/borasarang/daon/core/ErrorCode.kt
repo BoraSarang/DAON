@@ -10,6 +10,7 @@ object ErrorCode {
     const val NET_HTTP = "E-AND-NET-0003"
     const val STORE_WRITE = "E-AND-STORE-0001"
     const val CALENDAR_ASSET = "E-AND-DATA-0001"
+    const val PERM_LOCATION = "E-AND-PERM-0001"
 
     fun format(platform: String, category: String, number: Int): String =
         "E-$platform-$category-${number.toString().padStart(4, '0')}"
