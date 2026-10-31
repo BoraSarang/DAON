@@ -222,6 +222,14 @@
   .seg{height:60px;padding:0 24px;border:1px solid var(--rule);border-radius:12px;background:var(--surface2);
     color:var(--text2);font-size:25px;font-weight:700}
   .seg.on{border-color:var(--accent);background:var(--accent);color:#161A20}
+  .dwell-list{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+  .dwell-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .dwell-name{font-size:26px;font-weight:700;color:var(--text2);min-width:70px}
+  .dwell-row .segmented{margin-top:0;flex-wrap:nowrap;gap:6px}
+  .dwell-row .seg{height:54px;padding:0 15px;font-size:22px;font-weight:700}
+  .touch-label{font-size:24px;font-weight:700;color:var(--text2);margin-top:20px}
+  .touch-note{font-size:20px;color:var(--muted);margin-top:10px;line-height:1.45;font-weight:500}
+  #touchSeg .seg{height:58px;padding:0 22px;font-size:23px}
   .face-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
   .face-card{height:218px;border:2px solid var(--rule);border-radius:16px;background:var(--surface2);color:var(--text2);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px}
@@ -413,7 +421,7 @@
     <header class="topbar">
       <div>
         <div class="title">오늘 날씨</div>
-        <div class="sub">서울 · 15시 11분 갱신 · 화면을 누르면 달력으로 돌아갑니다</div>
+        <div class="sub" id="weatherSub">서울 · 15시 11분 갱신 · 화면을 누르면 달력으로 돌아갑니다</div>
       </div>
       <div class="right">
         <div class="dots" data-dots="weather"><i class="dot"></i><i class="dot on"></i><i class="dot"></i></div>
@@ -475,7 +483,7 @@
     <header class="topbar">
       <div>
         <div class="title">시계</div>
-        <div class="sub">자동 전환 중 · 시계 모양은 설정에서 바꿀 수 있습니다</div>
+        <div class="sub" id="clockSub">자동 전환 중 · 시계 모양은 설정에서 바꿀 수 있습니다</div>
       </div>
       <div class="right">
         <div class="dots" data-dots="clock"><i class="dot"></i><i class="dot"></i><i class="dot on"></i></div>
@@ -506,7 +514,7 @@
       <div class="clock-caption">음력 9월 21일 · 상강</div>
       <div class="clock-term">서리가 내리는 때 · 김장 배추 수확</div>
       <div class="clock-weather">지금 <b>14°</b> 비 · 오늘 <b>18° / 9°</b></div>
-      <div class="touch-hint">아무 곳이나 누르면 달력으로 돌아갑니다</div>
+      <div class="touch-hint" id="clockHint">아무 곳이나 누르면 달력으로 돌아갑니다</div>
     </div>
   </section>
 
@@ -526,15 +534,45 @@
         <div class="setting-row">
           <div>
             <div class="lab">화면 자동 전환</div>
-            <div class="desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다.<br>화면을 누르면 언제나 달력으로 돌아옵니다.</div>
+            <div class="desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다.<br>화면마다 머무는 시간을 따로 정할 수 있습니다.</div>
           </div>
           <button class="toggle" id="rotationToggle" aria-label="화면 자동 전환"></button>
         </div>
-        <div class="segmented" id="intervalSeg">
-          <button class="seg">15초</button>
-          <button class="seg on">30초</button>
-          <button class="seg">60초</button>
+        <div class="dwell-list">
+          <div class="dwell-row">
+            <span class="dwell-name">달력</span>
+            <div class="segmented dwell-seg" data-screen="calendar" role="group" aria-label="달력 화면 유지 시간">
+              <button class="seg">10초</button>
+              <button class="seg">20초</button>
+              <button class="seg on">30초</button>
+              <button class="seg">60초</button>
+            </div>
+          </div>
+          <div class="dwell-row">
+            <span class="dwell-name">날씨</span>
+            <div class="segmented dwell-seg" data-screen="weather" role="group" aria-label="날씨 화면 유지 시간">
+              <button class="seg">10초</button>
+              <button class="seg on">20초</button>
+              <button class="seg">30초</button>
+              <button class="seg">60초</button>
+            </div>
+          </div>
+          <div class="dwell-row">
+            <span class="dwell-name">시계</span>
+            <div class="segmented dwell-seg" data-screen="clock" role="group" aria-label="시계 화면 유지 시간">
+              <button class="seg">10초</button>
+              <button class="seg on">20초</button>
+              <button class="seg">30초</button>
+              <button class="seg">60초</button>
+            </div>
+          </div>
         </div>
+        <div class="touch-label">화면을 누르면</div>
+        <div class="segmented" id="touchSeg" role="group" aria-label="화면 터치 동작">
+          <button class="seg on" data-mode="dashboard">대시보드로 복귀</button>
+          <button class="seg" data-mode="pause">그 화면에서 멈추기</button>
+        </div>
+        <div class="touch-note" id="touchNote">날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.</div>
       </div>
 
       <div class="setting-section">
@@ -791,14 +829,17 @@ const screens=['calendar','weather','clock'];
 const stage=document.getElementById('stage');
 let current='calendar';
 let auto=false;
+let paused=false;
 let autoTimer=null;
-let autoInterval=12000;
+const dwells={calendar:30000, weather:20000, clock:20000};
+let touchMode='dashboard';
 
 function dotsFor(name){
   document.querySelectorAll('.dots').forEach(d=>d.style.opacity=(d.dataset.dots===name)?'1':'.45');
 }
 function setScreen(name, opts={}){
   current=name;
+  if(name==='settings'||name==='term') clearTimeout(autoTimer);
   const base=(name==='settings'||name==='term')?'calendar':name;
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+base));
   document.getElementById('settings-overlay').classList.toggle('active',name==='settings');
@@ -807,28 +848,49 @@ function setScreen(name, opts={}){
   document.querySelectorAll('#toolbar [data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===name));
   document.querySelectorAll('.dots').forEach(d=>d.style.display=(name==='settings'||name==='term')?'none':'flex');
   if(name==='term' && !opts.keepDetail) showDetail('2026-10-23', true);
-  if(opts.resetAuto) resetAuto();
+  if(opts.resetAuto){ paused=false; updateTouchHints(); resetAuto(); }
 }
 function resetAuto(){
-  if(!auto) return;
+  if(!auto || paused) return;
   clearTimeout(autoTimer);
+  if(current==='settings'||current==='term') return;
   autoTimer=setTimeout(()=>{
-    if(current==='settings'||current==='term'){resetAuto();return}
     const i=screens.indexOf(current);
     setScreen(screens[(i+1)%3]);
     resetAuto();
-  },autoInterval);
+  }, dwells[current] || 20000);
 }
-function startAuto(ms){
-  auto=true; autoInterval=ms||autoInterval;
+function startAuto(){
+  auto=true; paused=false;
   document.getElementById('autoBtn').textContent='자동 전환: 켜짐';
   const t=document.getElementById('rotationToggle'); if(t) t.classList.remove('off');
+  updateTouchHints();
   resetAuto();
 }
 function stopAuto(){
-  auto=false; clearTimeout(autoTimer);
+  auto=false; paused=false; clearTimeout(autoTimer);
   document.getElementById('autoBtn').textContent='자동 전환: 꺼짐';
   const t=document.getElementById('rotationToggle'); if(t) t.classList.add('off');
+  updateTouchHints();
+}
+function pauseAuto(){
+  paused=true; clearTimeout(autoTimer);
+  updateTouchHints();
+}
+function updateTouchHints(){
+  const wSub=document.getElementById('weatherSub');
+  const cSub=document.getElementById('clockSub');
+  const cHint=document.getElementById('clockHint');
+  const note=document.getElementById('touchNote');
+  const dashboard=touchMode==='dashboard';
+  if(wSub) wSub.textContent='서울 · 15시 11분 갱신 · '+
+    (dashboard ? '화면을 누르면 달력으로 돌아갑니다' : '화면을 누르면 이 화면에서 멈춥니다');
+  if(cSub) cSub.textContent=paused ? '자동 전환 멈춤' : '자동 전환 중 · 시계 모양은 설정에서 바꿀 수 있습니다';
+  if(cHint) cHint.textContent=paused ? '자동 전환을 멈췄습니다 · 다시 누르면 시작합니다'
+    : (dashboard ? '아무 곳이나 누르면 달력으로 돌아갑니다' : '아무 곳이나 누르면 자동 전환을 멈춥니다');
+  if(note) note.textContent=dashboard
+    ? '날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.'
+    : '날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작됩니다.';
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{
   const go=b.dataset.go;
@@ -841,20 +903,25 @@ document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',
   if(which==='term') setScreen('calendar',{resetAuto:true});
 }));
 document.getElementById('autoBtn').addEventListener('click',()=>{
-  if(auto){stopAuto();} else {startAuto(12000);}
+  if(auto){stopAuto();} else {startAuto();}
 });
 
-/* 터치하면 달력으로 */
+/* 터치 동작: 대시보드 복귀(기본) 또는 그 화면에서 멈추기 */
 stage.addEventListener('click',(e)=>{
   if(current==='weather'||current==='clock'){
-    // 화면 전체 터치 → 달력 복귀 (단, 설정 버튼은 예외)
     if(e.target.closest('[data-go="settings"]')) return;
-    setScreen('calendar',{resetAuto:true});
+    if(touchMode==='dashboard'){
+      setScreen('calendar',{resetAuto:true});
+    } else if(paused){
+      startAuto();
+    } else {
+      pauseAuto();
+    }
   } else if(current==='settings'||current==='term'){
     // 패널 내부 조작은 유지, 바깥 scrim은 닫기
     if(e.target.closest('.scrim')) setScreen('calendar',{resetAuto:true});
   } else {
-    resetAuto();
+    if(paused) startAuto(); else resetAuto();
   }
 },true);
 
@@ -862,13 +929,23 @@ stage.addEventListener('click',(e)=>{
 const rotationToggle=document.getElementById('rotationToggle');
 rotationToggle.addEventListener('click',()=>{
   rotationToggle.classList.toggle('off');
-  if(rotationToggle.classList.contains('off')) stopAuto(); else startAuto(autoInterval);
+  if(rotationToggle.classList.contains('off')) stopAuto(); else startAuto();
 });
-document.querySelectorAll('#intervalSeg .seg').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('#intervalSeg .seg').forEach(x=>x.classList.remove('on'));
+document.querySelectorAll('.dwell-seg').forEach(group=>{
+  group.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>{
+    group.querySelectorAll('.seg').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    dwells[group.dataset.screen]=parseInt(b.textContent,10)*1000;
+    if(auto && !paused) resetAuto();
+  }));
+});
+document.querySelectorAll('#touchSeg .seg').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#touchSeg .seg').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
-  autoInterval=parseInt(b.textContent,10)*1000;
-  if(auto) startAuto(autoInterval);
+  touchMode=b.dataset.mode;
+  paused=false;
+  updateTouchHints();
+  if(auto) resetAuto();
 }));
 document.querySelectorAll('#faceGrid .face-card').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#faceGrid .face-card').forEach(x=>x.classList.remove('on'));
@@ -877,7 +954,7 @@ document.querySelectorAll('#faceGrid .face-card').forEach(b=>b.addEventListener(
   document.getElementById('clockFaceWrap').dataset.face=face;
 }));
 document.querySelectorAll('.segmented').forEach(group=>{
-  if(group.id==='intervalSeg') return;
+  if(group.classList.contains('dwell-seg')||group.id==='faceSeg'||group.id==='touchSeg') return;
   group.querySelectorAll('.seg').forEach(b=>b.addEventListener('click',()=>{
     group.querySelectorAll('.seg').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
@@ -951,8 +1028,9 @@ if(params.get('capture')==='1'){
 } else {
   fit();
   setScreen('calendar');
-  startAuto(12000); // 목업에서는 12초로 빠르게 시연
+  startAuto(); // 승인된 기본값: 달력 30초 / 날씨 20초 / 시계 20초
 }
+updateTouchHints();
 </script>
 </body>
 </html>
