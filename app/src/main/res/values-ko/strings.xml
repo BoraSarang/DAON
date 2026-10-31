@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">다온</string>
+    <string name="app_tagline">시계 · 달력 · 날씨</string>
+
+    <!-- 설정 -->
+    <string name="label_settings">설정</string>
+    <string name="label_close">닫기</string>
+    <string name="label_city">도시</string>
+    <string name="label_hour_format">시간 형식</string>
+    <string name="label_units">단위</string>
+    <string name="label_language">언어</string>
+    <string name="hour_24">24시간</string>
+    <string name="hour_12">12시간</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_fahrenheit">°F</string>
+    <string name="lang_system">시스템</string>
+    <string name="lang_english">English</string>
+    <string name="lang_korean">한국어</string>
+
+    <!-- 대시보드 -->
+    <string name="label_calendar">이번 달</string>
+    <string name="label_weather">지금</string>
+    <string name="label_forecast">3일 예보</string>
+    <string name="label_agenda">오늘</string>
+    <string name="no_events">일정 없음</string>
+    <string name="today">오늘</string>
+    <string name="month_pattern">yyyy년 M월</string>
+    <string name="calendar_prev">이전 달</string>
+    <string name="calendar_next">다음 달</string>
+
+    <!-- 날씨 -->
+    <string name="feels_like">체감 %1$s</string>
+    <string name="humidity">습도 %1$d%%</string>
+    <string name="wind">바람 %1$s m/s</string>
+    <string name="updated_at">%1$s 갱신</string>
+    <string name="label_refresh">새로고침</string>
+    <string name="weather_offline">오프라인 — 마지막 값</string>
+    <string name="weather_loading">날씨 불러오는 중…</string>
+    <string name="error_weather_network">날씨를 불러오지 못했습니다</string>
+    <string name="error_weather_parse">날씨 데이터를 읽지 못했습니다</string>
+    <string name="error_store">설정을 저장하지 못했습니다</string>
+
+    <!-- 도시 -->
+    <string name="city_seoul">서울</string>
+    <string name="city_busan">부산</string>
+    <string name="city_incheon">인천</string>
+    <string name="city_daegu">대구</string>
+    <string name="city_daejeon">대전</string>
+    <string name="city_gwangju">광주</string>
+    <string name="city_jeju">제주</string>
+    <string name="city_tokyo">도쿄</string>
+    <string name="city_osaka">오사카</string>
+    <string name="city_new_york">뉴욕</string>
+    <string name="city_london">런던</string>
+    <string name="city_sydney">시드니</string>
+    <string name="city_singapore">싱가포르</string>
+
+    <!-- WMO 날씨 코드 -->
+    <string name="wmo_clear">맑음</string>
+    <string name="wmo_mainly_clear">대체로 맑음</string>
+    <string name="wmo_partly_cloudy">구름 조금</string>
+    <string name="wmo_overcast">흐림</string>
+    <string name="wmo_fog">안개</string>
+    <string name="wmo_drizzle">이슬비</string>
+    <string name="wmo_freezing_drizzle">어는 이슬비</string>
+    <string name="wmo_rain">비</string>
+    <string name="wmo_freezing_rain">어는 비</string>
+    <string name="wmo_snow">눈</string>
+    <string name="wmo_snow_grains">싸락눈</string>
+    <string name="wmo_rain_showers">소나기</string>
+    <string name="wmo_snow_showers">눈 소나기</string>
+    <string name="wmo_thunderstorm">천둥번개</string>
+    <string name="wmo_thunderstorm_hail">우박 동반 천둥번개</string>
+    <string name="wmo_unknown">알 수 없음</string>
+</resources>

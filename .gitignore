@@ -1,0 +1,25 @@
+# Build output
+build/
+*/build/
+.gradle/
+local.properties
+captures/
+.kotlin/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Secrets (절대 커밋 금지)
+.env
+.env.*
+*.jks
+*.keystore
+keystore.properties
+
+# Agent local (rules/workflow.md §2 [HARD])
+.agent/
+
+# OS
+.DS_Store
