@@ -7,8 +7,8 @@
 - [x] T-002 문서 세트: AGENTS.local, PLAN, DESIGN, TODO, CHANGELOG, README(en/ko)
 - [x] T-011 런처 아이콘 적용 (사용자 제공 세트, adaptive + round)
 - [x] T-012 실기기 기본 검증 (Fire HD 10 KFMAWI: 전체화면·가로·콜드스타트 1544ms·PSS 65.5MB·아이콘·언어 전환)
-- [x] T-003 일정(이벤트) 로컬 저장 + 오늘의 일정 표시 — SharedPreferences `events` + JSON(`EventJson`). 날짜 상세 패널에서 추가·삭제, 달력 셀 점 표시, 달력 아래 `오늘 일정` 스트립. **반복(매주·매월·매년)과 음력/양력 선택** 추가: 음력 일정은 매년 같은 음력 날짜에 펼친다(`EventOccurrences`, 음력 2025–2040 범위). 실기기 확인은 사용자 (2026-11-01)
-- [x] T-004 기기 캘린더 연동 — `READ_CALENDAR` + `CalendarContract.Instances`(오늘 ±12개월, 읽기 전용). **Fire OS 7 에도 `com.android.providers.calendar` 가 있어** 권한을 허용하면 일정을 읽는다(실기기 `device events=0` 확인). provider 가 없는 기기만 `UNAVAILABLE`. 실기기 확인은 사용자 (2026-11-01)
+- [x] T-003 일정(이벤트) 로컬 저장 + 오늘의 일정 표시 — SharedPreferences `events` + JSON(`EventJson`). 날짜 상세 패널에서 추가·삭제, 달력 셀 점 표시, 달력 아래 `오늘 일정` 스트립. **반복(매주·매월·매년)과 음력/양력 선택** 추가: 음력 일정은 매년 같은 음력 날짜에 펼친다(`EventOccurrences`, 음력 2025–2040 범위). 실기기 동작 확인(2026-11-01)
+- [x] T-004 기기 캘린더 연동 — `READ_CALENDAR` + `CalendarContract.Instances`(오늘 ±12개월, 읽기 전용). **Fire OS 7 에도 `com.android.providers.calendar` 가 있어** 권한을 허용하면 일정을 읽는다(실기기 `device events=0` 확인). provider 가 없는 기기만 `UNAVAILABLE`. 실기기 동작 확인(2026-11-01)
 - [x] T-005 시간별 날씨 막대 + 강수 확률 — T-019에서 구현(3시간 간격 8칸·강수량 막대·강수확률) (2026-10-31)
 - [ ] T-006 1시간 상시 실행 메모리 측정 (`adb shell dumpsys meminfo`, 1회 측정값 65.5MB → v0.2 현재 94.4MB) — **사용자 확인**
 - [ ] T-007 실기기 1시간 상시 표시 + 화면 꺼짐/재개 점검 — **사용자 확인**
