@@ -12,6 +12,32 @@
     <string name="screen_touch_home">Tap the screen to return to the calendar</string>
     <string name="screen_touch_resume">Tap the screen to resume auto-rotation</string>
     <string name="screen_touch_stop">Tap the screen to pause auto-rotation</string>
+
+    <!-- Settings -->
+    <string name="settings_rotation">Screen rotation</string>
+    <string name="settings_rotation_desc">When idle, the screen changes calendar → weather → clock. You can set how long each screen stays.</string>
+    <string name="settings_rotation_on">Rotation on</string>
+    <string name="settings_rotation_off">Rotation off</string>
+    <string name="dwell_seconds">%1$ds</string>
+    <string name="settings_touch">When the screen is tapped</string>
+    <string name="touch_dashboard">Return to dashboard</string>
+    <string name="touch_pause">Pause on this screen</string>
+    <string name="touch_note_dashboard">Tapping the weather or clock screen returns to the calendar and restarts auto-rotation.</string>
+    <string name="touch_note_pause">Tapping the weather or clock screen pauses there. Tap again to resume auto-rotation.</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="settings_text_size_desc">Make the text larger so it is easy to read from a distance.</string>
+    <string name="settings_clock_face">Clock face</string>
+    <string name="clock_face_analog">Round analog</string>
+    <string name="clock_face_digital">Large digital</string>
+    <string name="clock_face_hybrid">Combined</string>
+    <string name="text_normal">Normal</string>
+    <string name="text_large">Large</string>
+    <string name="text_xlarge">Extra large</string>
+    <string name="settings_weather">Weather</string>
+    <string name="settings_weather_motion">Weather motion</string>
+    <string name="settings_weather_motion_desc">Show rain, snow, and thunder effects on screen.</string>
+    <string name="motion_on">On</string>
+    <string name="motion_off">Off</string>
     <string name="label_close">Close</string>
     <string name="label_city">City</string>
     <string name="label_hour_format">Hour format</string>

@@ -12,6 +12,32 @@
     <string name="screen_touch_home">화면을 누르면 달력으로 돌아갑니다</string>
     <string name="screen_touch_resume">화면을 누르면 자동 전환이 다시 시작됩니다</string>
     <string name="screen_touch_stop">화면을 누르면 자동 전환이 멈춥니다</string>
+
+    <!-- 설정 -->
+    <string name="settings_rotation">화면 자동 전환</string>
+    <string name="settings_rotation_desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다. 화면마다 머무는 시간을 정할 수 있습니다.</string>
+    <string name="settings_rotation_on">자동 전환 켜짐</string>
+    <string name="settings_rotation_off">자동 전환 꺼짐</string>
+    <string name="dwell_seconds">%1$d초</string>
+    <string name="settings_touch">화면을 누르면</string>
+    <string name="touch_dashboard">대시보드로 복귀</string>
+    <string name="touch_pause">그 화면에서 멈추기</string>
+    <string name="touch_note_dashboard">날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.</string>
+    <string name="touch_note_pause">날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작됩니다.</string>
+    <string name="settings_text_size">글씨 크기</string>
+    <string name="settings_text_size_desc">멀리서도 잘 보이도록 화면 글씨를 키웁니다.</string>
+    <string name="settings_clock_face">시계 모양</string>
+    <string name="clock_face_analog">둥근 아날로그</string>
+    <string name="clock_face_digital">큰 디지털</string>
+    <string name="clock_face_hybrid">혼합</string>
+    <string name="text_normal">보통</string>
+    <string name="text_large">크게</string>
+    <string name="text_xlarge">아주 크게</string>
+    <string name="settings_weather">날씨</string>
+    <string name="settings_weather_motion">날씨 움직임</string>
+    <string name="settings_weather_motion_desc">비·눈·천둥을 화면에 표시합니다.</string>
+    <string name="motion_on">켜기</string>
+    <string name="motion_off">끄기</string>
     <string name="label_close">닫기</string>
     <string name="label_city">도시</string>
     <string name="label_hour_format">시간 형식</string>

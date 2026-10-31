@@ -16,12 +16,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,12 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -70,6 +74,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val calendar by vm.calendar.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
+    val baseDensity = LocalDensity.current
+    val scaledDensity = remember(baseDensity, vm.textScale) {
+        Density(baseDensity.density, baseDensity.fontScale * vm.textScale / 100f)
+    }
 
     var screen by rememberSaveable { mutableStateOf(ScreenMode.CALENDAR) }
     var detailDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -99,80 +107,83 @@ fun DashboardScreen(vm: DashboardViewModel) {
         }
     }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Kiosk.color.bg)
-            .pointerInput(vm.touchStop, screen) {
-                detectTapGestures {
-                    DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
-                    if (vm.touchStop) {
-                        rotationStopped = !rotationStopped
-                    } else if (screen != ScreenMode.CALENDAR) {
-                        screen = ScreenMode.CALENDAR
+    CompositionLocalProvider(LocalDensity provides scaledDensity) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Kiosk.color.bg)
+                .pointerInput(vm.touchStop, screen) {
+                    detectTapGestures {
+                        DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
+                        if (vm.touchStop) {
+                            rotationStopped = !rotationStopped
+                        } else if (screen != ScreenMode.CALENDAR) {
+                            screen = ScreenMode.CALENDAR
+                        }
                     }
+                },
+        ) {
+            Crossfade(targetState = screen, animationSpec = tween(250), label = "screen") { mode ->
+                when (mode) {
+                    ScreenMode.CALENDAR -> CalendarHome(
+                        now = now,
+                        weather = weather,
+                        city = city,
+                        calendar = calendar,
+                        korean = korean,
+                        locale = locale,
+                        hour24 = vm.hour24,
+                        celsius = vm.celsius,
+                        onDateClick = { detailDate = it },
+                        onOpenSettings = { settingsOpen = true },
+                        onRefreshWeather = { vm.refresh() },
+                    )
+                    ScreenMode.WEATHER -> WeatherScreen(
+                        city = city,
+                        state = weather,
+                        celsius = vm.celsius,
+                        locale = locale,
+                        touchStop = vm.touchStop,
+                        stopped = rotationStopped,
+                        onOpenSettings = { settingsOpen = true },
+                        onRefresh = { vm.refresh() },
+                    )
+                    ScreenMode.CLOCK -> ClockScreen(
+                        now = now,
+                        hour24 = vm.hour24,
+                        korean = korean,
+                        locale = locale,
+                        calendar = calendar,
+                        city = city,
+                        weather = weather,
+                        celsius = vm.celsius,
+                        clockFace = vm.clockFace,
+                        touchStop = vm.touchStop,
+                        stopped = rotationStopped,
+                        onOpenSettings = { settingsOpen = true },
+                    )
                 }
-            },
-    ) {
-        Crossfade(targetState = screen, animationSpec = tween(250), label = "screen") { mode ->
-            when (mode) {
-                ScreenMode.CALENDAR -> CalendarHome(
-                    now = now,
-                    weather = weather,
-                    city = city,
+            }
+
+            if (rotationStopped) {
+                Box(Modifier.align(Alignment.BottomCenter)) {
+                    RotationHint(stringResource(R.string.rotation_paused))
+                }
+            }
+
+            detailDate?.let { date ->
+                DateDetailPanel(
+                    date = date,
                     calendar = calendar,
                     korean = korean,
                     locale = locale,
-                    hour24 = vm.hour24,
-                    celsius = vm.celsius,
-                    onDateClick = { detailDate = it },
-                    onOpenSettings = { settingsOpen = true },
-                    onRefreshWeather = { vm.refresh() },
-                )
-                ScreenMode.WEATHER -> WeatherScreen(
-                    city = city,
-                    state = weather,
-                    celsius = vm.celsius,
-                    locale = locale,
-                    touchStop = vm.touchStop,
-                    stopped = rotationStopped,
-                    onOpenSettings = { settingsOpen = true },
-                    onRefresh = { vm.refresh() },
-                )
-                ScreenMode.CLOCK -> ClockScreen(
-                    now = now,
-                    hour24 = vm.hour24,
-                    korean = korean,
-                    locale = locale,
-                    calendar = calendar,
-                    city = city,
-                    weather = weather,
-                    celsius = vm.celsius,
-                    touchStop = vm.touchStop,
-                    stopped = rotationStopped,
-                    onOpenSettings = { settingsOpen = true },
+                    onClose = { detailDate = null },
                 )
             }
-        }
 
-        if (rotationStopped) {
-            Box(Modifier.align(Alignment.BottomCenter)) {
-                RotationHint(stringResource(R.string.rotation_paused))
+            if (settingsOpen) {
+                SettingsPanel(vm = vm, onDismiss = { settingsOpen = false })
             }
-        }
-
-        detailDate?.let { date ->
-            DateDetailPanel(
-                date = date,
-                calendar = calendar,
-                korean = korean,
-                locale = locale,
-                onClose = { detailDate = null },
-            )
-        }
-
-        if (settingsOpen) {
-            SettingsPanel(vm = vm, onDismiss = { settingsOpen = false })
         }
     }
 }
@@ -286,7 +297,7 @@ private fun HomeTopBar(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth().height(Home.topBar),
+        modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {

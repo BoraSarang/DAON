@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -77,7 +78,7 @@ fun ScreenHeader(
     onOpenSettings: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(Home.topBar),
+        modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {

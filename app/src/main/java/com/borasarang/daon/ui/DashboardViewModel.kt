@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
+import com.borasarang.daon.core.ClockFace
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.ErrorCode
 import com.borasarang.daon.data.City
@@ -73,6 +74,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     var dwellClock by mutableStateOf(AppPrefs.dwellClock)
         private set
     var touchStop by mutableStateOf(AppPrefs.touchStop)
+        private set
+    var textScale by mutableStateOf(AppPrefs.textScale)
+        private set
+    var weatherMotion by mutableStateOf(AppPrefs.weatherMotion)
+        private set
+    var clockFace by mutableStateOf(ClockFace.fromName(AppPrefs.clockFace))
         private set
 
     private var refreshJob: Job? = null
@@ -170,6 +177,26 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         AppPrefs.touchStop = enabled
         touchStop = enabled
         DebugLogger.i("SETTINGS", "touchStop=$enabled")
+    }
+
+    /** [percent]는 [AppPrefs.TEXT_SCALE_OPTIONS] 중 하나만 허용한다. */
+    fun updateTextScale(percent: Int) {
+        if (percent !in AppPrefs.TEXT_SCALE_OPTIONS) return
+        AppPrefs.textScale = percent
+        textScale = percent
+        DebugLogger.i("SETTINGS", "textScale=$percent")
+    }
+
+    fun updateWeatherMotion(enabled: Boolean) {
+        AppPrefs.weatherMotion = enabled
+        weatherMotion = enabled
+        DebugLogger.i("SETTINGS", "weatherMotion=$enabled")
+    }
+
+    fun updateClockFace(face: ClockFace) {
+        AppPrefs.clockFace = face.name
+        clockFace = face
+        DebugLogger.i("SETTINGS", "clockFace=${face.name}")
     }
 
     companion object {

@@ -20,6 +20,9 @@ object AppPrefs {
     private const val KEY_DWELL_WEATHER = "dwell_weather"
     private const val KEY_DWELL_CLOCK = "dwell_clock"
     private const val KEY_TOUCH_STOP = "touch_stop"
+    private const val KEY_TEXT_SCALE = "text_scale"
+    private const val KEY_WEATHER_MOTION = "weather_motion"
+    private const val KEY_CLOCK_FACE = "clock_face"
 
     private lateinit var prefs: SharedPreferences
 
@@ -67,6 +70,21 @@ object AppPrefs {
         get() = prefs.getBoolean(KEY_TOUCH_STOP, false)
         set(value) = write { putBoolean(KEY_TOUCH_STOP, value) }
 
+    /** 글씨 배율(%). 90·100·115. 100이 승인 목업 크기다. */
+    var textScale: Int
+        get() = prefs.getInt(KEY_TEXT_SCALE, DEFAULT_TEXT_SCALE)
+        set(value) = write { putInt(KEY_TEXT_SCALE, value) }
+
+    /** 비·눈·천둥 효과 표시. 기본 켬. */
+    var weatherMotion: Boolean
+        get() = prefs.getBoolean(KEY_WEATHER_MOTION, true)
+        set(value) = write { putBoolean(KEY_WEATHER_MOTION, value) }
+
+    /** 시계 화면 모양 이름. [ClockFace] 참조. */
+    var clockFace: String
+        get() = prefs.getString(KEY_CLOCK_FACE, ClockFace.ANALOG.name) ?: ClockFace.ANALOG.name
+        set(value) = writeString(KEY_CLOCK_FACE, value)
+
     private fun writeString(key: String, value: String) = write { putString(key, value) }
 
     private fun write(block: SharedPreferences.Editor.() -> Unit) {
@@ -80,7 +98,11 @@ object AppPrefs {
     const val DEFAULT_DWELL_CALENDAR = 30
     const val DEFAULT_DWELL_WEATHER = 20
     const val DEFAULT_DWELL_CLOCK = 20
+    const val DEFAULT_TEXT_SCALE = 100
 
     /** 설정에서 고를 수 있는 머무는 시간(초). */
     val DWELL_OPTIONS = listOf(10, 20, 30, 60)
+
+    /** 글씨 배율 선택지(%). */
+    val TEXT_SCALE_OPTIONS = listOf(90, 100, 115)
 }
