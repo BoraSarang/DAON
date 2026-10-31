@@ -82,6 +82,7 @@ fun SettingsPanel(
     val activity = LocalContext.current as Activity
     val city by vm.city.collectAsStateWithLifecycle()
     val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
+    val tvChannels by vm.tvChannels.collectAsStateWithLifecycle()
     val korean = java.util.Locale.getDefault().language == "ko"
     val settingsScroll = rememberScrollState()
 
@@ -230,6 +231,53 @@ fun SettingsPanel(
                         )
                         Text(
                             text = stringResource(R.string.settings_radio_note),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                    }
+
+                    SettingsSection(stringResource(R.string.settings_tv)) {
+                        ToggleRow(
+                            title = stringResource(R.string.settings_tv_rotation),
+                            desc = stringResource(R.string.settings_tv_rotation_desc),
+                            checked = vm.tvInRotation,
+                            onToggle = { vm.updateTvInRotation(it) },
+                            stateText = stringResource(
+                                if (vm.tvInRotation) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                        DwellRow(
+                            label = stringResource(R.string.settings_tv_dwell),
+                            seconds = vm.dwellTv,
+                            options = AppPrefs.TV_DWELL_OPTIONS,
+                            onSelect = { vm.updateDwell(ScreenMode.TV, it) },
+                        )
+                        if (tvChannels.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.settings_tv_default_channel),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Kiosk.color.textPrimary,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_tv_default_channel_desc),
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = Kiosk.color.textMuted,
+                            )
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                                tvChannels.forEach { channel ->
+                                    SettingChip(
+                                        selected = vm.tvChannelId == channel.id,
+                                        label = channel.displayName(korean),
+                                        onClick = { vm.setDefaultTvChannel(channel) },
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = stringResource(R.string.settings_tv_note),
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = Kiosk.color.textMuted,

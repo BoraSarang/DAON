@@ -6,12 +6,23 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-**v0.3.0-dev** — radio screen added (channel list + live playback); v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
+**v0.4.0-dev** — TV screen added (channel list, live video, full screen, rotation paused while watching); v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
-| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev |
-|---|---|---|---|---|
-| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s |
-| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) |
+| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev |
+|---|---|---|---|---|---|
+| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) |
+| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) |
+
+## v0.4 — TV
+
+A fifth screen, calendar → radio → **TV** → weather → clock. Six official free streams (KBS 1TV/2TV, MBC, SBS, EBS 1TV/2TV) in a 2×3 list next to a 16:9 video stage. Tapping a channel starts it immediately; the stream URL is resolved on every play because broadcasters hand out short-lived tokens (SBS uses a 60-second JWT, and MBC's CDN returns 403 without a `Referer` header). A large play/stop button and a `Full screen` button sit under the video, and `Exit full screen` returns to the list.
+
+**While TV is playing — including in full screen — the automatic screen rotation stops.** Stopping the channel or leaving the TV screen resumes it. Leaving the screen (the `Calendar` button, back, or the app going to the background) also stops playback, and starting the radio stops the TV and vice versa, so the two never play at once. A `TV` section in settings controls whether the screen joins the rotation, its dwell time, and the default channel.
+
+- Plan: [`docs/plans/PLAN_v0.4_tv.md`](docs/plans/PLAN_v0.4_tv.md)
+- Captures: [`16-v0.4-tv-ko.png`](docs/screenshots/16-v0.4-tv-ko.png) · [`17-v0.4-tv-playing-ko.png`](docs/screenshots/17-v0.4-tv-playing-ko.png) · [`18-v0.4-tv-fullscreen-ko.png`](docs/screenshots/18-v0.4-tv-fullscreen-ko.png)
+- Playback: Media3 ExoPlayer + `media3-ui` PlayerView, H.264/AAC HLS, no GMS. The player is created on the first play so the cold-start budget is untouched.
+- Streams: official free HLS only. MBC needs `Referer`/`Origin` on the media request; SBS `http://` URLs are upgraded to `https://` because the device blocks cleartext.
 
 ## v0.3 — radio
 
@@ -44,6 +55,8 @@ v0.1: ![ko](docs/screenshots/01-dashboard-ko.png) · ![en](docs/screenshots/02-d
 
 v0.3 radio: ![radio](docs/screenshots/13-v0.3-radio-ko.png) · ![playing](docs/screenshots/14-v0.3-radio-playing-ko.png) · ![error](docs/screenshots/15-v0.3-radio-error-ko.png)
 
+v0.4 TV: ![tv](docs/screenshots/16-v0.4-tv-ko.png) · ![playing](docs/screenshots/17-v0.4-tv-playing-ko.png) · ![fullscreen](docs/screenshots/18-v0.4-tv-fullscreen-ko.png)
+
 
 ## Target device
 
@@ -63,8 +76,9 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Date detail: 520dp panel with the solar term, farming tasks, holidays, and that day's events
 - Events: add/delete local events per day, with weekly/monthly/yearly repeats and a solar/lunar date basis; read device-calendar events when the tablet has a calendar provider
 - Weather: current, feels-like, humidity, wind, rain chance, 3-hourly and 7-day forecasts, farming note, rain/snow/thunder effects, 15-minute refresh
-- Rotation: calendar → radio → weather → clock (the radio screen can be excluded) with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock/radio returns home
+- Rotation: calendar → radio → TV → weather → clock (the radio and TV screens can be excluded) with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock/radio/TV returns home
 - Radio: 10 official free streams, large now-playing panel with play/stop and volume, `♪ channel` pill on the calendar, retry on network failure
+- TV: 6 official free streams, 16:9 video with play/stop and full screen, rotation paused while watching, retry on network failure
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on, optional screen pinning and start-on-boot
 - Settings panel (in-app): weather point (device location or saved neighborhood), events, clock face, text size, rotation, °C/°F, 12/24-hour, language (System / English / 한국어)
 

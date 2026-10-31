@@ -286,4 +286,17 @@ object Home {
         fontWeight = FontWeight.ExtraBold,
         letterSpacing = 1.sp,
     )
+
+    // ---------- TV ----------
+    /** 영상 아래 조작 줄 높이. */
+    val tvControlBar = 150.dp
+    val tvPlay = 84.dp
+    val tvTileGap = 13.dp
+
+    val tvName = TextStyle(
+        fontSize = 30.sp,
+        lineHeight = 34.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.8).sp,
+    )
 }

@@ -40,11 +40,11 @@ import com.borasarang.daon.R
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 
-/** 화면 점. [includeRadio] 가 false 면 라디오를 뺀 3개만 보여 준다. */
+/** 화면 점. [includeRadio]·[includeTv] 가 false 면 그 화면을 뺀다. */
 @Composable
-fun ScreenDots(current: ScreenMode, includeRadio: Boolean = true) {
+fun ScreenDots(current: ScreenMode, includeRadio: Boolean = true, includeTv: Boolean = true) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        ScreenMode.order(includeRadio).forEach { mode ->
+        ScreenMode.order(includeRadio, includeTv).forEach { mode ->
             Box(
                 Modifier
                     .size(Home.dot)
@@ -91,6 +91,7 @@ fun ScreenHeader(
     onOpenSettings: () -> Unit,
     onGoHome: (() -> Unit)? = null,
     includeRadio: Boolean = true,
+    includeTv: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
@@ -118,7 +119,7 @@ fun ScreenHeader(
             HomeButton(onClick = onGoHome)
             Spacer(Modifier.width(10.dp))
         }
-        ScreenDots(current, includeRadio)
+        ScreenDots(current, includeRadio, includeTv)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
     }

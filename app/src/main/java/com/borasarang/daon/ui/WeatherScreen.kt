@@ -113,6 +113,7 @@ fun WeatherScreen(
     touchStop: Boolean,
     stopped: Boolean,
     includeRadio: Boolean = true,
+    includeTv: Boolean = true,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
     onRefresh: () -> Unit,
@@ -139,6 +140,7 @@ fun WeatherScreen(
                 onOpenSettings = onOpenSettings,
                 onGoHome = onGoHome,
                 includeRadio = includeRadio,
+                includeTv = includeTv,
             )
             Spacer(Modifier.height(Home.panelGap))
 

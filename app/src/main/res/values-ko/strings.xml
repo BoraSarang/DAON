@@ -15,7 +15,7 @@
 
     <!-- 설정 -->
     <string name="settings_rotation">화면 자동 전환</string>
-    <string name="settings_rotation_desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다. 라디오 화면을 넣으면 달력 → 라디오 → 날씨 → 시계로 바뀝니다. 화면마다 머무는 시간을 정할 수 있습니다.</string>
+    <string name="settings_rotation_desc">손대지 않으면 달력 → 라디오 → TV → 날씨 → 시계 순서로 바뀝니다. 라디오·TV 화면은 빼거나 화면마다 머무는 시간을 정할 수 있습니다.</string>
     <string name="settings_rotation_on">자동 전환 켜짐</string>
     <string name="settings_rotation_off">자동 전환 꺼짐</string>
     <string name="dwell_seconds">%1$d초</string>
@@ -111,6 +111,37 @@
     <string name="settings_radio_autoplay">부팅 시 자동 재생</string>
     <string name="settings_radio_autoplay_desc">키오스크로 켜 두는 기기에서 유용합니다.</string>
     <string name="settings_radio_note">방송은 인터넷으로 받습니다. Wi-Fi가 끊기면 `방송을 불러오지 못했습니다` 안내와 `다시 시도` 버튼이 나옵니다. 방송사 공식 무료 스트림만 넣습니다.</string>
+
+    <!-- TV (v0.4) -->
+    <string name="screen_tv">TV</string>
+    <string name="tv_channel_list">채널</string>
+    <string name="tv_subtitle_playing">채널을 누르면 바로 바뀝니다</string>
+    <string name="tv_subtitle_stopped">채널을 누르면 바로 재생됩니다</string>
+    <string name="tv_now_playing">지금 방송</string>
+    <string name="tv_last_channel">마지막 채널</string>
+    <string name="tv_live">LIVE</string>
+    <string name="tv_state_playing">보는 중 · %1$s</string>
+    <string name="tv_state_stopped">멈춤 · 재생을 누르면 시작합니다</string>
+    <string name="tv_state_connecting">연결 중…</string>
+    <string name="tv_play">재생</string>
+    <string name="tv_stop">멈춤</string>
+    <string name="tv_fullscreen">전체 화면</string>
+    <string name="tv_exit_fullscreen">전체 화면 나가기</string>
+    <string name="tv_channel_playing">보는 중</string>
+    <string name="tv_hint_playing">TV를 보는 동안에는 화면이 자동으로 넘어가지 않습니다.</string>
+    <string name="tv_hint_stopped">채널을 누르거나 재생 버튼을 누르면 바로 시작합니다.</string>
+    <string name="tv_retry">다시 시도</string>
+    <string name="tv_channels_loading">채널을 불러오는 중…</string>
+    <string name="error_tv_channel">채널 정보를 찾지 못했습니다</string>
+    <string name="error_tv_network">채널을 불러오지 못했습니다</string>
+    <string name="error_tv_playback">채널을 재생하지 못했습니다</string>
+    <string name="settings_tv">TV</string>
+    <string name="settings_tv_rotation">TV 화면 포함</string>
+    <string name="settings_tv_rotation_desc">달력 → 라디오 → TV → 날씨 → 시계 순서로 넘어갑니다. TV 재생 중에는 넘어가지 않습니다.</string>
+    <string name="settings_tv_dwell">TV 화면 시간</string>
+    <string name="settings_tv_default_channel">기본 채널</string>
+    <string name="settings_tv_default_channel_desc">앱을 열거나 전원을 켰을 때 고를 채널</string>
+    <string name="settings_tv_note">방송사 공식 무료 스트림만 넣습니다. 채널을 보는 동안에는 화면이 자동으로 넘어가지 않습니다.</string>
 
     <!-- 일정 (T-003/T-004) -->
     <string name="settings_events">일정</string>

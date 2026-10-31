@@ -15,7 +15,7 @@
 
     <!-- Settings -->
     <string name="settings_rotation">Screen rotation</string>
-    <string name="settings_rotation_desc">When idle, the screen changes calendar → weather → clock. With the radio screen included it goes calendar → radio → weather → clock. You can set how long each screen stays.</string>
+    <string name="settings_rotation_desc">When idle, the screen changes calendar → radio → TV → weather → clock. You can leave the radio or TV screen out and set how long each screen stays.</string>
     <string name="settings_rotation_on">Rotation on</string>
     <string name="settings_rotation_off">Rotation off</string>
     <string name="dwell_seconds">%1$ds</string>
@@ -111,6 +111,37 @@
     <string name="settings_radio_autoplay">Play on startup</string>
     <string name="settings_radio_autoplay_desc">Useful for a tablet left on as a kiosk.</string>
     <string name="settings_radio_note">Broadcasts come over the internet. If Wi-Fi drops, a “Could not load the broadcast” message appears with a retry button. Only official free streams are listed.</string>
+
+    <!-- TV (v0.4) -->
+    <string name="screen_tv">TV</string>
+    <string name="tv_channel_list">Channels</string>
+    <string name="tv_subtitle_playing">Tap a channel to switch right away</string>
+    <string name="tv_subtitle_stopped">Tap a channel to start watching</string>
+    <string name="tv_now_playing">Now on air</string>
+    <string name="tv_last_channel">Last channel</string>
+    <string name="tv_live">LIVE</string>
+    <string name="tv_state_playing">Watching · %1$s</string>
+    <string name="tv_state_stopped">Stopped · press play to start</string>
+    <string name="tv_state_connecting">Connecting…</string>
+    <string name="tv_play">Play</string>
+    <string name="tv_stop">Stop</string>
+    <string name="tv_fullscreen">Full screen</string>
+    <string name="tv_exit_fullscreen">Exit full screen</string>
+    <string name="tv_channel_playing">Watching</string>
+    <string name="tv_hint_playing">Auto-rotation pauses while the TV is on.</string>
+    <string name="tv_hint_stopped">Tap a channel or press play to start.</string>
+    <string name="tv_retry">Try again</string>
+    <string name="tv_channels_loading">Loading channels…</string>
+    <string name="error_tv_channel">Could not find the channel</string>
+    <string name="error_tv_network">Could not load the channel</string>
+    <string name="error_tv_playback">Could not play the channel</string>
+    <string name="settings_tv">TV</string>
+    <string name="settings_tv_rotation">Include TV screen</string>
+    <string name="settings_tv_rotation_desc">Rotation goes calendar → radio → TV → weather → clock. Watching TV pauses rotation.</string>
+    <string name="settings_tv_dwell">TV screen time</string>
+    <string name="settings_tv_default_channel">Default channel</string>
+    <string name="settings_tv_default_channel_desc">The channel chosen when the app opens.</string>
+    <string name="settings_tv_note">Only official free streams are listed. While a channel is playing, the screen does not rotate.</string>
 
     <!-- Events (T-003/T-004) -->
     <string name="settings_events">Events</string>

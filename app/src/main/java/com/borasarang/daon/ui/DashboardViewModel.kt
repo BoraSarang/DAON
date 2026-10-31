@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.exoplayer.ExoPlayer
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.ClockFace
@@ -33,6 +34,11 @@ import com.borasarang.daon.data.radio.RadioChannel
 import com.borasarang.daon.data.radio.RadioException
 import com.borasarang.daon.data.radio.RadioPlayer
 import com.borasarang.daon.data.radio.RadioResolver
+import com.borasarang.daon.data.tv.TvCatalog
+import com.borasarang.daon.data.tv.TvChannel
+import com.borasarang.daon.data.tv.TvException
+import com.borasarang.daon.data.tv.TvPlayer
+import com.borasarang.daon.data.tv.TvResolver
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,6 +74,20 @@ data class RadioUiState(
     val channel: RadioChannel? = null,
     val playing: Boolean = false,
     val buffering: Boolean = false,
+    val errorRes: Int? = null,
+    val startedAtMs: Long = 0L,
+)
+
+/**
+ * TV 화면 상태.
+ *
+ * [fullscreen] 은 영상만 전체 화면으로 보는 상태다. 재생 중이면 자동 전환도 멈춘다.
+ */
+data class TvUiState(
+    val channel: TvChannel? = null,
+    val playing: Boolean = false,
+    val buffering: Boolean = false,
+    val fullscreen: Boolean = false,
     val errorRes: Int? = null,
     val startedAtMs: Long = 0L,
 )
@@ -206,6 +226,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     var radioVolume by mutableStateOf(AppPrefs.radioVolume)
         private set
 
+    var tvInRotation by mutableStateOf(AppPrefs.tvInRotation)
+        private set
+    var dwellTv by mutableStateOf(AppPrefs.dwellTv)
+        private set
+    var tvChannelId by mutableStateOf(AppPrefs.tvChannelId)
+        private set
+
     private val _radio = MutableStateFlow(RadioUiState())
     val radio: StateFlow<RadioUiState> = _radio.asStateFlow()
 
@@ -215,6 +242,20 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val radioResolver = RadioResolver()
     private val radioPlayer = RadioPlayer(app)
     private var radioJob: Job? = null
+
+    private val _tv = MutableStateFlow(TvUiState())
+    val tv: StateFlow<TvUiState> = _tv.asStateFlow()
+
+    private val _tvChannels = MutableStateFlow<List<TvChannel>>(emptyList())
+    val tvChannels: StateFlow<List<TvChannel>> = _tvChannels.asStateFlow()
+
+    private val tvResolver = TvResolver()
+    private val tvPlayer = TvPlayer(app)
+    private var tvJob: Job? = null
+
+    /** 화면의 `PlayerView` 에 붙일 플레이어. 첫 재생 전에는 null. */
+    var tvPlayerInstance by mutableStateOf<ExoPlayer?>(null)
+        private set
 
     private var refreshJob: Job? = null
     private var locationJob: Job? = null
@@ -268,7 +309,35 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
+        tvPlayer.onBuffering = {
+            _tv.update { it.copy(buffering = true, errorRes = null) }
+        }
+        tvPlayer.onPlaying = {
+            _tv.update {
+                it.copy(
+                    playing = true,
+                    buffering = false,
+                    errorRes = null,
+                    startedAtMs = if (it.startedAtMs > 0L) it.startedAtMs else SystemClock.elapsedRealtime(),
+                )
+            }
+        }
+        tvPlayer.onEnded = {
+            _tv.update { it.copy(playing = false, buffering = false, startedAtMs = 0L) }
+        }
+        tvPlayer.onError = { name ->
+            DebugLogger.e(ErrorCode.TV_PLAYBACK, "player error: $name")
+            _tv.update {
+                it.copy(
+                    playing = false,
+                    buffering = false,
+                    errorRes = R.string.error_tv_playback,
+                    startedAtMs = 0L,
+                )
+            }
+        }
         loadRadioChannels()
+        loadTvChannels()
     }
 
     fun refresh() {
@@ -685,10 +754,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     /** [seconds]는 화면별 허용값 중 하나만 쓴다. */
     fun updateDwell(mode: ScreenMode, seconds: Int) {
-        val allowed = if (mode == ScreenMode.RADIO) {
-            AppPrefs.RADIO_DWELL_OPTIONS
-        } else {
-            AppPrefs.DWELL_OPTIONS
+        val allowed = when (mode) {
+            ScreenMode.RADIO -> AppPrefs.RADIO_DWELL_OPTIONS
+            ScreenMode.TV -> AppPrefs.TV_DWELL_OPTIONS
+            else -> AppPrefs.DWELL_OPTIONS
         }
         if (seconds !in allowed) return
         when (mode) {
@@ -699,6 +768,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             ScreenMode.RADIO -> {
                 AppPrefs.dwellRadio = seconds
                 dwellRadio = seconds
+            }
+            ScreenMode.TV -> {
+                AppPrefs.dwellTv = seconds
+                dwellTv = seconds
             }
             ScreenMode.WEATHER -> {
                 AppPrefs.dwellWeather = seconds
@@ -767,6 +840,8 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 채널을 고르면 바로 재생한다. 주소는 매번 새로 확인한다(토큰 만료 대응). */
     fun playChannel(channel: RadioChannel) {
+        // TV 와 동시에 소리가 나지 않게 먼저 멈춘다.
+        if (_tv.value.playing || _tv.value.buffering) stopTv()
         radioChannelId = channel.id
         AppPrefs.radioChannelId = channel.id
         radioJob?.cancel()
@@ -864,12 +939,145 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         radioPlayer.release()
+        tvPlayer.release()
         super.onCleared()
+    }
+
+    // ---------- TV ----------
+
+    /** 번들 TV 채널 목록. 실패해도 나머지 화면은 그대로 쓸 수 있다. */
+    private fun loadTvChannels() {
+        viewModelScope.launch {
+            val channels = withContext(Dispatchers.IO) {
+                val text = runCatching {
+                    getApplication<Application>().assets
+                        .open(TV_ASSET)
+                        .bufferedReader()
+                        .use { it.readText() }
+                }.getOrNull()
+                TvCatalog.parse(text)
+            }
+            _tvChannels.value = channels
+            if (channels.isEmpty()) {
+                DebugLogger.e(ErrorCode.TV_CHANNEL, "tv catalog empty")
+                _tv.value = TvUiState(errorRes = R.string.error_tv_channel)
+                return@launch
+            }
+            val saved = channels.firstOrNull { it.id == AppPrefs.tvChannelId } ?: channels.first()
+            _tv.value = TvUiState(channel = saved)
+            DebugLogger.i("TV", "channels=${channels.size} default=${saved.id}")
+        }
+    }
+
+    /** 채널을 고르면 바로 재생한다. 라디오가 나오고 있으면 먼저 멈춘다. */
+    fun playTvChannel(channel: TvChannel) {
+        if (_radio.value.playing || _radio.value.buffering) stopRadio()
+        tvChannelId = channel.id
+        AppPrefs.tvChannelId = channel.id
+        tvJob?.cancel()
+        _tv.update {
+            it.copy(channel = channel, buffering = true, errorRes = null, startedAtMs = 0L)
+        }
+        DebugLogger.i("TV", "play ${channel.id} type=${channel.type.name}")
+        tvJob = viewModelScope.launch {
+            try {
+                val stream = tvResolver.resolveWithRetry(channel)
+                tvPlayer.play(stream)
+                tvPlayerInstance = tvPlayer.exoPlayer
+            } catch (e: TvException) {
+                DebugLogger.e(e.code, "resolve ${channel.id}: ${e.message}")
+                _tv.update {
+                    it.copy(
+                        buffering = false,
+                        playing = false,
+                        errorRes = R.string.error_tv_network,
+                    )
+                }
+            } catch (c: CancellationException) {
+                // 다른 채널을 눌러 취소된 경우다. 오류가 아니다.
+                throw c
+            } catch (t: Throwable) {
+                DebugLogger.e(
+                    ErrorCode.TV_RESOLVE,
+                    "resolve ${channel.id}: ${t.javaClass.simpleName}",
+                )
+                _tv.update {
+                    it.copy(
+                        buffering = false,
+                        playing = false,
+                        errorRes = R.string.error_tv_network,
+                    )
+                }
+            }
+        }
+    }
+
+    /** 큰 재생/멈춤 버튼. 재생 중이거나 연결 중이면 멈춘다. */
+    fun toggleTv() {
+        val state = _tv.value
+        if (state.playing || state.buffering) {
+            stopTv()
+        } else {
+            state.channel?.let { playTvChannel(it) }
+        }
+    }
+
+    /** 재생을 멈춘다. 전체화면도 함께 빠져나온다. */
+    fun stopTv() {
+        val state = _tv.value
+        if (tvJob == null && !state.playing && !state.buffering && !state.fullscreen) return
+        tvJob?.cancel()
+        tvJob = null
+        tvPlayer.stop()
+        _tv.update {
+            it.copy(
+                playing = false,
+                buffering = false,
+                fullscreen = false,
+                startedAtMs = 0L,
+            )
+        }
+        DebugLogger.i("TV", "stop")
+    }
+
+    /** 오류 뒤 `다시 시도`. 목록이 비었으면 목록부터 다시 읽는다. */
+    fun retryTv() {
+        val channel = _tv.value.channel
+        if (channel == null) {
+            loadTvChannels()
+        } else {
+            playTvChannel(channel)
+        }
+    }
+
+    /** 전체화면으로 볼지. 재생 중이 아니면 전체화면에 들어가지 않는다. */
+    fun setTvFullscreen(enabled: Boolean) {
+        val state = _tv.value
+        if (enabled && !state.playing && !state.buffering) return
+        _tv.update { it.copy(fullscreen = enabled) }
+        DebugLogger.i("TV", "fullscreen=$enabled")
+    }
+
+    fun updateTvInRotation(enabled: Boolean) {
+        AppPrefs.tvInRotation = enabled
+        tvInRotation = enabled
+        DebugLogger.i("SETTINGS", "tvInRotation=$enabled")
+    }
+
+    /** 설정의 `기본 채널`. 재생 중이 아니면 지금 보이는 채널도 바꾼다. */
+    fun setDefaultTvChannel(channel: TvChannel) {
+        AppPrefs.tvChannelId = channel.id
+        tvChannelId = channel.id
+        if (!_tv.value.playing && !_tv.value.buffering) {
+            _tv.update { it.copy(channel = channel, errorRes = null) }
+        }
+        DebugLogger.i("SETTINGS", "tvChannel=${channel.id}")
     }
 
     companion object {
         private const val REFRESH_INTERVAL_MS = 15 * 60 * 1_000L
         private const val RADIO_ASSET = "radio_channels.json"
+        private const val TV_ASSET = "tv_channels.json"
 
         /** 타이핑이 멈춘 뒤 검색까지 기다리는 시간. Nominatim 초당 1회 정책을 지킨다. */
         private const val SEARCH_DEBOUNCE_MS = 1_000L

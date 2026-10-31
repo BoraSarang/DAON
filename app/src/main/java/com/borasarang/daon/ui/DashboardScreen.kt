@@ -72,7 +72,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * v0.2 키오스크 홈. 달력 → 날씨 → 시계 3화면을 자동 전환한다.
+ * 키오스크 홈. 달력 → 라디오 → TV → 날씨 → 시계 화면을 자동 전환한다(라디오·TV는 설정에서 제외 가능).
  * 70대 사용자를 기준으로 큰 글씨와 큰 터치 영역을 쓴다.
  */
 @Composable
@@ -84,6 +84,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val events by vm.events.collectAsStateWithLifecycle()
     val radio by vm.radio.collectAsStateWithLifecycle()
     val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
+    val tv by vm.tv.collectAsStateWithLifecycle()
+    val tvChannels by vm.tvChannels.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -129,10 +131,13 @@ fun DashboardScreen(vm: DashboardViewModel) {
     /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
     var rotationStopped by remember { mutableStateOf(false) }
 
-    val paused = settingsOpen || detailDate != null
+    /** TV 영상이 나오는 동안에는 화면을 넘기지 않는다(전체 화면 포함). */
+    val tvActive = tv.playing || tv.buffering
+    val paused = settingsOpen || detailDate != null || tvActive || tv.fullscreen
     val dwell = when (screen) {
         ScreenMode.CALENDAR -> vm.dwellCalendar
         ScreenMode.RADIO -> vm.dwellRadio
+        ScreenMode.TV -> vm.dwellTv
         ScreenMode.WEATHER -> vm.dwellWeather
         ScreenMode.CLOCK -> vm.dwellClock
     }
@@ -140,23 +145,34 @@ fun DashboardScreen(vm: DashboardViewModel) {
     LaunchedEffect(screen, dwell, vm.rotationEnabled, paused, rotationStopped) {
         if (!vm.rotationEnabled || paused || rotationStopped) return@LaunchedEffect
         delay(dwell * 1_000L)
-        val next = screen.next(vm.radioInRotation)
+        val next = screen.next(vm.radioInRotation, vm.tvInRotation)
         DebugLogger.i("ROTATE", "auto ${screen.name} -> ${next.name} after ${dwell}s")
         screen = next
     }
 
-    // 앱이 화면에서 내려가면 방송을 멈춘다. 백그라운드 재생 서비스는 v0.3에 두지 않는다.
+    // TV 화면을 떠나면 재생을 멈춘다. 라디오처럼 백그라운드 재생은 두지 않는다.
+    LaunchedEffect(screen) {
+        if (screen != ScreenMode.TV) vm.stopTv()
+    }
+
+    // 앱이 화면에서 내려가면 방송을 멈춘다. 백그라운드 재생 서비스는 두지 않는다.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) vm.stopRadio()
+            if (event == Lifecycle.Event.ON_STOP) {
+                vm.stopRadio()
+                vm.stopTv()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    BackHandler(enabled = detailDate != null || settingsOpen || screen != ScreenMode.CALENDAR) {
+    BackHandler(
+        enabled = tv.fullscreen || detailDate != null || settingsOpen || screen != ScreenMode.CALENDAR,
+    ) {
         when {
+            tv.fullscreen -> vm.setTvFullscreen(false)
             detailDate != null -> detailDate = null
             settingsOpen -> settingsOpen = false
             else -> screen = ScreenMode.CALENDAR
@@ -172,8 +188,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     detectTapGestures {
                         // 설정·날짜 상세가 열려 있으면 화면 전환 터치로 보지 않는다.
                         if (settingsOpen || detailDate != null) return@detectTapGestures
-                        // 라디오는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
-                        if (screen == ScreenMode.RADIO) return@detectTapGestures
+                        // 라디오·TV 는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
+                        if (screen == ScreenMode.RADIO || screen == ScreenMode.TV) {
+                            return@detectTapGestures
+                        }
                         DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
                         if (vm.touchStop) {
                             rotationStopped = !rotationStopped
@@ -209,6 +227,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         onRefreshWeather = { vm.refresh() },
                         radioName = radio.channel?.displayName(korean)?.takeIf { radio.playing },
                         includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
                         onOpenRadio = {
                             rotationStopped = false
                             screen = ScreenMode.RADIO
@@ -220,10 +239,28 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         korean = korean,
                         volume = vm.radioVolume,
                         includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
                         onSelectChannel = { vm.playChannel(it) },
                         onTogglePlay = { vm.toggleRadio() },
                         onSetVolume = { vm.updateRadioVolume(it) },
                         onRetry = { vm.retryRadio() },
+                        onOpenSettings = { settingsOpen = true },
+                        onGoHome = {
+                            rotationStopped = false
+                            screen = ScreenMode.CALENDAR
+                        },
+                    )
+                    ScreenMode.TV -> TvScreen(
+                        channels = tvChannels,
+                        state = tv,
+                        korean = korean,
+                        player = vm.tvPlayerInstance,
+                        includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
+                        onSelectChannel = { vm.playTvChannel(it) },
+                        onTogglePlay = { vm.toggleTv() },
+                        onSetFullscreen = { vm.setTvFullscreen(it) },
+                        onRetry = { vm.retryTv() },
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -239,6 +276,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
                         includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -259,6 +297,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
                         includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -330,6 +369,7 @@ private fun CalendarHome(
     onRefreshWeather: () -> Unit,
     radioName: String?,
     includeRadio: Boolean,
+    includeTv: Boolean,
     onOpenRadio: () -> Unit,
 ) {
     val today = now.toLocalDate()
@@ -345,6 +385,7 @@ private fun CalendarHome(
             locale = locale,
             radioName = radioName,
             includeRadio = includeRadio,
+            includeTv = includeTv,
             onOpenRadio = onOpenRadio,
             onOpenSettings = onOpenSettings,
         )
@@ -396,6 +437,7 @@ private fun HomeTopBar(
     locale: Locale,
     radioName: String?,
     includeRadio: Boolean,
+    includeTv: Boolean,
     onOpenRadio: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -469,7 +511,7 @@ private fun HomeTopBar(
             RadioPill(name = radioName, onClick = onOpenRadio)
             Spacer(Modifier.width(12.dp))
         }
-        ScreenDots(ScreenMode.CALENDAR, includeRadio)
+        ScreenDots(ScreenMode.CALENDAR, includeRadio, includeTv)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
     }

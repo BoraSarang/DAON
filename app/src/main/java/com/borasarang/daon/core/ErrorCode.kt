@@ -24,6 +24,15 @@ object ErrorCode {
     /** 스트림 재생 실패. */
     const val RADIO_PLAYBACK = "E-AND-RADIO-0003"
 
+    /** TV 채널 정보가 없거나 목록이 깨졌다. */
+    const val TV_CHANNEL = "E-AND-TV-0001"
+
+    /** 방송사 TV 스트림 주소 확인 실패. */
+    const val TV_RESOLVE = "E-AND-TV-0002"
+
+    /** TV 스트림 재생 실패. */
+    const val TV_PLAYBACK = "E-AND-TV-0003"
+
     fun format(platform: String, category: String, number: Int): String =
         "E-$platform-$category-${number.toString().padStart(4, '0')}"
 }

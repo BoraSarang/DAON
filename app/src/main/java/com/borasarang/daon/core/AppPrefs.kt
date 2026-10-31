@@ -24,6 +24,9 @@ object AppPrefs {
     private const val KEY_RADIO_CHANNEL = "radio_channel"
     private const val KEY_RADIO_AUTOPLAY = "radio_autoplay"
     private const val KEY_RADIO_VOLUME = "radio_volume"
+    private const val KEY_TV_IN_ROTATION = "tv_in_rotation"
+    private const val KEY_DWELL_TV = "dwell_tv"
+    private const val KEY_TV_CHANNEL = "tv_channel"
     private const val KEY_TOUCH_STOP = "touch_stop"
     private const val KEY_TEXT_SCALE = "text_scale"
     private const val KEY_WEATHER_MOTION = "weather_motion"
@@ -108,6 +111,21 @@ object AppPrefs {
     var radioVolume: Int
         get() = prefs.getInt(KEY_RADIO_VOLUME, DEFAULT_RADIO_VOLUME)
         set(value) = write { putInt(KEY_RADIO_VOLUME, value) }
+
+    /** TV 화면을 자동 전환에 넣을지. 기본 켬. */
+    var tvInRotation: Boolean
+        get() = prefs.getBoolean(KEY_TV_IN_ROTATION, true)
+        set(value) = write { putBoolean(KEY_TV_IN_ROTATION, value) }
+
+    /** TV 화면에 머무는 시간(초). 허용값 10·30·60. 재생 중에는 전환이 멈춘다. */
+    var dwellTv: Int
+        get() = prefs.getInt(KEY_DWELL_TV, DEFAULT_DWELL_TV)
+        set(value) = write { putInt(KEY_DWELL_TV, value) }
+
+    /** 마지막으로 고른 TV 채널 id. */
+    var tvChannelId: String
+        get() = prefs.getString(KEY_TV_CHANNEL, DEFAULT_TV_CHANNEL) ?: DEFAULT_TV_CHANNEL
+        set(value) = writeString(KEY_TV_CHANNEL, value)
 
     /** true면 터치 시 현재 화면에서 멈춤, false면 대시보드(달력)로 복귀. */
     var touchStop: Boolean
@@ -242,12 +260,17 @@ object AppPrefs {
     const val DEFAULT_TEXT_SCALE = 100
     const val DEFAULT_RADIO_CHANNEL = "kbs_1radio"
     const val DEFAULT_RADIO_VOLUME = 6
+    const val DEFAULT_DWELL_TV = 30
+    const val DEFAULT_TV_CHANNEL = "kbs1"
 
     /** 설정에서 고를 수 있는 머무는 시간(초). */
     val DWELL_OPTIONS = listOf(10, 20, 30, 60)
 
     /** 라디오 화면은 10·30·60초만 고른다. */
     val RADIO_DWELL_OPTIONS = listOf(10, 30, 60)
+
+    /** TV 화면도 10·30·60초만 고른다. */
+    val TV_DWELL_OPTIONS = listOf(10, 30, 60)
 
     /** 글씨 배율 선택지(%). */
     val TEXT_SCALE_OPTIONS = listOf(90, 100, 115)
