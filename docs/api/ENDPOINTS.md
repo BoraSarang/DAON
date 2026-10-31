@@ -37,6 +37,6 @@ GET /v1/forecast
 
 ### 오류 처리
 
-- HTTP 비정상/타임아웃/JSON 파싱 실패 → `E-AND-NET-0001` / `E-AND-NET-0002`
-- 사용자 표시: 마지막 성공값 유지 + `error_weather_offline` 배지 (무음 실패 금지)
-- 로그: `[ERROR] E-AND-NET-0001 <code> <message>` (본문 전체 로깅 금지)
+- 타임아웃 → `E-AND-NET-0001` · JSON 파싱 실패 → `E-AND-NET-0002` · HTTP 비정상/IO → `E-AND-NET-0003`
+- 사용자 표시: 마지막 성공값 유지 + `weather_offline` 문자열 (무음 실패 금지)
+- 로그: `[ERROR] E-AND-NET-0003 http_status=<code>` (응답 본문 전체 로깅 금지)

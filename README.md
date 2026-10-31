@@ -6,7 +6,7 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-Early scaffold (v0.1.0) — **verified on the target device**: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen.
+Early scaffold (v0.1.0) — **verified on the target device**: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
 | Metric | Budget | Measured |
 |---|---|---|
@@ -37,7 +37,7 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Calendar: current month grid, today highlighted, previous/next month navigation
 - Weather: current temperature, feels-like, humidity, wind, plus a 3-day forecast, refreshed every 15 minutes
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on
-- Settings sheet: city, 12/24-hour, °C/°F, language (System / English / 한국어)
+- Settings panel (in-app): city, 12/24-hour, °C/°F, language (System / English / 한국어)
 
 ## Requirements
 

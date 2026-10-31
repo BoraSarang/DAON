@@ -7,11 +7,11 @@
 - **무소음(quiet)**: 장식 최소. 그림자·그라데이션 없음. 위계는 크기·굵기·1dp 선으로 만든다.
 - **정보 3분할**: 왼쪽 = 시간, 가운데 = 달력, 오른쪽 = 날씨. 시선이 한 번에 흐른다.
 - **색은 의미만**: 강조색 1개(amber)와 상태색(ok/warn/danger)만. 배경은 거의 검정.
-- 시스템 UI(권한·다이얼로그·설정 시트)는 Material 3 기본 규칙 유지.
+- 시스템 UI(권한·다이얼로그·설정 패널)는 Material 3 기본 규칙 유지.
 - 최소 접근성: 본문 대비 AA 이상, 터치 타깃 48dp 이상, 텍스트 크기 조절 대응(고정 dp 대신 sp).
 
 ## 2. 토큰 (v0.1)
-단일 출처는 `app/src/main/java/com/borasarang/androidapp/ui/theme/Tokens.kt`.
+단일 출처는 `app/src/main/java/com/borasarang/daon/ui/theme/Tokens.kt`.
 
 ### 색 (다크)
 | 토큰 | 값 | 용도 |
@@ -34,7 +34,7 @@
 ### 타이포그래피
 | 토큰 | 값 | 용도 |
 |------|-----|------|
-| `type.clock` | 132sp / W300 / tabular | 시:분 |
+| `type.clock` | 최대 132sp / W300 / tabular (패널 폭에 맞춰 축소) | 시:분 |
 | `type.clockSmall` | 40sp / W300 / tabular | 초·AM/PM |
 | `type.temp` | 88sp / W300 / tabular | 현재 기온 |
 | `type.date` | 30sp / W500 | 요일·날짜 |
@@ -52,14 +52,14 @@
 | `space.xs/sm/md/lg/xl/xxl` | 4/8/16/24/32/48dp | 4dp 배수 |
 | `screen.padding` | 40dp | 화면 외곽 |
 | `panel.gap` | 32dp | 패널 사이 |
-| `radius.sm/md/lg` | 10/16/24dp | 셀·시트·강조 |
+| `radius.sm/md/lg` | 10/16/24dp | 셀·패널·강조 |
 | `stroke.hairline` | 1dp | 구분선 (그림자 대신) |
 | `target.min` | 48dp | 터치 타깃 |
 
 ### 레이아웃 (1920×1200 기준)
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ 2026년 10월 31일 토요일                    Seoul · 갱신 1분 전 ⚙ │
+│ 2026년 10월 31일 토요일                       Seoul · 갱신 15:11 · 설정 │
 │                                                              │
 │  14:08      ┌ 이번 달 ─────────────┐   ┌ 지금 날씨 ────────┐ │
 │   :32       │  월  화  수  목  금  토  일 │  18°  맑음        │ │

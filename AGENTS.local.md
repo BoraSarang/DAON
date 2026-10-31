@@ -17,8 +17,8 @@
 - **작업 모드 기본값**: 정식
 
 ## 2. 번들ID / 앱 ID
-- Android applicationId / namespace: `com.borasarang.daon`
-- 정식 명칭 확정 시 함께 변경 검토(첫 배포 전까지). 배포 후 변경 금지.
+- Android applicationId / namespace: `com.borasarang.daon` — **확정**(2026-10-31, 앱명 DAON/다온)
+- 배포 후 변경 금지(파괴적 변경 가드).
 
 ## 3. 성능 예산 Override (필요 시)
 - 변경점 없음 → `rules/budgets.json` 기본값 적용
@@ -30,7 +30,7 @@
 - **dynamic color 금지**: design_profile=custom 이며 대상 기기가 API 28 이므로 dynamicLightColorScheme 계열을 쓰지 않는다.
 - **몰입형 키오스크**: 시스템 바 숨김(immersive sticky) + `FLAG_KEEP_SCREEN_ON`. 완전 잠금(Lock Task)은 기기 소유자(Device Owner) 또는 화면 고정 사용자 승인 필요 → T-008.
 - **네트워크**: 날씨는 Open-Meteo(키 불필요 HTTPS). API 키 하드코딩 금지. 위치 권한 없이 도시 수동 선택.
-- **실기기 검증**: 대상 기기는 Fire HD 10. adb 연결 시 `adb -s <serial>` 필수(동시 연결 기기 존재). 검증 불가 시 에뮬레이터 API 28 1920×1200 가로로 대체하고 그 사실을 세션 로그에 남긴다.
+- **실기기 검증**: 대상 기기는 Fire HD 10. adb 연결 시 `adb -s <serial>` 필수(동시 연결 기기 존재). 기기 미연결 시에만 에뮬레이터 API 28 1920×1200 가로로 대체하고 세션 로그에 남긴다.
   - 실측(2026-10-31): `KFMAWI` / Fire OS **7.3.1.2** / API **28** / 물리 1200×1920·240dpi(가로 1920×1200)
   - 확인된 것: 콜드 스타트 1544ms, PSS 65.5MB, 몰입형 전체화면, 런처 아이콘, 설정 패널, 언어 전환
   - 남은 것: 1시간 연속 실행 메모리(T-006), 완전 키오스크 잠금·부팅 자동 시작(T-008)
@@ -38,3 +38,9 @@
 
 ## 5. 디자인 토큰 (custom 프로필)
 - 색/타입/간격/형태 토큰은 `docs/DESIGN.md` 단일 출처. 본 파일에는 프로필 확정만 기록.
+
+## 6. 세션 시작·재개
+- 새 세션은 이 폴더를 작업 디렉터리로 열고 **`.agent/session-2026-10-31-android.md` → `docs/TODO.md` → `docs/plans/PLAN_v0.1_android.md`** 순으로 읽는다(3분 이내).
+- `.agent/` 는 로컬 전용(git 제외). 세션 파일은 마일스톤마다 덮어쓴다.
+- 빌드·설치: `TARGET_DEVICE=<serial> ./build_and_run.sh debug android` (JDK 는 Android Studio JBR 자동 선택, `./gradlew` 사용)
+- 현재 대상 기기 serial: `G0012C0594231E2V` (Fire HD 10, USB). 재연결 시 `adb devices -l` 로 확인.
