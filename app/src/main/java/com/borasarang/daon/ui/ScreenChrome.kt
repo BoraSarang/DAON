@@ -3,6 +3,12 @@ package com.borasarang.daon.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,27 +20,31 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 
-/** 화면 점 3개. 현재 화면만 액센트로 켠다. */
+/** 화면 점. [includeRadio] 가 false 면 라디오를 뺀 3개만 보여 준다. */
 @Composable
-fun ScreenDots(current: ScreenMode) {
+fun ScreenDots(current: ScreenMode, includeRadio: Boolean = true) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        ScreenMode.entries.forEach { mode ->
+        ScreenMode.order(includeRadio).forEach { mode ->
             Box(
                 Modifier
                     .size(Home.dot)
@@ -80,6 +90,7 @@ fun ScreenHeader(
     current: ScreenMode,
     onOpenSettings: () -> Unit,
     onGoHome: (() -> Unit)? = null,
+    includeRadio: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
@@ -107,7 +118,7 @@ fun ScreenHeader(
             HomeButton(onClick = onGoHome)
             Spacer(Modifier.width(10.dp))
         }
-        ScreenDots(current)
+        ScreenDots(current, includeRadio)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
     }
@@ -153,5 +164,73 @@ fun RotationHint(text: String) {
                 .background(Kiosk.color.surface.copy(alpha = 0.82f))
                 .padding(horizontal = 16.dp, vertical = 7.dp),
         )
+    }
+}
+
+/**
+ * 달력 화면 상단의 `♪ 채널` 표시. 라디오가 재생 중일 때만 나오고,
+ * 누르면 라디오 화면으로 돌아간다. 70대가 발견하기 쉽게 글씨를 키웠다.
+ */
+@Composable
+fun RadioPill(name: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .height(Home.settingsHeight)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Kiosk.color.accentSoft)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Equalizer(barWidth = 2.dp, maxHeight = 14.dp)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = name,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Kiosk.color.accent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 210.dp),
+        )
+    }
+}
+
+/** 재생 중 표시용 작은 이퀄라이저. 소리가 나는 느낌을 준다. */
+@Composable
+fun Equalizer(
+    modifier: Modifier = Modifier,
+    color: Color = Kiosk.color.accent,
+    barWidth: Dp = 3.dp,
+    maxHeight: Dp = 18.dp,
+) {
+    val transition = rememberInfiniteTransition(label = "equalizer")
+    val fractions = listOf(0.45f, 1f, 0.62f, 0.82f)
+    Row(
+        modifier = modifier.height(maxHeight),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        fractions.forEachIndexed { index, fraction ->
+            val scale by transition.animateFloat(
+                initialValue = 0.35f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 520 + index * 90,
+                        easing = LinearEasing,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "bar$index",
+            )
+            Box(
+                Modifier
+                    .width(barWidth)
+                    .height(maxHeight * fraction * scale)
+                    .clip(RoundedCornerShape(barWidth / 2f))
+                    .background(color),
+            )
+        }
     }
 }

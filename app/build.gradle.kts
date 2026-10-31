@@ -13,8 +13,8 @@ android {
         // Fire OS 7(Android 9, API 28) 대상. java.time 사용을 위해 26 이상 유지.
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0-dev"
+        versionCode = 3
+        versionName = "0.3.0-dev"
     }
 
     androidResources {
@@ -64,6 +64,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // 라디오 HLS 재생. GMS 없이 동작해 Fire OS 에서도 쓴다.
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.exoplayer.hls)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

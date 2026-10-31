@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +48,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
@@ -78,6 +82,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val place by vm.place.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
     val events by vm.events.collectAsStateWithLifecycle()
+    val radio by vm.radio.collectAsStateWithLifecycle()
+    val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -126,6 +132,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val paused = settingsOpen || detailDate != null
     val dwell = when (screen) {
         ScreenMode.CALENDAR -> vm.dwellCalendar
+        ScreenMode.RADIO -> vm.dwellRadio
         ScreenMode.WEATHER -> vm.dwellWeather
         ScreenMode.CLOCK -> vm.dwellClock
     }
@@ -133,8 +140,19 @@ fun DashboardScreen(vm: DashboardViewModel) {
     LaunchedEffect(screen, dwell, vm.rotationEnabled, paused, rotationStopped) {
         if (!vm.rotationEnabled || paused || rotationStopped) return@LaunchedEffect
         delay(dwell * 1_000L)
-        DebugLogger.i("ROTATE", "auto ${screen.name} -> ${screen.next().name} after ${dwell}s")
-        screen = screen.next()
+        val next = screen.next(vm.radioInRotation)
+        DebugLogger.i("ROTATE", "auto ${screen.name} -> ${next.name} after ${dwell}s")
+        screen = next
+    }
+
+    // 앱이 화면에서 내려가면 방송을 멈춘다. 백그라운드 재생 서비스는 v0.3에 두지 않는다.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) vm.stopRadio()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     BackHandler(enabled = detailDate != null || settingsOpen || screen != ScreenMode.CALENDAR) {
@@ -154,6 +172,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     detectTapGestures {
                         // 설정·날짜 상세가 열려 있으면 화면 전환 터치로 보지 않는다.
                         if (settingsOpen || detailDate != null) return@detectTapGestures
+                        // 라디오는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
+                        if (screen == ScreenMode.RADIO) return@detectTapGestures
                         DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
                         if (vm.touchStop) {
                             rotationStopped = !rotationStopped
@@ -187,6 +207,28 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         },
                         onOpenSettings = { settingsOpen = true },
                         onRefreshWeather = { vm.refresh() },
+                        radioName = radio.channel?.displayName(korean)?.takeIf { radio.playing },
+                        includeRadio = vm.radioInRotation,
+                        onOpenRadio = {
+                            rotationStopped = false
+                            screen = ScreenMode.RADIO
+                        },
+                    )
+                    ScreenMode.RADIO -> RadioScreen(
+                        channels = radioChannels,
+                        state = radio,
+                        korean = korean,
+                        volume = vm.radioVolume,
+                        includeRadio = vm.radioInRotation,
+                        onSelectChannel = { vm.playChannel(it) },
+                        onTogglePlay = { vm.toggleRadio() },
+                        onSetVolume = { vm.updateRadioVolume(it) },
+                        onRetry = { vm.retryRadio() },
+                        onOpenSettings = { settingsOpen = true },
+                        onGoHome = {
+                            rotationStopped = false
+                            screen = ScreenMode.CALENDAR
+                        },
                     )
                     ScreenMode.WEATHER -> WeatherScreen(
                         place = place,
@@ -196,6 +238,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         weatherMotion = vm.weatherMotion && !settingsOpen,
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
+                        includeRadio = vm.radioInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -215,6 +258,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         clockFace = vm.clockFace,
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
+                        includeRadio = vm.radioInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -284,6 +328,9 @@ private fun CalendarHome(
     onOpenWeather: () -> Unit,
     onOpenSettings: () -> Unit,
     onRefreshWeather: () -> Unit,
+    radioName: String?,
+    includeRadio: Boolean,
+    onOpenRadio: () -> Unit,
 ) {
     val today = now.toLocalDate()
     Column(
@@ -296,6 +343,9 @@ private fun CalendarHome(
             calendar = calendar,
             korean = korean,
             locale = locale,
+            radioName = radioName,
+            includeRadio = includeRadio,
+            onOpenRadio = onOpenRadio,
             onOpenSettings = onOpenSettings,
         )
         Spacer(Modifier.height(Home.panelGap))
@@ -344,6 +394,9 @@ private fun HomeTopBar(
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
+    radioName: String?,
+    includeRadio: Boolean,
+    onOpenRadio: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val today = now.toLocalDate()
@@ -412,7 +465,11 @@ private fun HomeTopBar(
             }
         }
 
-        ScreenDots(ScreenMode.CALENDAR)
+        if (radioName != null) {
+            RadioPill(name = radioName, onClick = onOpenRadio)
+            Spacer(Modifier.width(12.dp))
+        }
+        ScreenDots(ScreenMode.CALENDAR, includeRadio)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
     }

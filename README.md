@@ -6,12 +6,22 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-**v0.2.0-dev** — calendar-first redesign implemented; on-device verification is in progress (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
+**v0.3.0-dev** — radio screen added (channel list + live playback); v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
-| Metric | Budget | v0.1 | v0.2-dev |
-|---|---|---|---|
-| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s |
-| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) |
+| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev |
+|---|---|---|---|---|
+| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s |
+| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) |
+
+## v0.3 — radio
+
+A fourth screen, calendar → **radio** → weather → clock. Ten official free streams (KBS, MBC, SBS, EBS, FEBC, Gugak FM) in a 5×2 grid with a large now-playing panel: channel name, FM frequency, LIVE badge, play/stop, and a 10-step volume control. Tapping a channel starts it immediately; the stream URL is resolved on every play because broadcasters hand out short-lived tokens. Audio keeps playing while the screens rotate, the calendar shows a `♪ channel` pill that returns to the radio screen, and a `Radio` section in settings controls whether the screen joins the rotation, its dwell time, the default channel, and autoplay on startup. Streams come over the internet, so a dropped connection shows `Could not load the broadcast` with a retry button.
+
+- Mockup: [`docs/mockups/v0.3-radio/index.html`](docs/mockups/v0.3-radio/index.html) · plan: [`docs/plans/PLAN_v0.3_radio.md`](docs/plans/PLAN_v0.3_radio.md)
+- Captures: [`13-v0.3-radio-ko.png`](docs/screenshots/13-v0.3-radio-ko.png) · [`14-v0.3-radio-playing-ko.png`](docs/screenshots/14-v0.3-radio-playing-ko.png) · [`15-v0.3-radio-error-ko.png`](docs/screenshots/15-v0.3-radio-error-ko.png)
+- Playback: Media3 ExoPlayer 1.5.1 + HLS (no GMS). Audio focus is handled by ExoPlayer; playback stops when the app leaves the foreground.
+- Streams: official free HLS only. TBS FM was dropped because its CDN uses a GlobalSign R46 root that Fire OS 7 does not trust; FEBC FM (106.9) replaced it.
+
 
 ## v0.2 — calendar-first kiosk
 
@@ -32,6 +42,8 @@ Events can be added on the tablet with a **solar or lunar date basis** and an op
 
 v0.1: ![ko](docs/screenshots/01-dashboard-ko.png) · ![en](docs/screenshots/02-dashboard-en.png)
 
+v0.3 radio: ![radio](docs/screenshots/13-v0.3-radio-ko.png) · ![playing](docs/screenshots/14-v0.3-radio-playing-ko.png) · ![error](docs/screenshots/15-v0.3-radio-error-ko.png)
+
 
 ## Target device
 
@@ -51,7 +63,8 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Date detail: 520dp panel with the solar term, farming tasks, holidays, and that day's events
 - Events: add/delete local events per day, with weekly/monthly/yearly repeats and a solar/lunar date basis; read device-calendar events when the tablet has a calendar provider
 - Weather: current, feels-like, humidity, wind, rain chance, 3-hourly and 7-day forecasts, farming note, rain/snow/thunder effects, 15-minute refresh
-- Rotation: calendar → weather → clock with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock returns home
+- Rotation: calendar → radio → weather → clock (the radio screen can be excluded) with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock/radio returns home
+- Radio: 10 official free streams, large now-playing panel with play/stop and volume, `♪ channel` pill on the calendar, retry on network failure
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on, optional screen pinning and start-on-boot
 - Settings panel (in-app): weather point (device location or saved neighborhood), events, clock face, text size, rotation, °C/°F, 12/24-hour, language (System / English / 한국어)
 

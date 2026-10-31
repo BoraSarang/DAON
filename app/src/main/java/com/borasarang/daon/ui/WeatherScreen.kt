@@ -112,6 +112,7 @@ fun WeatherScreen(
     weatherMotion: Boolean,
     touchStop: Boolean,
     stopped: Boolean,
+    includeRadio: Boolean = true,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
     onRefresh: () -> Unit,
@@ -137,6 +138,7 @@ fun WeatherScreen(
                 current = ScreenMode.WEATHER,
                 onOpenSettings = onOpenSettings,
                 onGoHome = onGoHome,
+                includeRadio = includeRadio,
             )
             Spacer(Modifier.height(Home.panelGap))
 

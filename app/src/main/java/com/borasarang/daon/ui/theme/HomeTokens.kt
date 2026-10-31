@@ -230,4 +230,60 @@ object Home {
         fontWeight = FontWeight.Bold,
         fontFeatureSettings = TABULAR,
     )
+
+    // ---------- 라디오 ----------
+    /** 지금 방송 패널 높이(목업 352px). */
+    val radioNowPanel = 235.dp
+    val radioPlay = 131.dp
+    val radioVolumeWidth = 167.dp
+    val radioVolumeButton = 51.dp
+    val radioTileGap = 13.dp
+
+    val radioKicker = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+    )
+    val radioName = TextStyle(
+        fontSize = 64.sp,
+        lineHeight = 66.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-2.2).sp,
+    )
+    val radioFreq = TextStyle(
+        fontSize = 27.sp,
+        lineHeight = 32.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFeatureSettings = TABULAR,
+    )
+    val radioState = TextStyle(
+        fontSize = 18.sp,
+        lineHeight = 22.sp,
+        fontWeight = FontWeight.Medium,
+        fontFeatureSettings = TABULAR,
+    )
+    val radioTileName = TextStyle(
+        fontSize = 23.sp,
+        lineHeight = 26.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.4).sp,
+    )
+    val radioTileFreq = TextStyle(
+        fontSize = 17.sp,
+        lineHeight = 21.sp,
+        fontWeight = FontWeight.SemiBold,
+        fontFeatureSettings = TABULAR,
+    )
+    val radioHint = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 21.sp,
+        fontWeight = FontWeight.Medium,
+    )
+    val radioLive = TextStyle(
+        fontSize = 14.sp,
+        lineHeight = 16.sp,
+        fontWeight = FontWeight.ExtraBold,
+        letterSpacing = 1.sp,
+    )
 }

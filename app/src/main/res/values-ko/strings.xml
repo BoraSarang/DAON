@@ -15,7 +15,7 @@
 
     <!-- 설정 -->
     <string name="settings_rotation">화면 자동 전환</string>
-    <string name="settings_rotation_desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다. 화면마다 머무는 시간을 정할 수 있습니다.</string>
+    <string name="settings_rotation_desc">손대지 않으면 달력 → 날씨 → 시계 순서로 바뀝니다. 라디오 화면을 넣으면 달력 → 라디오 → 날씨 → 시계로 바뀝니다. 화면마다 머무는 시간을 정할 수 있습니다.</string>
     <string name="settings_rotation_on">자동 전환 켜짐</string>
     <string name="settings_rotation_off">자동 전환 꺼짐</string>
     <string name="dwell_seconds">%1$d초</string>
@@ -77,6 +77,40 @@
     <string name="lang_system">시스템</string>
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
+
+    <!-- 라디오 (v0.3) -->
+    <string name="screen_radio">라디오</string>
+    <string name="radio_subtitle_playing">채널을 누르면 바로 바뀝니다</string>
+    <string name="radio_subtitle_stopped">채널을 누르면 바로 재생됩니다</string>
+    <string name="radio_now_playing">지금 방송</string>
+    <string name="radio_last_channel">마지막 채널</string>
+    <string name="radio_live">LIVE</string>
+    <string name="radio_freq">FM %1$s</string>
+    <string name="radio_state_playing">재생 중 · %1$s</string>
+    <string name="radio_state_stopped">멈춤 · 재생을 누르면 시작합니다</string>
+    <string name="radio_state_connecting">연결 중…</string>
+    <string name="radio_play">재생</string>
+    <string name="radio_stop">멈춤</string>
+    <string name="radio_volume">소리</string>
+    <string name="radio_volume_down">볼륨 줄이기</string>
+    <string name="radio_volume_up">볼륨 높이기</string>
+    <string name="radio_channel_playing">재생 중</string>
+    <string name="radio_hint_playing">다른 화면으로 넘어가도 소리는 계속 나옵니다. 소리는 기기 볼륨 버튼으로도 조절할 수 있습니다.</string>
+    <string name="radio_hint_stopped">채널을 누르거나 재생 버튼을 누르면 바로 시작합니다.</string>
+    <string name="radio_retry">다시 시도</string>
+    <string name="radio_channels_loading">채널을 불러오는 중…</string>
+    <string name="error_radio_channel">채널 정보를 찾지 못했습니다</string>
+    <string name="error_radio_network">방송을 불러오지 못했습니다</string>
+    <string name="error_radio_playback">방송을 재생하지 못했습니다</string>
+    <string name="settings_radio">라디오</string>
+    <string name="settings_radio_rotation">라디오 화면 포함</string>
+    <string name="settings_radio_rotation_desc">달력 → 라디오 → 날씨 → 시계 순서로 넘어갑니다.</string>
+    <string name="settings_radio_dwell">라디오 화면 시간</string>
+    <string name="settings_radio_default_channel">기본 채널</string>
+    <string name="settings_radio_default_channel_desc">앱을 열거나 전원을 켰을 때 고를 채널</string>
+    <string name="settings_radio_autoplay">부팅 시 자동 재생</string>
+    <string name="settings_radio_autoplay_desc">키오스크로 켜 두는 기기에서 유용합니다.</string>
+    <string name="settings_radio_note">방송은 인터넷으로 받습니다. Wi-Fi가 끊기면 `방송을 불러오지 못했습니다` 안내와 `다시 시도` 버튼이 나옵니다. 방송사 공식 무료 스트림만 넣습니다.</string>
 
     <!-- 일정 (T-003/T-004) -->
     <string name="settings_events">일정</string>

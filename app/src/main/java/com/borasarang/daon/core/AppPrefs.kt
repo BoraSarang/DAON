@@ -19,6 +19,11 @@ object AppPrefs {
     private const val KEY_DWELL_CALENDAR = "dwell_calendar"
     private const val KEY_DWELL_WEATHER = "dwell_weather"
     private const val KEY_DWELL_CLOCK = "dwell_clock"
+    private const val KEY_RADIO_IN_ROTATION = "radio_in_rotation"
+    private const val KEY_DWELL_RADIO = "dwell_radio"
+    private const val KEY_RADIO_CHANNEL = "radio_channel"
+    private const val KEY_RADIO_AUTOPLAY = "radio_autoplay"
+    private const val KEY_RADIO_VOLUME = "radio_volume"
     private const val KEY_TOUCH_STOP = "touch_stop"
     private const val KEY_TEXT_SCALE = "text_scale"
     private const val KEY_WEATHER_MOTION = "weather_motion"
@@ -77,6 +82,32 @@ object AppPrefs {
     var dwellClock: Int
         get() = prefs.getInt(KEY_DWELL_CLOCK, DEFAULT_DWELL_CLOCK)
         set(value) = write { putInt(KEY_DWELL_CLOCK, value) }
+
+    /** 라디오 화면을 자동 전환에 넣을지. 기본 켬. */
+    var radioInRotation: Boolean
+        get() = prefs.getBoolean(KEY_RADIO_IN_ROTATION, true)
+        set(value) = write { putBoolean(KEY_RADIO_IN_ROTATION, value) }
+
+    /** 라디오 화면에 머무는 시간(초). 허용값 10·30·60. */
+    var dwellRadio: Int
+        get() = prefs.getInt(KEY_DWELL_RADIO, DEFAULT_DWELL_RADIO)
+        set(value) = write { putInt(KEY_DWELL_RADIO, value) }
+
+    /** 마지막으로 고른(또는 기본으로 정한) 채널 id. */
+    var radioChannelId: String
+        get() = prefs.getString(KEY_RADIO_CHANNEL, DEFAULT_RADIO_CHANNEL)
+            ?: DEFAULT_RADIO_CHANNEL
+        set(value) = writeString(KEY_RADIO_CHANNEL, value)
+
+    /** 앱을 열거나 부팅했을 때 기본 채널을 바로 재생할지. 기본 끔. */
+    var radioAutoplay: Boolean
+        get() = prefs.getBoolean(KEY_RADIO_AUTOPLAY, false)
+        set(value) = write { putBoolean(KEY_RADIO_AUTOPLAY, value) }
+
+    /** 라디오 소리 크기(0..10). 기기 미디어 볼륨과 별개인 앱 배율이다. */
+    var radioVolume: Int
+        get() = prefs.getInt(KEY_RADIO_VOLUME, DEFAULT_RADIO_VOLUME)
+        set(value) = write { putInt(KEY_RADIO_VOLUME, value) }
 
     /** true면 터치 시 현재 화면에서 멈춤, false면 대시보드(달력)로 복귀. */
     var touchStop: Boolean
@@ -207,10 +238,16 @@ object AppPrefs {
     const val DEFAULT_DWELL_CALENDAR = 30
     const val DEFAULT_DWELL_WEATHER = 20
     const val DEFAULT_DWELL_CLOCK = 20
+    const val DEFAULT_DWELL_RADIO = 30
     const val DEFAULT_TEXT_SCALE = 100
+    const val DEFAULT_RADIO_CHANNEL = "kbs_1radio"
+    const val DEFAULT_RADIO_VOLUME = 6
 
     /** 설정에서 고를 수 있는 머무는 시간(초). */
     val DWELL_OPTIONS = listOf(10, 20, 30, 60)
+
+    /** 라디오 화면은 10·30·60초만 고른다. */
+    val RADIO_DWELL_OPTIONS = listOf(10, 30, 60)
 
     /** 글씨 배율 선택지(%). */
     val TEXT_SCALE_OPTIONS = listOf(90, 100, 115)

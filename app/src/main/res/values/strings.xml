@@ -15,7 +15,7 @@
 
     <!-- Settings -->
     <string name="settings_rotation">Screen rotation</string>
-    <string name="settings_rotation_desc">When idle, the screen changes calendar → weather → clock. You can set how long each screen stays.</string>
+    <string name="settings_rotation_desc">When idle, the screen changes calendar → weather → clock. With the radio screen included it goes calendar → radio → weather → clock. You can set how long each screen stays.</string>
     <string name="settings_rotation_on">Rotation on</string>
     <string name="settings_rotation_off">Rotation off</string>
     <string name="dwell_seconds">%1$ds</string>
@@ -77,6 +77,40 @@
     <string name="lang_system">System</string>
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
+
+    <!-- Radio (v0.3) -->
+    <string name="screen_radio">Radio</string>
+    <string name="radio_subtitle_playing">Tap a channel to switch right away</string>
+    <string name="radio_subtitle_stopped">Tap a channel to start listening</string>
+    <string name="radio_now_playing">Now on air</string>
+    <string name="radio_last_channel">Last channel</string>
+    <string name="radio_live">LIVE</string>
+    <string name="radio_freq">FM %1$s</string>
+    <string name="radio_state_playing">Playing · %1$s</string>
+    <string name="radio_state_stopped">Stopped · press play to start</string>
+    <string name="radio_state_connecting">Connecting…</string>
+    <string name="radio_play">Play</string>
+    <string name="radio_stop">Stop</string>
+    <string name="radio_volume">Sound</string>
+    <string name="radio_volume_down">Volume down</string>
+    <string name="radio_volume_up">Volume up</string>
+    <string name="radio_channel_playing">Playing</string>
+    <string name="radio_hint_playing">The sound keeps playing on other screens. The tablet’s volume buttons also work.</string>
+    <string name="radio_hint_stopped">Tap a channel or press play to start.</string>
+    <string name="radio_retry">Try again</string>
+    <string name="radio_channels_loading">Loading channels…</string>
+    <string name="error_radio_channel">Could not find the channel</string>
+    <string name="error_radio_network">Could not load the broadcast</string>
+    <string name="error_radio_playback">Could not play the broadcast</string>
+    <string name="settings_radio">Radio</string>
+    <string name="settings_radio_rotation">Include radio screen</string>
+    <string name="settings_radio_rotation_desc">Rotation goes calendar → radio → weather → clock.</string>
+    <string name="settings_radio_dwell">Radio screen time</string>
+    <string name="settings_radio_default_channel">Default channel</string>
+    <string name="settings_radio_default_channel_desc">The channel chosen when the app opens.</string>
+    <string name="settings_radio_autoplay">Play on startup</string>
+    <string name="settings_radio_autoplay_desc">Useful for a tablet left on as a kiosk.</string>
+    <string name="settings_radio_note">Broadcasts come over the internet. If Wi-Fi drops, a “Could not load the broadcast” message appears with a retry button. Only official free streams are listed.</string>
 
     <!-- Events (T-003/T-004) -->
     <string name="settings_events">Events</string>

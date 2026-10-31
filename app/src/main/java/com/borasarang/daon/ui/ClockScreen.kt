@@ -113,6 +113,7 @@ fun ClockScreen(
     clockFace: ClockFace,
     touchStop: Boolean,
     stopped: Boolean,
+    includeRadio: Boolean = true,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
 ) {
@@ -151,6 +152,7 @@ fun ClockScreen(
             current = ScreenMode.CLOCK,
             onOpenSettings = onOpenSettings,
             onGoHome = onGoHome,
+            includeRadio = includeRadio,
         )
         Spacer(Modifier.height(Home.panelGap))
 

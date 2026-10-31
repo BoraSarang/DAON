@@ -81,6 +81,8 @@ fun SettingsPanel(
 ) {
     val activity = LocalContext.current as Activity
     val city by vm.city.collectAsStateWithLifecycle()
+    val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
+    val korean = java.util.Locale.getDefault().language == "ko"
     val settingsScroll = rememberScrollState()
 
     Box(Modifier.fillMaxSize()) {
@@ -172,6 +174,62 @@ fun SettingsPanel(
                             text = stringResource(
                                 if (vm.touchStop) R.string.touch_note_pause else R.string.touch_note_dashboard,
                             ),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                    }
+
+                    SettingsSection(stringResource(R.string.settings_radio)) {
+                        ToggleRow(
+                            title = stringResource(R.string.settings_radio_rotation),
+                            desc = stringResource(R.string.settings_radio_rotation_desc),
+                            checked = vm.radioInRotation,
+                            onToggle = { vm.updateRadioInRotation(it) },
+                            stateText = stringResource(
+                                if (vm.radioInRotation) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                        DwellRow(
+                            label = stringResource(R.string.settings_radio_dwell),
+                            seconds = vm.dwellRadio,
+                            options = AppPrefs.RADIO_DWELL_OPTIONS,
+                            onSelect = { vm.updateDwell(ScreenMode.RADIO, it) },
+                        )
+                        if (radioChannels.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.settings_radio_default_channel),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Kiosk.color.textPrimary,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_radio_default_channel_desc),
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                                color = Kiosk.color.textMuted,
+                            )
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                                radioChannels.forEach { channel ->
+                                    SettingChip(
+                                        selected = vm.radioChannelId == channel.id,
+                                        label = "${channel.displayName(korean)} ${channel.freq}",
+                                        onClick = { vm.setDefaultRadioChannel(channel) },
+                                    )
+                                }
+                            }
+                        }
+                        ToggleRow(
+                            title = stringResource(R.string.settings_radio_autoplay),
+                            desc = stringResource(R.string.settings_radio_autoplay_desc),
+                            checked = vm.radioAutoplay,
+                            onToggle = { vm.updateRadioAutoplay(it) },
+                            stateText = stringResource(
+                                if (vm.radioAutoplay) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_radio_note),
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = Kiosk.color.textMuted,
@@ -553,7 +611,12 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun DwellRow(label: String, seconds: Int, onSelect: (Int) -> Unit) {
+private fun DwellRow(
+    label: String,
+    seconds: Int,
+    onSelect: (Int) -> Unit,
+    options: List<Int> = AppPrefs.DWELL_OPTIONS,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = label,
@@ -563,7 +626,7 @@ private fun DwellRow(label: String, seconds: Int, onSelect: (Int) -> Unit) {
             modifier = Modifier.width(66.dp),
         )
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppPrefs.DWELL_OPTIONS.forEach { option ->
+            options.forEach { option ->
                 SettingChip(
                     selected = seconds == option,
                     label = stringResource(R.string.dwell_seconds, option),

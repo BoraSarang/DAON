@@ -1,0 +1,82 @@
+[
+  {
+    "id": "kbs_1radio",
+    "name": "KBS 1라디오",
+    "nameEn": "KBS 1 Radio",
+    "freq": "97.3",
+    "type": "KBS",
+    "apiUrl": "https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/21"
+  },
+  {
+    "id": "kbs_2radio",
+    "name": "KBS 해피FM",
+    "nameEn": "KBS Happy FM",
+    "freq": "106.1",
+    "type": "KBS",
+    "apiUrl": "https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/22"
+  },
+  {
+    "id": "kbs_2fm",
+    "name": "KBS 쿨FM",
+    "nameEn": "KBS Cool FM",
+    "freq": "89.1",
+    "type": "KBS",
+    "apiUrl": "https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/25"
+  },
+  {
+    "id": "mbc_sfm",
+    "name": "MBC 표준FM",
+    "nameEn": "MBC Standard FM",
+    "freq": "95.9",
+    "type": "MBC",
+    "apiUrl": "https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=sfm"
+  },
+  {
+    "id": "mbc_fm4u",
+    "name": "MBC FM4U",
+    "nameEn": "MBC FM4U",
+    "freq": "91.9",
+    "type": "MBC",
+    "apiUrl": "https://sminiplay.imbc.com/aacplay.ashx?agent=webapp&channel=mfm"
+  },
+  {
+    "id": "sbs_power",
+    "name": "SBS 파워FM",
+    "nameEn": "SBS Power FM",
+    "freq": "107.7",
+    "type": "SBS",
+    "apiUrl": "https://apis.sbs.co.kr/play-api/1.0/livestream/powerpc/powerfm?protocol=hls&ssl=Y"
+  },
+  {
+    "id": "sbs_love",
+    "name": "SBS 러브FM",
+    "nameEn": "SBS Love FM",
+    "freq": "103.5",
+    "type": "SBS",
+    "apiUrl": "https://apis.sbs.co.kr/play-api/1.0/livestream/lovepc/lovefm?protocol=hls&ssl=Y"
+  },
+  {
+    "id": "ebs_fm",
+    "name": "EBS FM",
+    "nameEn": "EBS FM",
+    "freq": "104.5",
+    "type": "DIRECT",
+    "streamUrl": "https://ebsonair.ebs.co.kr/fmradiofamilypc/familypc1m/playlist.m3u8"
+  },
+  {
+    "id": "febc_fm",
+    "name": "FEBC 극동방송",
+    "nameEn": "FEBC FM",
+    "freq": "106.9",
+    "type": "DIRECT",
+    "streamUrl": "https://mlive3.febc.net/live5/seoulfm/playlist.m3u8"
+  },
+  {
+    "id": "gugak",
+    "name": "국악방송",
+    "nameEn": "Gugak FM",
+    "freq": "99.1",
+    "type": "DIRECT",
+    "streamUrl": "https://mgugaklive.nowcdn.co.kr/gugakradio/gugakradio.stream/playlist.m3u8"
+  }
+]

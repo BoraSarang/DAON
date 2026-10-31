@@ -1,6 +1,7 @@
 package com.borasarang.daon.ui
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -27,6 +28,12 @@ import com.borasarang.daon.data.event.EventJson
 import com.borasarang.daon.data.event.EventOccurrences
 import com.borasarang.daon.data.event.EventStore
 import com.borasarang.daon.data.event.RepeatRule
+import com.borasarang.daon.data.radio.RadioCatalog
+import com.borasarang.daon.data.radio.RadioChannel
+import com.borasarang.daon.data.radio.RadioException
+import com.borasarang.daon.data.radio.RadioPlayer
+import com.borasarang.daon.data.radio.RadioResolver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -49,6 +56,20 @@ data class WeatherUiState(
     val isLoading: Boolean = false,
     val errorRes: Int? = null,
     val isOffline: Boolean = false,
+)
+
+/**
+ * 라디오 화면 상태.
+ *
+ * [startedAtMs] 는 [SystemClock.elapsedRealtime] 기준 재생 시작 시각이다.
+ * 화면에 `재생 중 · 00:12:34` 처럼 보여 주는 데만 쓴다.
+ */
+data class RadioUiState(
+    val channel: RadioChannel? = null,
+    val playing: Boolean = false,
+    val buffering: Boolean = false,
+    val errorRes: Int? = null,
+    val startedAtMs: Long = 0L,
 )
 
 /** 현재 위치 조회 상태. 화면에는 [DashboardViewModel.locationStatus] 로 전달한다. */
@@ -174,6 +195,27 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     var clockFace by mutableStateOf(ClockFace.fromName(AppPrefs.clockFace))
         private set
 
+    var radioInRotation by mutableStateOf(AppPrefs.radioInRotation)
+        private set
+    var dwellRadio by mutableStateOf(AppPrefs.dwellRadio)
+        private set
+    var radioAutoplay by mutableStateOf(AppPrefs.radioAutoplay)
+        private set
+    var radioChannelId by mutableStateOf(AppPrefs.radioChannelId)
+        private set
+    var radioVolume by mutableStateOf(AppPrefs.radioVolume)
+        private set
+
+    private val _radio = MutableStateFlow(RadioUiState())
+    val radio: StateFlow<RadioUiState> = _radio.asStateFlow()
+
+    private val _radioChannels = MutableStateFlow<List<RadioChannel>>(emptyList())
+    val radioChannels: StateFlow<List<RadioChannel>> = _radioChannels.asStateFlow()
+
+    private val radioResolver = RadioResolver()
+    private val radioPlayer = RadioPlayer(app)
+    private var radioJob: Job? = null
+
     private var refreshJob: Job? = null
     private var locationJob: Job? = null
     private var searchJob: Job? = null
@@ -199,6 +241,34 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 refresh()
             }
         }
+        radioPlayer.onBuffering = {
+            _radio.update { it.copy(buffering = true, errorRes = null) }
+        }
+        radioPlayer.onPlaying = {
+            _radio.update {
+                it.copy(
+                    playing = true,
+                    buffering = false,
+                    errorRes = null,
+                    startedAtMs = if (it.startedAtMs > 0L) it.startedAtMs else SystemClock.elapsedRealtime(),
+                )
+            }
+        }
+        radioPlayer.onEnded = {
+            _radio.update { it.copy(playing = false, buffering = false, startedAtMs = 0L) }
+        }
+        radioPlayer.onError = { name ->
+            DebugLogger.e(ErrorCode.RADIO_PLAYBACK, "player error: $name")
+            _radio.update {
+                it.copy(
+                    playing = false,
+                    buffering = false,
+                    errorRes = R.string.error_radio_playback,
+                    startedAtMs = 0L,
+                )
+            }
+        }
+        loadRadioChannels()
     }
 
     fun refresh() {
@@ -613,13 +683,22 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         DebugLogger.i("SETTINGS", "rotation=$enabled")
     }
 
-    /** [seconds]는 [AppPrefs.DWELL_OPTIONS] 중 하나만 허용한다. */
+    /** [seconds]는 화면별 허용값 중 하나만 쓴다. */
     fun updateDwell(mode: ScreenMode, seconds: Int) {
-        if (seconds !in AppPrefs.DWELL_OPTIONS) return
+        val allowed = if (mode == ScreenMode.RADIO) {
+            AppPrefs.RADIO_DWELL_OPTIONS
+        } else {
+            AppPrefs.DWELL_OPTIONS
+        }
+        if (seconds !in allowed) return
         when (mode) {
             ScreenMode.CALENDAR -> {
                 AppPrefs.dwellCalendar = seconds
                 dwellCalendar = seconds
+            }
+            ScreenMode.RADIO -> {
+                AppPrefs.dwellRadio = seconds
+                dwellRadio = seconds
             }
             ScreenMode.WEATHER -> {
                 AppPrefs.dwellWeather = seconds
@@ -659,8 +738,138 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         DebugLogger.i("SETTINGS", "clockFace=${face.name}")
     }
 
+    // ---------- 라디오 ----------
+
+    /** 번들 채널 목록을 읽는다. 실패해도 나머지 화면은 그대로 쓸 수 있다. */
+    private fun loadRadioChannels() {
+        viewModelScope.launch {
+            val channels = withContext(Dispatchers.IO) {
+                val text = runCatching {
+                    getApplication<Application>().assets
+                        .open(RADIO_ASSET)
+                        .bufferedReader()
+                        .use { it.readText() }
+                }.getOrNull()
+                RadioCatalog.parse(text)
+            }
+            _radioChannels.value = channels
+            if (channels.isEmpty()) {
+                DebugLogger.e(ErrorCode.RADIO_CHANNEL, "radio catalog empty")
+                _radio.value = RadioUiState(errorRes = R.string.error_radio_channel)
+                return@launch
+            }
+            val saved = channels.firstOrNull { it.id == AppPrefs.radioChannelId } ?: channels.first()
+            _radio.value = RadioUiState(channel = saved)
+            DebugLogger.i("RADIO", "channels=${channels.size} default=${saved.id}")
+            if (AppPrefs.radioAutoplay) playChannel(saved)
+        }
+    }
+
+    /** 채널을 고르면 바로 재생한다. 주소는 매번 새로 확인한다(토큰 만료 대응). */
+    fun playChannel(channel: RadioChannel) {
+        radioChannelId = channel.id
+        AppPrefs.radioChannelId = channel.id
+        radioJob?.cancel()
+        _radio.value = RadioUiState(channel = channel, buffering = true)
+        DebugLogger.i("RADIO", "play ${channel.id} type=${channel.type.name}")
+        radioJob = viewModelScope.launch {
+            try {
+                val url = radioResolver.resolveWithRetry(channel)
+                radioPlayer.play(url, radioVolume)
+            } catch (e: RadioException) {
+                DebugLogger.e(e.code, "resolve ${channel.id}: ${e.message}")
+                _radio.update {
+                    it.copy(
+                        buffering = false,
+                        playing = false,
+                        errorRes = R.string.error_radio_network,
+                    )
+                }
+            } catch (c: CancellationException) {
+                // 다른 채널을 눌러 취소된 경우다. 오류가 아니다.
+                throw c
+            } catch (t: Throwable) {
+                DebugLogger.e(
+                    ErrorCode.RADIO_RESOLVE,
+                    "resolve ${channel.id}: ${t.javaClass.simpleName}",
+                )
+                _radio.update {
+                    it.copy(
+                        buffering = false,
+                        playing = false,
+                        errorRes = R.string.error_radio_network,
+                    )
+                }
+            }
+        }
+    }
+
+    /** 큰 재생/멈춤 버튼. 재생 중이거나 연결 중이면 멈춘다. */
+    fun toggleRadio() {
+        val state = _radio.value
+        if (state.playing || state.buffering) {
+            stopRadio()
+        } else {
+            state.channel?.let { playChannel(it) }
+        }
+    }
+
+    fun stopRadio() {
+        radioJob?.cancel()
+        radioJob = null
+        radioPlayer.stop()
+        _radio.update { it.copy(playing = false, buffering = false, startedAtMs = 0L) }
+        DebugLogger.i("RADIO", "stop")
+    }
+
+    /** 오류 뒤 `다시 시도`. 채널 목록이 비었으면 목록부터 다시 읽는다. */
+    fun retryRadio() {
+        val channel = _radio.value.channel
+        if (channel == null) {
+            loadRadioChannels()
+        } else {
+            playChannel(channel)
+        }
+    }
+
+    fun updateRadioVolume(step: Int) {
+        val value = step.coerceIn(0, RadioPlayer.MAX_STEP)
+        if (value == radioVolume) return
+        radioVolume = value
+        AppPrefs.radioVolume = value
+        radioPlayer.setVolume(value)
+    }
+
+    fun updateRadioInRotation(enabled: Boolean) {
+        AppPrefs.radioInRotation = enabled
+        radioInRotation = enabled
+        DebugLogger.i("SETTINGS", "radioInRotation=$enabled")
+    }
+
+    fun updateRadioAutoplay(enabled: Boolean) {
+        AppPrefs.radioAutoplay = enabled
+        radioAutoplay = enabled
+        DebugLogger.i("SETTINGS", "radioAutoplay=$enabled")
+    }
+
+    /** 설정의 `기본 채널`. 재생 중이 아니면 지금 보이는 채널도 바꾼다. */
+    fun setDefaultRadioChannel(channel: RadioChannel) {
+        AppPrefs.radioChannelId = channel.id
+        radioChannelId = channel.id
+        if (!_radio.value.playing && !_radio.value.buffering) {
+            _radio.update { it.copy(channel = channel, errorRes = null) }
+        }
+        DebugLogger.i("SETTINGS", "radioChannel=${channel.id}")
+    }
+
+    override fun onCleared() {
+        radioPlayer.release()
+        super.onCleared()
+    }
+
     companion object {
         private const val REFRESH_INTERVAL_MS = 15 * 60 * 1_000L
+        private const val RADIO_ASSET = "radio_channels.json"
 
         /** 타이핑이 멈춘 뒤 검색까지 기다리는 시간. Nominatim 초당 1회 정책을 지킨다. */
         private const val SEARCH_DEBOUNCE_MS = 1_000L

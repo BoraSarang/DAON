@@ -15,6 +15,15 @@ object ErrorCode {
     const val KIOSK_LOCK = "E-AND-KIOSK-0001"
     const val BOOT_START = "E-AND-BOOT-0001"
 
+    /** 라디오 채널 정보가 없거나 목록이 깨졌다. */
+    const val RADIO_CHANNEL = "E-AND-RADIO-0001"
+
+    /** 방송사 스트림 주소 확인(리졸버) 실패. */
+    const val RADIO_RESOLVE = "E-AND-RADIO-0002"
+
+    /** 스트림 재생 실패. */
+    const val RADIO_PLAYBACK = "E-AND-RADIO-0003"
+
     fun format(platform: String, category: String, number: Int): String =
         "E-$platform-$category-${number.toString().padStart(4, '0')}"
 }
