@@ -55,6 +55,7 @@ import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
+import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
@@ -76,12 +77,18 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val weather by vm.weather.collectAsStateWithLifecycle()
     val place by vm.place.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
+    val events by vm.events.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         vm.onLocationPermissionResult(granted)
+    }
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        vm.onCalendarPermissionResult(granted)
     }
     LaunchedEffect(Unit) {
         // 첫 실행 때 한 번만 묻는다. 거부하면 설정의 `권한 허용`으로 다시 요청할 수 있다.
@@ -91,6 +98,20 @@ fun DashboardScreen(vm: DashboardViewModel) {
             permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
     }
+    LaunchedEffect(vm.deviceCalendarEnabled, vm.calendarStatus) {
+        // 캘린더 provider 가 있는 기기에서만 권한을 묻는다(Fire OS 에는 캘린더 앱이 없다).
+        if (vm.deviceCalendarEnabled &&
+            vm.calendarStatus == CalendarStatus.NO_PERMISSION &&
+            !AppPrefs.deviceCalendarAsked
+        ) {
+            AppPrefs.deviceCalendarAsked = true
+            DebugLogger.i("CALENDAR", "request read permission")
+            calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+        }
+    }
+    val today = now.toLocalDate()
+    val eventDates = remember(events) { events.mapTo(HashSet()) { it.date } }
+    val todayEvents = remember(events, today) { events.filter { it.date == today } }
     val baseDensity = LocalDensity.current
     val scaledDensity = remember(baseDensity, vm.textScale) {
         Density(baseDensity.density, baseDensity.fontScale * vm.textScale / 100f)
@@ -153,6 +174,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         locale = locale,
                         hour24 = vm.hour24,
                         celsius = vm.celsius,
+                        eventDates = eventDates,
+                        todayEvents = todayEvents,
                         onDateClick = { detailDate = it },
                         onOpenSettings = { settingsOpen = true },
                         onRefreshWeather = { vm.refresh() },
@@ -197,6 +220,14 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     calendar = calendar,
                     korean = korean,
                     locale = locale,
+                    events = events.filter { it.date == date },
+                    calendarEnabled = vm.deviceCalendarEnabled,
+                    calendarStatus = vm.calendarStatus,
+                    onAddEvent = { title -> vm.addEvent(date, title) },
+                    onRemoveEvent = { id -> vm.removeEvent(id) },
+                    onRequestCalendarPermission = {
+                        calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
+                    },
                     onClose = { detailDate = null },
                 )
             }
@@ -207,6 +238,9 @@ fun DashboardScreen(vm: DashboardViewModel) {
                     onDismiss = { settingsOpen = false },
                     onRequestLocationPermission = {
                         permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    },
+                    onRequestCalendarPermission = {
+                        calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
                     },
                 )
             }
@@ -225,6 +259,8 @@ private fun CalendarHome(
     locale: Locale,
     hour24: Boolean,
     celsius: Boolean,
+    eventDates: Set<LocalDate>,
+    todayEvents: List<CalendarEvent>,
     onDateClick: (LocalDate) -> Unit,
     onOpenSettings: () -> Unit,
     onRefreshWeather: () -> Unit,
@@ -250,6 +286,8 @@ private fun CalendarHome(
                 calendar = calendar,
                 korean = korean,
                 locale = locale,
+                eventDates = eventDates,
+                todayEvents = todayEvents,
                 modifier = Modifier.weight(0.7f).fillMaxHeight(),
                 onDateClick = onDateClick,
             )

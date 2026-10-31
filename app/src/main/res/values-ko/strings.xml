@@ -78,6 +78,29 @@
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
 
+    <!-- 일정 (T-003/T-004) -->
+    <string name="settings_events">일정</string>
+    <string name="settings_device_calendar">기기 캘린더</string>
+    <string name="settings_device_calendar_desc">태블릿 캘린더 앱의 일정을 달력 화면에 표시합니다.</string>
+    <string name="settings_calendar_off">기기 캘린더를 쓰지 않습니다.</string>
+    <string name="settings_calendar_checking">기기 캘린더를 확인하는 중…</string>
+    <string name="settings_calendar_on">기기 캘린더에 연결되었습니다.</string>
+    <string name="settings_calendar_permission">캘린더 권한이 없습니다.</string>
+    <string name="settings_calendar_unavailable">이 기기에는 캘린더 앱이 없습니다. 여기에서 직접 일정을 추가할 수 있습니다.</string>
+    <string name="calendar_grant">캘린더 허용</string>
+    <string name="calendar_reload">다시 불러오기</string>
+
+    <!-- 키오스크 (T-008) -->
+    <string name="settings_kiosk">키오스크</string>
+    <string name="settings_kiosk_lock">이 앱에 고정</string>
+    <string name="settings_kiosk_lock_desc">대시보드가 닫히지 않도록 화면을 고정합니다. 처음 한 번 확인 창이 뜰 수 있습니다.</string>
+    <string name="settings_kiosk_on">고정됨</string>
+    <string name="settings_kiosk_off">고정 안 됨</string>
+    <string name="settings_kiosk_owner">기기 관리자 모드 — 확인 창 없이 고정됩니다.</string>
+    <string name="settings_kiosk_note">고정을 풀려면 뒤로가기와 최근 앱 버튼을 함께 길게 누르세요.</string>
+    <string name="settings_kiosk_boot">부팅 시 자동 시작</string>
+    <string name="settings_kiosk_boot_desc">태블릿을 켜면 대시보드를 자동으로 엽니다. Fire OS에서는 차단될 수 있습니다.</string>
+
     <!-- 날짜 상세 -->
     <string name="detail_term_kicker">24절기 · %1$s</string>
     <string name="detail_holiday_kicker">공휴일 · 대한민국</string>
@@ -91,6 +114,13 @@
     <string name="detail_note_term">지역과 품종에 따라 농사 시기가 다를 수 있습니다. 지역 농협·농업기술센터 안내를 함께 확인하세요.</string>
     <string name="detail_note_holiday">공휴일 정보는 한국천문연구원 월력요항을 기준으로 합니다.</string>
     <string name="detail_note_date">날짜를 누르면 음력, 공휴일, 24절기와 농사일을 볼 수 있습니다.</string>
+    <string name="detail_events">일정</string>
+    <string name="detail_no_events">이 날은 일정이 없습니다.</string>
+    <string name="detail_event_hint">일정을 적어 주세요</string>
+    <string name="detail_event_add">추가</string>
+    <string name="detail_event_remove">일정 지우기</string>
+    <string name="detail_event_device_source">기기 캘린더 · %1$s</string>
+    <string name="detail_event_local_source">이 태블릿에서 추가</string>
 
     <!-- 대시보드 -->
     <string name="label_calendar">이번 달</string>
@@ -107,6 +137,8 @@
     <string name="calendar_next">다음 달</string>
     <string name="label_now">지금</string>
     <string name="label_today_farm">오늘의 농사</string>
+    <string name="label_today_events">오늘 일정</string>
+    <string name="agenda_more">%1$d개 더</string>
     <string name="label_seconds">%1$d초</string>
 
     <!-- 날씨 -->

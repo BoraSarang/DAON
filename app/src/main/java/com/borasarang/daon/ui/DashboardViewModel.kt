@@ -21,6 +21,10 @@ import com.borasarang.daon.data.WeatherRepository
 import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.CalendarRepository
+import com.borasarang.daon.data.event.CalendarEvent
+import com.borasarang.daon.data.event.DeviceCalendar
+import com.borasarang.daon.data.event.EventJson
+import com.borasarang.daon.data.event.EventStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,11 +32,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.math.roundToInt
 
@@ -61,6 +67,24 @@ enum class LocationStatus {
     SERVICE_OFF,
 
     /** 권한은 있지만 좌표를 못 얻었다. 도시 폴백 중. */
+    UNAVAILABLE,
+}
+
+/** 기기 캘린더 연결 상태. Fire OS 처럼 provider 가 없으면 [UNAVAILABLE] 이다. */
+enum class CalendarStatus {
+    /** 설정에서 기기 캘린더를 껐다. */
+    OFF,
+
+    /** provider·권한을 확인하는 중. */
+    CHECKING,
+
+    /** 읽기 가능. */
+    AVAILABLE,
+
+    /** provider 는 있지만 READ_CALENDAR 권한이 없다. */
+    NO_PERMISSION,
+
+    /** 이 기기에 캘린더 provider 가 없다. */
     UNAVAILABLE,
 }
 
@@ -99,6 +123,23 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     /** 번들 달력 자산. 파싱 전에는 비어 있고, 준비되면 음력·절기·공휴일이 나타난다. */
     private val _calendar = MutableStateFlow(CalendarData.empty())
     val calendar: StateFlow<CalendarData> = _calendar.asStateFlow()
+
+    private val eventStore = EventStore(app)
+    private val deviceCalendar = DeviceCalendar(app)
+    private val _localEvents = MutableStateFlow(eventStore.all())
+    private val _deviceEvents = MutableStateFlow<List<CalendarEvent>>(emptyList())
+
+    /** 로컬 일정 + 기기 캘린더 일정. 날짜·시간 순으로 정렬된다. */
+    val events: StateFlow<List<CalendarEvent>> = combine(_localEvents, _deviceEvents) { local, device ->
+        (local + device).sortedWith(EventJson.ORDER)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), _localEvents.value)
+
+    var deviceCalendarEnabled by mutableStateOf(AppPrefs.deviceCalendarEnabled)
+        private set
+    var calendarStatus by mutableStateOf(CalendarStatus.CHECKING)
+        private set
+    var kioskBootStart by mutableStateOf(AppPrefs.kioskBootStart)
+        private set
 
     var hour24 by mutableStateOf(AppPrefs.hour24)
         private set
@@ -139,6 +180,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             _calendar.value = CalendarRepository.load(getApplication())
         }
+        refreshDeviceCalendar()
         refresh()
         startLocationRefresh(force = false)
         viewModelScope.launch {
@@ -288,6 +330,83 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         placeResults = emptyList()
         placeSearchError = null
         placeSearching = false
+    }
+
+    /**
+     * 기기 캘린더를 다시 읽는다. provider 가 없거나 권한이 없으면 상태만 바꾸고
+     * 로컬 일정은 그대로 유지한다.
+     */
+    fun refreshDeviceCalendar() {
+        viewModelScope.launch {
+            if (!deviceCalendarEnabled) {
+                calendarStatus = CalendarStatus.OFF
+                _deviceEvents.value = emptyList()
+                return@launch
+            }
+            calendarStatus = CalendarStatus.CHECKING
+            val available = withContext(Dispatchers.IO) { deviceCalendar.isAvailable() }
+            if (!available) {
+                calendarStatus = CalendarStatus.UNAVAILABLE
+                _deviceEvents.value = emptyList()
+                DebugLogger.i("CALENDAR", "device provider unavailable")
+                return@launch
+            }
+            if (!deviceCalendar.hasPermission()) {
+                calendarStatus = CalendarStatus.NO_PERMISSION
+                _deviceEvents.value = emptyList()
+                return@launch
+            }
+            val today = LocalDate.now()
+            val list = withContext(Dispatchers.IO) {
+                deviceCalendar.events(today.minusMonths(DEVICE_CALENDAR_MONTHS_BACK), today.plusMonths(DEVICE_CALENDAR_MONTHS_FORWARD))
+            }
+            _deviceEvents.value = list
+            calendarStatus = CalendarStatus.AVAILABLE
+            DebugLogger.i("CALENDAR", "device events=${list.size}")
+        }
+    }
+
+    fun updateDeviceCalendarEnabled(enabled: Boolean) {
+        AppPrefs.deviceCalendarEnabled = enabled
+        deviceCalendarEnabled = enabled
+        DebugLogger.i("SETTINGS", "deviceCalendar=$enabled")
+        refreshDeviceCalendar()
+    }
+
+    /** 권한 요청 결과. 거부해도 로컬 일정은 계속 쓸 수 있다. */
+    fun onCalendarPermissionResult(granted: Boolean) {
+        AppPrefs.deviceCalendarAsked = true
+        DebugLogger.i("CALENDAR", "permission=$granted")
+        if (granted) {
+            refreshDeviceCalendar()
+        } else {
+            calendarStatus = CalendarStatus.NO_PERMISSION
+            _deviceEvents.value = emptyList()
+        }
+    }
+
+    fun hasCalendarPermission(): Boolean = deviceCalendar.hasPermission()
+
+    fun addEvent(date: LocalDate, title: String) {
+        if (title.isBlank()) return
+        _localEvents.value = eventStore.add(date, title)
+        DebugLogger.i("EVENT", "added date=$date")
+    }
+
+    fun removeEvent(id: String) {
+        _localEvents.value = eventStore.remove(id)
+        DebugLogger.i("EVENT", "removed")
+    }
+
+    fun updateKioskLock(enabled: Boolean) {
+        AppPrefs.kioskLock = enabled
+        DebugLogger.i("SETTINGS", "kioskLock=$enabled")
+    }
+
+    fun updateBootStart(enabled: Boolean) {
+        AppPrefs.kioskBootStart = enabled
+        kioskBootStart = enabled
+        DebugLogger.i("SETTINGS", "kioskBootStart=$enabled")
     }
 
     fun hasLocationPermission(): Boolean = deviceLocation.hasPermission()
@@ -525,5 +644,9 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
         /** 타이핑이 멈춘 뒤 검색까지 기다리는 시간. Nominatim 초당 1회 정책을 지킨다. */
         private const val SEARCH_DEBOUNCE_MS = 1_000L
+
+        /** 기기 캘린더를 읽는 범위(오늘 기준 개월). 달력 이동 시 점 표시 범위다. */
+        private const val DEVICE_CALENDAR_MONTHS_BACK = 12L
+        private const val DEVICE_CALENDAR_MONTHS_FORWARD = 12L
     }
 }

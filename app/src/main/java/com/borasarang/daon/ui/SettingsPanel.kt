@@ -36,6 +36,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +58,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.ClockFace
+import com.borasarang.daon.core.DebugLogger
+import com.borasarang.daon.core.KioskMode
 import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.PlaceResult
@@ -72,6 +77,7 @@ fun SettingsPanel(
     vm: DashboardViewModel,
     onDismiss: () -> Unit,
     onRequestLocationPermission: () -> Unit,
+    onRequestCalendarPermission: () -> Unit,
 ) {
     val activity = LocalContext.current as Activity
     val city by vm.city.collectAsStateWithLifecycle()
@@ -325,6 +331,80 @@ fun SettingsPanel(
                             }
                         }
                     }
+
+                    SettingsSection(stringResource(R.string.settings_events)) {
+                        ToggleRow(
+                            title = stringResource(R.string.settings_device_calendar),
+                            desc = stringResource(R.string.settings_device_calendar_desc),
+                            checked = vm.deviceCalendarEnabled,
+                            onToggle = { vm.updateDeviceCalendarEnabled(it) },
+                            stateText = stringResource(
+                                if (vm.deviceCalendarEnabled) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                        Text(
+                            text = calendarStatusText(vm),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                        if (vm.deviceCalendarEnabled) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                                if (vm.calendarStatus == CalendarStatus.NO_PERMISSION) {
+                                    SettingChip(
+                                        selected = false,
+                                        label = stringResource(R.string.calendar_grant),
+                                        onClick = onRequestCalendarPermission,
+                                    )
+                                }
+                                if (vm.calendarStatus == CalendarStatus.AVAILABLE) {
+                                    SettingChip(
+                                        selected = false,
+                                        label = stringResource(R.string.calendar_reload),
+                                        onClick = { vm.refreshDeviceCalendar() },
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    SettingsSection(stringResource(R.string.settings_kiosk)) {
+                        var lockActive by remember {
+                            mutableStateOf(KioskMode.isLockTaskActive(activity))
+                        }
+                        val owner = remember { KioskMode.isDeviceOwner(activity) }
+                        ToggleRow(
+                            title = stringResource(R.string.settings_kiosk_lock),
+                            desc = stringResource(R.string.settings_kiosk_lock_desc),
+                            checked = lockActive,
+                            onToggle = { enabled ->
+                                if (enabled) KioskMode.start(activity) else KioskMode.stop(activity)
+                                vm.updateKioskLock(enabled)
+                                lockActive = enabled
+                                DebugLogger.i("KIOSK", "lock=$enabled owner=$owner")
+                            },
+                            stateText = stringResource(
+                                if (lockActive) R.string.settings_kiosk_on else R.string.settings_kiosk_off,
+                            ),
+                        )
+                        Text(
+                            text = stringResource(
+                                if (owner) R.string.settings_kiosk_owner else R.string.settings_kiosk_note,
+                            ),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                        ToggleRow(
+                            title = stringResource(R.string.settings_kiosk_boot),
+                            desc = stringResource(R.string.settings_kiosk_boot_desc),
+                            checked = vm.kioskBootStart,
+                            onToggle = { vm.updateBootStart(it) },
+                            stateText = stringResource(
+                                if (vm.kioskBootStart) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                    }
                 }
 
                 Box(
@@ -387,6 +467,15 @@ private fun formatAccuracy(meters: Float): String =
     } else {
         String.format(java.util.Locale.getDefault(), "%.1fkm", meters / 1_000f)
     }
+
+@Composable
+private fun calendarStatusText(vm: DashboardViewModel): String = when (vm.calendarStatus) {
+    CalendarStatus.OFF -> stringResource(R.string.settings_calendar_off)
+    CalendarStatus.CHECKING -> stringResource(R.string.settings_calendar_checking)
+    CalendarStatus.AVAILABLE -> stringResource(R.string.settings_calendar_on)
+    CalendarStatus.NO_PERMISSION -> stringResource(R.string.settings_calendar_permission)
+    CalendarStatus.UNAVAILABLE -> stringResource(R.string.settings_calendar_unavailable)
+}
 
 @Composable
 private fun RotationRow(checked: Boolean, onToggle: (Boolean) -> Unit) {

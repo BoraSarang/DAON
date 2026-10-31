@@ -78,6 +78,29 @@
     <string name="lang_english">English</string>
     <string name="lang_korean">한국어</string>
 
+    <!-- Events (T-003/T-004) -->
+    <string name="settings_events">Events</string>
+    <string name="settings_device_calendar">Device calendar</string>
+    <string name="settings_device_calendar_desc">Show events from the tablet\'s calendar app on the calendar screen.</string>
+    <string name="settings_calendar_off">Device calendar is off.</string>
+    <string name="settings_calendar_checking">Checking the device calendar…</string>
+    <string name="settings_calendar_on">Device calendar connected.</string>
+    <string name="settings_calendar_permission">Calendar permission is off.</string>
+    <string name="settings_calendar_unavailable">No calendar app on this device. You can still add events here.</string>
+    <string name="calendar_grant">Allow calendar</string>
+    <string name="calendar_reload">Reload</string>
+
+    <!-- Kiosk (T-008) -->
+    <string name="settings_kiosk">Kiosk</string>
+    <string name="settings_kiosk_lock">Lock to this app</string>
+    <string name="settings_kiosk_lock_desc">Pins the screen so the dashboard stays open. Android may ask you to confirm once.</string>
+    <string name="settings_kiosk_on">Pinned</string>
+    <string name="settings_kiosk_off">Not pinned</string>
+    <string name="settings_kiosk_owner">Device owner mode — no confirmation needed.</string>
+    <string name="settings_kiosk_note">To unpin, press and hold Back and Overview.</string>
+    <string name="settings_kiosk_boot">Start on boot</string>
+    <string name="settings_kiosk_boot_desc">Opens the dashboard when the tablet turns on. Fire OS may block this.</string>
+
     <!-- Date detail -->
     <string name="detail_term_kicker">Solar term · %1$s</string>
     <string name="detail_holiday_kicker">Public holiday · Korea</string>
@@ -91,6 +114,13 @@
     <string name="detail_note_term">Farming timing varies by region and variety. Check with your local agricultural center.</string>
     <string name="detail_note_holiday">Holiday data follows the Korea Astronomy and Space Science Institute almanac.</string>
     <string name="detail_note_date">Tap a date to see its lunar date, holidays, solar terms, and farming tasks.</string>
+    <string name="detail_events">Events</string>
+    <string name="detail_no_events">No events on this day.</string>
+    <string name="detail_event_hint">Add an event</string>
+    <string name="detail_event_add">Add</string>
+    <string name="detail_event_remove">Delete event</string>
+    <string name="detail_event_device_source">Device calendar · %1$s</string>
+    <string name="detail_event_local_source">Added on this tablet</string>
 
     <!-- Dashboard -->
     <string name="label_calendar">This month</string>
@@ -107,6 +137,8 @@
     <string name="calendar_next">Next month</string>
     <string name="label_now">Now</string>
     <string name="label_today_farm">Today\'s farming</string>
+    <string name="label_today_events">Today\'s events</string>
+    <string name="agenda_more">+%1$d more</string>
     <string name="label_seconds">%1$d sec</string>
 
     <!-- Weather -->

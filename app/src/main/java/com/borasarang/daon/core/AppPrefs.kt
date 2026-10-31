@@ -32,6 +32,10 @@ object AppPrefs {
     private const val KEY_PLACE_NAME = "place_name"
     private const val KEY_PLACE_LAT = "place_lat"
     private const val KEY_PLACE_LON = "place_lon"
+    private const val KEY_DEVICE_CALENDAR = "device_calendar"
+    private const val KEY_DEVICE_CALENDAR_ASKED = "device_calendar_asked"
+    private const val KEY_KIOSK_LOCK = "kiosk_lock"
+    private const val KEY_KIOSK_BOOT = "kiosk_boot"
 
     private lateinit var prefs: SharedPreferences
 
@@ -166,6 +170,26 @@ object AppPrefs {
             remove(KEY_PLACE_LON)
         }
     }
+
+    /** 기기 캘린더 일정을 달력에 함께 표시할지. 기본 켬. */
+    var deviceCalendarEnabled: Boolean
+        get() = prefs.getBoolean(KEY_DEVICE_CALENDAR, true)
+        set(value) = write { putBoolean(KEY_DEVICE_CALENDAR, value) }
+
+    /** 캘린더 권한을 한 번이라도 요청했는지. 거부 후 자동 팝업을 반복하지 않는다. */
+    var deviceCalendarAsked: Boolean
+        get() = prefs.getBoolean(KEY_DEVICE_CALENDAR_ASKED, false)
+        set(value) = write { putBoolean(KEY_DEVICE_CALENDAR_ASKED, value) }
+
+    /** 사용자가 마지막으로 요청한 키오스크 고정 상태. 실제 고정 여부는 [KioskMode] 로 확인한다. */
+    var kioskLock: Boolean
+        get() = prefs.getBoolean(KEY_KIOSK_LOCK, false)
+        set(value) = write { putBoolean(KEY_KIOSK_LOCK, value) }
+
+    /** 부팅이 끝나면 대시보드를 자동으로 연다. 기본 끔(Fire OS 가 막을 수 있어 사용자가 켠다). */
+    var kioskBootStart: Boolean
+        get() = prefs.getBoolean(KEY_KIOSK_BOOT, false)
+        set(value) = write { putBoolean(KEY_KIOSK_BOOT, value) }
 
     private fun readDouble(key: String): Double? =
         if (prefs.contains(key)) Double.fromBits(prefs.getLong(key, 0L)) else null

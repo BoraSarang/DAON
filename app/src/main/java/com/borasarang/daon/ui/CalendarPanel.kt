@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import com.borasarang.daon.R
 import com.borasarang.daon.core.monthGrid
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
+import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.DayOfWeek
@@ -61,6 +63,8 @@ fun CalendarPanel(
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
+    eventDates: Set<LocalDate> = emptySet(),
+    todayEvents: List<CalendarEvent> = emptyList(),
     modifier: Modifier = Modifier,
     onDateClick: (LocalDate) -> Unit = {},
 ) {
@@ -133,6 +137,7 @@ fun CalendarPanel(
                                 calendar = calendar,
                                 korean = korean,
                                 selected = selected == date,
+                                hasEvents = date in eventDates,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                                 onClick = {
                                     selected = date
@@ -147,6 +152,9 @@ fun CalendarPanel(
                 }
             }
 
+            if (todayEvents.isNotEmpty()) {
+                TodayAgenda(todayEvents)
+            }
             FarmStrip(today = today, calendar = calendar, korean = korean)
         }
     }
@@ -231,6 +239,7 @@ private fun DayCell(
     calendar: CalendarData,
     korean: Boolean,
     selected: Boolean,
+    hasEvents: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
@@ -272,12 +281,23 @@ private fun DayCell(
                 .padding(horizontal = Home.cellPadH, vertical = Home.cellPadV)
                 .alpha(if (inMonth) 1f else 0.32f),
         ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                style = Home.dayNumber,
-                color = dayColor,
-                maxLines = 1,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = Home.dayNumber,
+                    color = dayColor,
+                    maxLines = 1,
+                )
+                if (hasEvents) {
+                    Spacer(Modifier.width(5.dp))
+                    Box(
+                        Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isToday) TodayInk else Kiosk.color.accent),
+                    )
+                }
+            }
             if (lunar != null) {
                 Text(
                     text = if (korean) {
@@ -300,6 +320,60 @@ private fun DayCell(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TodayAgenda(events: List<CalendarEvent>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Home.agendaStrip)
+            .background(Kiosk.color.surfaceAlt)
+            .padding(horizontal = 17.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.label_today_events),
+            style = Home.farmLabel,
+            color = Kiosk.color.accent,
+            maxLines = 1,
+        )
+        Spacer(Modifier.width(13.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            events.take(2).forEach { event ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (event.time != null) {
+                        Text(
+                            text = event.time,
+                            style = Home.detailRow,
+                            color = Kiosk.color.textMuted,
+                            maxLines = 1,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(
+                        text = event.title,
+                        style = Home.farmText,
+                        color = Kiosk.color.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        if (events.size > 2) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.agenda_more, events.size - 2),
+                style = Home.chipText,
+                color = Kiosk.color.textSecondary,
+                maxLines = 1,
+            )
         }
     }
 }

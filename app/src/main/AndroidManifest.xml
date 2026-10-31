@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- GPS 없는 Fire 태블릿의 네트워크(HERE) 위치. 날씨 지점 자동 선택에만 쓴다. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 기기 캘린더 일정 읽기(T-004). Fire OS 에 캘린더 앱이 없으면 권한 없이 로컬 일정만 쓴다. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- 부팅 시 대시보드 자동 시작(T-008). 설정에서 켠 경우에만 동작한다. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".App"
@@ -27,5 +31,27 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Device Owner 등록용(T-008). 등록하지 않으면 일반 화면 고정으로 동작한다. -->
+        <receiver
+            android:name=".admin.AdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 부팅 시 자동 시작(T-008). 설정에서 켠 경우에만 대시보드를 연다. -->
+        <receiver
+            android:name=".admin.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

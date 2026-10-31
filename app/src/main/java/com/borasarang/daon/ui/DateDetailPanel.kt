@@ -19,17 +19,29 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,6 +52,8 @@ import com.borasarang.daon.data.calendar.SolarTerm
 import com.borasarang.daon.data.calendar.TermDetail
 import com.borasarang.daon.data.calendar.descriptionFor
 import com.borasarang.daon.data.calendar.displayName
+import com.borasarang.daon.data.event.CalendarEvent
+import com.borasarang.daon.data.event.EventSource
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 import java.time.LocalDate
@@ -58,6 +72,12 @@ fun DateDetailPanel(
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
+    events: List<CalendarEvent>,
+    calendarEnabled: Boolean,
+    calendarStatus: CalendarStatus,
+    onAddEvent: (String) -> Unit,
+    onRemoveEvent: (String) -> Unit,
+    onRequestCalendarPermission: () -> Unit,
     onClose: () -> Unit,
 ) {
     val term = calendar.termsOn(date).firstOrNull()
@@ -132,6 +152,16 @@ fun DateDetailPanel(
                     hanja = hanja,
                     dateLine = dateLine,
                     onClose = onClose,
+                )
+
+                EventSection(
+                    date = date,
+                    events = events,
+                    calendarEnabled = calendarEnabled,
+                    calendarStatus = calendarStatus,
+                    onAdd = onAddEvent,
+                    onRemove = onRemoveEvent,
+                    onRequestCalendarPermission = onRequestCalendarPermission,
                 )
 
                 when {
@@ -370,4 +400,171 @@ private fun TermChip(text: String, highlighted: Boolean) {
 @Composable
 private fun SubTitle(text: String) {
     Text(text, style = Home.detailSub, color = Kiosk.color.textMuted)
+}
+
+@Composable
+private fun EventSection(
+    date: LocalDate,
+    events: List<CalendarEvent>,
+    calendarEnabled: Boolean,
+    calendarStatus: CalendarStatus,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onRequestCalendarPermission: () -> Unit,
+) {
+    var draft by remember(date) { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    val hint = stringResource(R.string.detail_event_hint)
+    val submit = {
+        val text = draft.trim()
+        if (text.isNotEmpty()) {
+            onAdd(text)
+            draft = ""
+            focusManager.clearFocus()
+        }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SubTitle(stringResource(R.string.detail_events))
+        if (events.isEmpty()) {
+            Text(
+                text = stringResource(R.string.detail_no_events),
+                style = Home.detailBody,
+                color = Kiosk.color.textMuted,
+            )
+        } else {
+            events.forEach { event -> EventRow(event, onRemove) }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            BasicTextField(
+                value = draft,
+                onValueChange = { draft = it.take(60) },
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 17.sp, color = Kiosk.color.textPrimary),
+                cursorBrush = SolidColor(Kiosk.color.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Kiosk.color.surfaceAlt)
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
+                    .semantics { contentDescription = hint },
+                decorationBox = { innerTextField ->
+                    if (draft.isEmpty()) {
+                        Text(hint, fontSize = 17.sp, color = Kiosk.color.textMuted)
+                    }
+                    innerTextField()
+                },
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Kiosk.color.accentSoft)
+                    .clickable { submit() }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.detail_event_add),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Kiosk.color.accent,
+                )
+            }
+        }
+        if (calendarEnabled) {
+            when (calendarStatus) {
+                CalendarStatus.NO_PERMISSION -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_calendar_permission),
+                        style = Home.detailNote,
+                        color = Kiosk.color.textMuted,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = stringResource(R.string.calendar_grant),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Kiosk.color.accent,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Kiosk.color.accentSoft)
+                            .clickable(onClick = onRequestCalendarPermission)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
+                CalendarStatus.UNAVAILABLE -> Text(
+                    text = stringResource(R.string.settings_calendar_unavailable),
+                    style = Home.detailNote,
+                    color = Kiosk.color.textMuted,
+                )
+                else -> Unit
+            }
+        }
+    }
+}
+
+@Composable
+private fun EventRow(event: CalendarEvent, onRemove: (String) -> Unit) {
+    val removeLabel = stringResource(R.string.detail_event_remove)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Kiosk.color.surfaceAlt)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (event.time != null) {
+            Text(
+                text = event.time,
+                style = Home.detailRow,
+                color = Kiosk.color.accent,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(10.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = event.title,
+                style = Home.detailBody,
+                color = Kiosk.color.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = if (event.source == EventSource.DEVICE) {
+                    stringResource(
+                        R.string.detail_event_device_source,
+                        event.calendarName ?: stringResource(R.string.screen_calendar),
+                    )
+                } else {
+                    stringResource(R.string.detail_event_local_source)
+                },
+                style = Home.detailNote,
+                color = Kiosk.color.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (event.source == EventSource.LOCAL) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onRemove(event.id) }
+                    .semantics { contentDescription = removeLabel },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("×", fontSize = 20.sp, color = Kiosk.color.textMuted)
+            }
+        }
+    }
 }

@@ -80,7 +80,7 @@
 - `WeatherRepository`가 7일·시간별(3시간)·`is_day`를 파싱. `WeatherUiState.isOffline` 추가
 - 새 파일 `ui/WeatherEffect.kt`. `WeatherScreen.kt` 전면 재작성
 - 문자열 en/ko **135키 일치**, 테스트 14건 통과. 100%·115%·한/영 실기기 확인
-- 캡처: `docs/screenshots/11-v0.2-weather-ko.png`(밤, 달), `12-v0.2-weather-en.png`
+- 캡처: `docs/screenshots/11-v0.2-weather-ko.png`(밤, 달), `12-v0.2-weather-en.png` — **파일 미저장**, T-021에서 촬영·갱신 예정(현재 `08-v0.2-weather-ko.png`는 1차 버전)
 - 검증: `fetched days=7 hours=8`, 비/눈/천둥 화면 녹화 확인, 움직임 끄기 미표시, 오프라인 배지 표시
 - perf: 콜드 스타트 **1830–1864ms**(예산 2000ms), 달력 로드 235–242ms
 
@@ -95,6 +95,35 @@
 - 검증: `chungju` 검색 → `[PLACE] search results=1` → `[SETTINGS] place saved` → `[WEATHER] fetch lat=36.991 lon=127.926`. 세 화면 모두 `충주시, 충청북도` 표시
 - 문자열 en/ko 11키 추가(현재 162키 일치), 테스트 3건 추가(Nominatim 파싱) 총 23건 통과, 오류 코드 `E-AND-PERM-0001`
 - perf: 콜드 스타트 **1849–1896ms**(예산 2000ms), 달력 로드 249ms
+
+### 일정: 로컬 저장 + 기기 캘린더 (T-003, T-004)
+- 날짜 상세 패널에 `일정` 구역: 그 날의 일정 목록, 한 줄 입력 + `추가`, 로컬 일정 `×` 삭제
+- 달력 셀에 일정 점(7dp) 표시, 달력 아래 `오늘 일정` 스트립(최대 2건 + `N개 더`)
+- 로컬 일정은 SharedPreferences `events` + JSON 한 덩어리(`EventJson`). 일정 수가 적어 Room 없이 충분하고, 깨진 항목은 건너뛴다
+- 기기 캘린더는 `CalendarContract.Instances` 로 오늘 기준 ±12개월을 읽는다(읽기 전용, 출처 `기기 캘린더 · 이름` 표시). `READ_CALENDAR` 권한은 provider 가 있는 기기에서 한 번만 요청
+- Fire OS 에는 캘린더 앱/provider 가 없어 상태가 `이 기기에는 캘린더 앱이 없습니다` 로 표시되고 **로컬 일정만** 동작한다
+- 새 파일 `data/event/CalendarEvent.kt`, `EventJson.kt`, `EventStore.kt`, `DeviceCalendar.kt`. `DashboardViewModel`이 로컬+기기 일정을 합쳐 정렬
+- 문자열 en/ko **190키 일치**, 테스트 4건 추가(JSON 왕복·깨진 항목·정렬) 총 **27건 통과**
+- error_code: `E-AND-PERM-0002`(캘린더 읽기 실패)
+
+### 키오스크 잠금·부팅 자동 시작 (T-008)
+- 설정 → `키오스크`: `이 앱에 고정`(Lock Task/화면 고정) + `부팅 시 자동 시작`
+- Device Owner 로 등록하면 확인 창 없이 고정되고, 아니면 Android 화면 고정으로 동작한다(처음 1회 확인)
+- `AdminReceiver`(Device Owner 등록용) + `BootReceiver`(BOOT_COMPLETED, 설정을 켠 경우에만). 부팅 자동 시작은 Fire OS 가 막을 수 있어 실패 시 `E-AND-BOOT-0001` 로그만 남긴다
+- 새 파일 `core/KioskMode.kt`, `admin/AdminReceiver.kt`, `admin/BootReceiver.kt`, `res/xml/device_admin.xml`
+- Device Owner 등록 명령은 `docs/appstore/data_safety.md` 와 README 에 적었다
+- error_code: `E-AND-KIOSK-0001`
+
+### Appstore 메타데이터 (T-009)
+- `docs/appstore/listing_ko.md`, `listing_en.md`: 앱 이름·짧은 설명·전체 설명·키워드·카테고리·스크린샷 순서
+- `docs/appstore/data_safety.md`: 수집·이용 데이터, 권한 사유(위치·캘린더·부팅), 제3자(Open-Meteo·Nominatim), 아동 대상 아님
+- 개인정보처리방침 초안 포함(위치·동네 검색어·캘린더 일정은 기기 밖으로 나가지 않음)
+
+### v0.2.0-dev 마감 정리
+- `versionCode 2`, `versionName 0.2.0-dev` 로 올림
+- T-020 시계 3종은 코드·설정 반영 완료. 100/115%·ko/en 실기기 캡처는 사용자 확인 대기
+- T-005(시간별 날씨)는 T-019에서 이미 구현되어 TODO 중복 항목을 정리했다
+- 남은 검증: T-006(1시간 메모리), T-007(상시 표시), T-021(70대 3과제·PSS·60fps·캡처), T-023(연 1회 공휴일 갱신)
 
 ## [android] 0.1.0 — 2026-10-31
 
