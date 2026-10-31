@@ -102,6 +102,13 @@
     <string name="label_today_range">Today %1$s / %2$s</string>
     <string name="weather_forecast_title">Forecast</string>
     <string name="weather_updated">Updated %1$s</string>
+    <string name="weather_week_title">This week</string>
+    <string name="weather_week_note">High / low</string>
+    <string name="weather_hourly_title">Hourly weather</string>
+    <string name="weather_hourly_note">Every 3 hours · bars show expected rain</string>
+    <string name="label_precip_prob">Rain chance</string>
+    <string name="label_precip_amount">Expected rain</string>
+    <string name="weather_advisory_detail">Rain chance %1$d%% · %2$s · wind %3$s m/s</string>
     <string name="updated_at">Updated %1$s</string>
     <string name="label_refresh">Refresh</string>
     <string name="weather_offline">Offline — last known values</string>

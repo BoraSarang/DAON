@@ -143,6 +143,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         state = weather,
                         celsius = vm.celsius,
                         locale = locale,
+                        weatherMotion = vm.weatherMotion && !settingsOpen,
                         touchStop = vm.touchStop,
                         stopped = rotationStopped,
                         onOpenSettings = { settingsOpen = true },

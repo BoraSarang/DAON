@@ -102,6 +102,13 @@
     <string name="label_today_range">오늘 %1$s / %2$s</string>
     <string name="weather_forecast_title">예보</string>
     <string name="weather_updated">업데이트 %1$s</string>
+    <string name="weather_week_title">이번 주</string>
+    <string name="weather_week_note">최고 / 최저</string>
+    <string name="weather_hourly_title">시간별 날씨</string>
+    <string name="weather_hourly_note">3시간 간격 · 막대는 예상 강수량</string>
+    <string name="label_precip_prob">강수확률</string>
+    <string name="label_precip_amount">예상 강수량</string>
+    <string name="weather_advisory_detail">강수확률 %1$d%% · %2$s · 바람 %3$s m/s</string>
     <string name="updated_at">%1$s 갱신</string>
     <string name="label_refresh">새로고침</string>
     <string name="weather_offline">오프라인 — 마지막 값</string>

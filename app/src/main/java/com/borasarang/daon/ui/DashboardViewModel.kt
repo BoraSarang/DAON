@@ -35,6 +35,7 @@ data class WeatherUiState(
     val snapshot: WeatherSnapshot? = null,
     val isLoading: Boolean = false,
     val errorRes: Int? = null,
+    val isOffline: Boolean = false,
 )
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
@@ -107,7 +108,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             }
             result.fold(
                 onSuccess = { snapshot ->
-                    DebugLogger.perf("WEATHER", "fetched days=${snapshot.daily.size}")
+                    DebugLogger.perf("WEATHER", "fetched days=${snapshot.daily.size} hours=${snapshot.hourly.size}")
                     _weather.value = WeatherUiState(snapshot = snapshot, isLoading = false, errorRes = null)
                 },
                 onFailure = { throwable ->
@@ -118,7 +119,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                     } else {
                         R.string.error_weather_network
                     }
-                    _weather.update { it.copy(isLoading = false, errorRes = messageRes) }
+                    _weather.update {
+                        it.copy(
+                            isLoading = false,
+                            errorRes = messageRes,
+                            isOffline = it.snapshot != null,
+                        )
+                    }
                 },
             )
         }

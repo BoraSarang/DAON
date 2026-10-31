@@ -1,6 +1,7 @@
 package com.borasarang.daon.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -22,6 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,50 +40,68 @@ import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.DailyForecast
+import com.borasarang.daon.data.HourlyForecast
 import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
-/** 날씨 화면 전용 큰 숫자. 달력 옆 카드보다 훨씬 크게 보여준다. */
 private val HeroTemp = TextStyle(
-    fontSize = 168.sp,
-    lineHeight = 168.sp,
+    fontSize = 134.sp,
+    lineHeight = 140.sp,
     fontWeight = FontWeight.Bold,
-    letterSpacing = (-8).sp,
+    letterSpacing = (-7).sp,
     fontFeatureSettings = "tnum",
 )
 
 private val HeroCondition = TextStyle(
-    fontSize = 40.sp,
-    lineHeight = 46.sp,
+    fontSize = 34.sp,
+    lineHeight = 40.sp,
     fontWeight = FontWeight.SemiBold,
 )
 
-private val ForecastDay = TextStyle(
-    fontSize = 24.sp,
-    lineHeight = 28.sp,
+private val WeekDay = TextStyle(
+    fontSize = 18.sp,
+    lineHeight = 22.sp,
     fontWeight = FontWeight.Bold,
 )
 
-private val ForecastCondition = TextStyle(
-    fontSize = 19.sp,
+private val WeekTemp = TextStyle(
+    fontSize = 20.sp,
     lineHeight = 24.sp,
-    fontWeight = FontWeight.Medium,
-)
-
-private val ForecastTemp = TextStyle(
-    fontSize = 30.sp,
-    lineHeight = 34.sp,
     fontWeight = FontWeight.Bold,
     fontFeatureSettings = "tnum",
 )
 
+private val HourTime = TextStyle(
+    fontSize = 18.sp,
+    lineHeight = 22.sp,
+    fontWeight = FontWeight.Bold,
+    fontFeatureSettings = "tnum",
+)
+
+private val HourTemp = TextStyle(
+    fontSize = 24.sp,
+    lineHeight = 28.sp,
+    fontWeight = FontWeight.Bold,
+    fontFeatureSettings = "tnum",
+)
+
+private val SmallNote = TextStyle(
+    fontSize = 13.sp,
+    lineHeight = 17.sp,
+    fontWeight = FontWeight.Medium,
+)
+
 /**
- * 날씨 메인 화면. T-017에서는 현재·오늘·4일 예보·농사 참고를 보여주고,
- * T-019에서 시간별·7일·비/눈 효과를 더한다.
+ * 날씨 메인. 현재·오늘 요약 + 이번 주 7일 + 농사 참고 + 3시간 간격 8칸.
+ * 배경에는 비·눈·천둥 효과를 그린다(설정에서 끌 수 있음).
  */
 @Composable
 fun WeatherScreen(
@@ -82,42 +109,78 @@ fun WeatherScreen(
     state: WeatherUiState,
     celsius: Boolean,
     locale: Locale,
+    weatherMotion: Boolean,
     touchStop: Boolean,
     stopped: Boolean,
     onOpenSettings: () -> Unit,
     onRefresh: () -> Unit,
 ) {
+    val snapshot = state.snapshot
     val cityName = stringResource(city.labelRes)
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Kiosk.color.bg)
-            .padding(Home.screenPadding),
-    ) {
-        ScreenHeader(
-            title = stringResource(R.string.screen_weather),
-            subtitle = "$cityName · ${stringResource(R.string.label_now)}",
-            current = ScreenMode.WEATHER,
-            onOpenSettings = onOpenSettings,
+    val korean = locale.language == "ko"
+    val subtitle = "$cityName · " + stringResource(
+        if (state.isOffline) R.string.weather_offline else R.string.label_now,
+    )
+
+    Box(Modifier.fillMaxSize().background(Kiosk.color.bg)) {
+        WeatherEffect(
+            code = snapshot?.current?.weatherCode,
+            motion = weatherMotion,
+            modifier = Modifier.fillMaxSize(),
         )
-        Spacer(Modifier.height(Home.panelGap))
 
-        val snapshot = state.snapshot
-        when {
-            snapshot != null -> {
-                WeatherHero(snapshot, celsius, locale, onRefresh, Modifier.fillMaxWidth().weight(0.62f))
-                Spacer(Modifier.height(Home.panelGap))
-                ForecastPanel(snapshot, celsius, locale, Modifier.fillMaxWidth().weight(0.38f))
-            }
-            state.isLoading -> WeatherMessage(stringResource(R.string.weather_loading))
-            else -> WeatherMessage(stringResource(state.errorRes ?: R.string.error_weather_network), error = true)
-        }
-
-        Spacer(Modifier.height(10.dp))
-        if (!stopped) {
-            RotationHint(
-                stringResource(if (touchStop) R.string.screen_touch_stop else R.string.screen_touch_home),
+        Column(Modifier.fillMaxSize().padding(Home.screenPadding)) {
+            ScreenHeader(
+                title = stringResource(R.string.screen_weather),
+                subtitle = subtitle,
+                current = ScreenMode.WEATHER,
+                onOpenSettings = onOpenSettings,
             )
+            Spacer(Modifier.height(Home.panelGap))
+
+            when {
+                snapshot != null -> {
+                    Row(Modifier.fillMaxWidth().weight(0.60f)) {
+                        WeatherHero(
+                            snapshot = snapshot,
+                            celsius = celsius,
+                            locale = locale,
+                            offline = state.isOffline,
+                            onRefresh = onRefresh,
+                            modifier = Modifier.weight(0.64f).fillMaxHeight(),
+                        )
+                        Spacer(Modifier.width(Home.panelGap))
+                        WeekPanel(
+                            snapshot = snapshot,
+                            celsius = celsius,
+                            locale = locale,
+                            modifier = Modifier.weight(0.36f).fillMaxHeight(),
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    AdvisoryBanner(snapshot, locale)
+                    Spacer(Modifier.height(12.dp))
+                    HourlyPanel(
+                        snapshot = snapshot,
+                        celsius = celsius,
+                        locale = locale,
+                        korean = korean,
+                        modifier = Modifier.fillMaxWidth().weight(0.40f),
+                    )
+                }
+                state.isLoading -> WeatherMessage(stringResource(R.string.weather_loading))
+                else -> WeatherMessage(
+                    stringResource(state.errorRes ?: R.string.error_weather_network),
+                    error = true,
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            if (!stopped) {
+                RotationHint(
+                    stringResource(if (touchStop) R.string.screen_touch_stop else R.string.screen_touch_home),
+                )
+            }
         }
     }
 }
@@ -127,6 +190,7 @@ private fun WeatherHero(
     snapshot: WeatherSnapshot,
     celsius: Boolean,
     locale: Locale,
+    offline: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier,
 ) {
@@ -140,7 +204,7 @@ private fun WeatherHero(
         shape = RoundedCornerShape(Home.panelRadiusLarge),
         border = BorderStroke(1.dp, Kiosk.color.rule),
     ) {
-        Column(Modifier.fillMaxSize().padding(32.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 26.dp, vertical = 20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(
@@ -150,48 +214,57 @@ private fun WeatherHero(
                     style = Home.clockLabel,
                     color = Kiosk.color.textMuted,
                 )
+                if (offline) {
+                    Spacer(Modifier.width(10.dp))
+                    OfflineBadge()
+                }
                 Spacer(Modifier.weight(1f))
                 RefreshButton(onRefresh)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(6.dp))
+
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                WeatherGlyph(
+                    code = current.weatherCode,
+                    isDay = current.isDay,
+                    modifier = Modifier.size(84.dp),
+                )
+                Spacer(Modifier.width(22.dp))
                 Text(
                     text = "${current.temperature.roundToInt()}°",
                     style = HeroTemp,
                     color = Kiosk.color.textPrimary,
                 )
-                Spacer(Modifier.width(34.dp))
+                Spacer(Modifier.width(24.dp))
                 Column {
                     Text(
                         text = stringResource(weatherLabelRes(current.weatherCode)),
                         style = HeroCondition,
                         color = Kiosk.color.textPrimary,
+                        maxLines = 1,
                     )
-                    if (today != null) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = stringResource(
-                                R.string.label_today_range,
-                                "${today.max.roundToInt()}°",
-                                "${today.min.roundToInt()}°",
-                            ),
-                            style = Home.hiLo,
-                            color = Kiosk.color.textSecondary,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.label_range) + " " +
-                                "${(today.max - today.min).roundToInt()}°",
-                            style = Home.hiLo,
-                            color = Kiosk.color.textMuted,
-                        )
-                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.feels_like,
+                            "${current.feelsLike.roundToInt()}$unit",
+                        ),
+                        style = Home.hiLo,
+                        color = Kiosk.color.textSecondary,
+                    )
                 }
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 WeatherMetric(
-                    label = stringResource(R.string.label_feels),
-                    value = "${current.feelsLike.roundToInt()}$unit",
+                    label = stringResource(R.string.label_precip_prob),
+                    value = "${today?.precipitationProbability ?: 0}%",
+                    modifier = Modifier.weight(1f),
+                    highlight = (today?.precipitationProbability ?: 0) >= 60,
+                )
+                WeatherMetric(
+                    label = stringResource(R.string.label_precip_amount),
+                    value = formatMm(today?.precipitationSum ?: 0.0, locale),
                     modifier = Modifier.weight(1f),
                 )
                 WeatherMetric(
@@ -204,20 +277,13 @@ private fun WeatherHero(
                     value = String.format(locale, "%.1f m/s", current.windSpeed),
                     modifier = Modifier.weight(1f),
                 )
-                WeatherMetric(
-                    label = stringResource(R.string.label_farm_advice),
-                    value = stringResource(farmAdviceRes(snapshot)),
-                    modifier = Modifier.weight(1.6f),
-                    valueLines = 2,
-                    highlight = true,
-                )
             }
         }
     }
 }
 
 @Composable
-private fun ForecastPanel(
+private fun WeekPanel(
     snapshot: WeatherSnapshot,
     celsius: Boolean,
     locale: Locale,
@@ -230,26 +296,157 @@ private fun ForecastPanel(
         shape = RoundedCornerShape(Home.panelRadiusLarge),
         border = BorderStroke(1.dp, Kiosk.color.rule),
     ) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 20.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.weather_week_title),
+                    style = Home.clockLabel,
+                    color = Kiosk.color.textMuted,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.weather_week_note),
+                    style = SmallNote,
+                    color = Kiosk.color.textMuted,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            snapshot.daily.take(7).forEach { day ->
+                WeekRow(day = day, unit = unit, locale = locale, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeekRow(day: DailyForecast, unit: String, locale: Locale, modifier: Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = dayLabel(day.date, locale),
+            style = WeekDay,
+            color = if (day.date == LocalDate.now()) Kiosk.color.accent else Kiosk.color.textPrimary,
+            maxLines = 1,
+            modifier = Modifier.width(52.dp),
+        )
+        WeatherGlyph(code = day.weatherCode, modifier = Modifier.size(26.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = if (day.precipitationProbability > 0) "${day.precipitationProbability}%" else "",
+            style = SmallNote,
+            color = Kiosk.color.rain,
+            maxLines = 1,
+            modifier = Modifier.width(42.dp),
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = "${day.max.roundToInt()}°",
+            style = WeekTemp,
+            color = Kiosk.color.textPrimary,
+        )
+        Text(
+            text = " / ${day.min.roundToInt()}$unit",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = Kiosk.color.textMuted,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun AdvisoryBanner(snapshot: WeatherSnapshot, locale: Locale) {
+    val current = snapshot.current
+    val today = snapshot.daily.firstOrNull()
+    val wind = today?.windMax?.takeIf { it > 0.0 } ?: current.windSpeed
+    val detail = stringResource(
+        R.string.weather_advisory_detail,
+        today?.precipitationProbability ?: 0,
+        formatMm(today?.precipitationSum ?: 0.0, locale),
+        String.format(locale, "%.1f", wind),
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(Kiosk.color.accentSoft)
+            .padding(horizontal = 22.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .width(4.dp)
+                .height(40.dp)
+                .background(Kiosk.color.accent, RoundedCornerShape(2.dp)),
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.weather_forecast_title),
-                style = Home.clockLabel,
-                color = Kiosk.color.textMuted,
+                text = stringResource(farmAdviceRes(snapshot)),
+                fontSize = 21.sp,
+                lineHeight = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Kiosk.color.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth().fillMaxHeight()) {
-                snapshot.daily.forEachIndexed { index, day ->
-                    DayColumn(
-                        day = day,
-                        label = if (index == 0) {
-                            stringResource(R.string.today)
-                        } else {
-                            day.date.format(DateTimeFormatter.ofPattern("E", locale))
-                        },
-                        unit = unit,
-                        locale = locale,
-                        modifier = Modifier.weight(1f),
-                    )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = detail,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
+                color = Kiosk.color.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HourlyPanel(
+    snapshot: WeatherSnapshot,
+    celsius: Boolean,
+    locale: Locale,
+    korean: Boolean,
+    modifier: Modifier,
+) {
+    val unit = stringResource(if (celsius) R.string.unit_celsius else R.string.unit_fahrenheit)
+    Surface(
+        modifier = modifier,
+        color = Kiosk.color.surface,
+        shape = RoundedCornerShape(Home.panelRadiusLarge),
+        border = BorderStroke(1.dp, Kiosk.color.rule),
+    ) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.weather_hourly_title),
+                    style = Home.clockLabel,
+                    color = Kiosk.color.textMuted,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.weather_hourly_note),
+                    style = SmallNote,
+                    color = Kiosk.color.textMuted,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            if (snapshot.hourly.isEmpty()) {
+                Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Text("—", style = Home.condition, color = Kiosk.color.textMuted)
+                }
+            } else {
+                Row(Modifier.fillMaxWidth().weight(1f)) {
+                    snapshot.hourly.forEach { hour ->
+                        HourColumn(
+                            hour = hour,
+                            unit = unit,
+                            locale = locale,
+                            korean = korean,
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                        )
+                    }
                 }
             }
         }
@@ -257,61 +454,73 @@ private fun ForecastPanel(
 }
 
 @Composable
-private fun DayColumn(
-    day: DailyForecast,
-    label: String,
+private fun HourColumn(
+    hour: HourlyForecast,
     unit: String,
     locale: Locale,
+    korean: Boolean,
     modifier: Modifier,
 ) {
+    val timeText = if (korean) "${hour.time.hour}시" else hour.time.format(DateTimeFormatter.ofPattern("HH:mm"))
     Column(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(label, style = ForecastDay, color = Kiosk.color.textSecondary, maxLines = 1)
+        Text(timeText, style = HourTime, color = Kiosk.color.textSecondary, maxLines = 1)
+        Spacer(Modifier.height(5.dp))
+        WeatherGlyph(code = hour.weatherCode, isDay = hour.isDay, modifier = Modifier.size(30.dp))
+        Spacer(Modifier.height(5.dp))
+        Text(
+            text = "${hour.temperature.roundToInt()}$unit",
+            style = HourTemp,
+            color = Kiosk.color.textPrimary,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = formatMm(hour.precipitation, locale),
+            style = SmallNote,
+            color = if (hour.precipitation > 0) Kiosk.color.rain else Kiosk.color.textMuted,
+            maxLines = 1,
+        )
         Spacer(Modifier.height(6.dp))
-        Text(
-            text = day.date.format(DateTimeFormatter.ofPattern("M/d", locale)),
-            style = Home.miniDay,
-            color = Kiosk.color.textMuted,
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = stringResource(weatherLabelRes(day.weatherCode)),
-            style = ForecastCondition,
-            color = Kiosk.color.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "${day.max.roundToInt()}° / ${day.min.roundToInt()}$unit",
-            style = ForecastTemp,
-            color = Kiosk.color.textPrimary,
-            maxLines = 1,
-        )
+        PrecipBar(hour.precipitation)
     }
 }
 
 @Composable
-private fun RefreshButton(onClick: () -> Unit) {
+private fun PrecipBar(millimetres: Double) {
+    val fraction = (millimetres / 5.0).coerceIn(0.0, 1.0).toFloat()
     Box(
-        modifier = Modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Kiosk.color.surfaceAlt)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
+        Modifier
+            .width(52.dp)
+            .height(6.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(Kiosk.color.rule),
     ) {
-        Text(
-            text = stringResource(R.string.label_refresh),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Kiosk.color.accent,
-        )
+        if (fraction > 0f) {
+            Box(
+                Modifier
+                    .fillMaxWidth(fraction)
+                    .fillMaxHeight()
+                    .background(Kiosk.color.rain, RoundedCornerShape(3.dp)),
+            )
+        }
     }
+}
+
+@Composable
+private fun OfflineBadge() {
+    Text(
+        text = stringResource(R.string.weather_offline),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = Kiosk.color.danger,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Kiosk.color.danger.copy(alpha = 0.16f))
+            .padding(horizontal = 9.dp, vertical = 4.dp),
+    )
 }
 
 @Composable
@@ -344,7 +553,7 @@ internal fun WeatherMetric(
         Text(
             text = value,
             style = Home.metricValue,
-            color = Kiosk.color.textPrimary,
+            color = if (highlight) Kiosk.color.accent else Kiosk.color.textPrimary,
             maxLines = valueLines,
             overflow = TextOverflow.Ellipsis,
         )
@@ -385,5 +594,199 @@ internal fun ColumnScope.FarmAdviceBox(snapshot: WeatherSnapshot) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun RefreshButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Kiosk.color.surfaceAlt)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.label_refresh),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Kiosk.color.accent,
+        )
+    }
+}
+
+private fun dayLabel(date: LocalDate, locale: Locale): String =
+    date.format(DateTimeFormatter.ofPattern("E", locale))
+
+private fun formatMm(value: Double, locale: Locale): String {
+    val text = if (value >= 10.0) {
+        String.format(locale, "%.0f", value)
+    } else {
+        String.format(locale, "%.1f", value)
+    }
+    return "$text mm"
+}
+
+// ---------- 날씨 그림 ----------
+
+private enum class GlyphKind { SUN, PARTLY, CLOUD, FOG, RAIN, SNOW, THUNDER }
+
+private fun glyphKind(code: Int): GlyphKind = when (code) {
+    0 -> GlyphKind.SUN
+    1, 2 -> GlyphKind.PARTLY
+    3 -> GlyphKind.CLOUD
+    45, 48 -> GlyphKind.FOG
+    71, 73, 75, 77, 85, 86 -> GlyphKind.SNOW
+    95, 96, 99 -> GlyphKind.THUNDER
+    51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82 -> GlyphKind.RAIN
+    else -> GlyphKind.CLOUD
+}
+
+/** WMO 코드를 작은 Canvas 그림으로 그린다. 아이콘 폰트 없이도 모든 기기에서 같게 보인다. */
+@Composable
+private fun WeatherGlyph(code: Int, isDay: Boolean = true, modifier: Modifier) {
+    val kind = glyphKind(code)
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val s = size.minDimension
+        when (kind) {
+            GlyphKind.SUN -> if (isDay) {
+                drawSun(Offset(w / 2f, h / 2f), s * 0.20f)
+            } else {
+                drawMoon(Offset(w / 2f, h / 2f), s * 0.26f)
+            }
+            GlyphKind.PARTLY -> {
+                if (isDay) {
+                    drawSun(Offset(w * 0.36f, h * 0.34f), s * 0.15f)
+                } else {
+                    drawMoon(Offset(w * 0.36f, h * 0.34f), s * 0.19f)
+                }
+                drawCloud(Offset(w * 0.54f, h * 0.56f), s * 0.18f, Kiosk.color.textSecondary)
+            }
+            GlyphKind.CLOUD -> drawCloud(Offset(w / 2f, h * 0.44f), s * 0.21f, Kiosk.color.textSecondary)
+            GlyphKind.FOG -> drawFog(Offset(w / 2f, h / 2f), s * 0.34f)
+            GlyphKind.RAIN -> {
+                drawCloud(Offset(w / 2f, h * 0.40f), s * 0.20f, Kiosk.color.textSecondary)
+                drawRain(Offset(w / 2f, h * 0.64f), s * 0.20f)
+            }
+            GlyphKind.SNOW -> {
+                drawCloud(Offset(w / 2f, h * 0.40f), s * 0.20f, Kiosk.color.textSecondary)
+                drawSnow(Offset(w / 2f, h * 0.68f), s * 0.16f)
+            }
+            GlyphKind.THUNDER -> {
+                drawCloud(Offset(w / 2f, h * 0.38f), s * 0.20f, Kiosk.color.textSecondary)
+                drawBolt(Offset(w / 2f, h * 0.58f), s * 0.20f)
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawSun(center: Offset, radius: Float) {
+    drawCircle(Kiosk.color.accent, radius, center)
+    val inner = radius * 1.45f
+    val outer = radius * 2.0f
+    repeat(8) { index ->
+        val angle = index * PI / 4.0
+        drawLine(
+            color = Kiosk.color.accent,
+            start = Offset(
+                center.x + (cos(angle) * inner).toFloat(),
+                center.y + (sin(angle) * inner).toFloat(),
+            ),
+            end = Offset(
+                center.x + (cos(angle) * outer).toFloat(),
+                center.y + (sin(angle) * outer).toFloat(),
+            ),
+            strokeWidth = radius * 0.22f,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+private fun DrawScope.drawMoon(center: Offset, radius: Float) {
+    val moon = Color(0xFFE8E2D0)
+    drawCircle(moon, radius, center)
+    drawCircle(
+        color = Kiosk.color.surface,
+        radius = radius * 0.86f,
+        center = Offset(center.x + radius * 0.44f, center.y - radius * 0.30f),
+    )
+    repeat(3) { index ->
+        val angle = index * PI / 1.5 + 0.6
+        drawCircle(
+            color = moon.copy(alpha = 0.55f),
+            radius = radius * 0.09f,
+            center = Offset(
+                center.x + (cos(angle) * radius * 1.65f).toFloat(),
+                center.y + (sin(angle) * radius * 1.65f).toFloat(),
+            ),
+        )
+    }
+}
+
+private fun DrawScope.drawCloud(center: Offset, radius: Float, color: Color) {
+    val cx = center.x
+    val cy = center.y
+    drawCircle(color, radius * 0.85f, Offset(cx - radius * 0.85f, cy))
+    drawCircle(color, radius * 1.15f, Offset(cx, cy - radius * 0.55f))
+    drawCircle(color, radius * 0.80f, Offset(cx + radius * 0.90f, cy))
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(cx - radius * 1.55f, cy),
+        size = Size(radius * 3.1f, radius * 1.05f),
+        cornerRadius = CornerRadius(radius * 0.52f),
+    )
+}
+
+private fun DrawScope.drawRain(center: Offset, radius: Float) {
+    repeat(3) { index ->
+        val x = center.x + (index - 1) * radius * 0.9f
+        drawLine(
+            color = Kiosk.color.rain,
+            start = Offset(x, center.y),
+            end = Offset(x - radius * 0.22f, center.y + radius * 0.9f),
+            strokeWidth = radius * 0.18f,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+private fun DrawScope.drawSnow(center: Offset, radius: Float) {
+    repeat(3) { index ->
+        drawCircle(
+            color = Color.White.copy(alpha = 0.85f),
+            radius = radius * 0.22f,
+            center = Offset(center.x + (index - 1) * radius * 0.9f, center.y),
+        )
+    }
+}
+
+private fun DrawScope.drawBolt(center: Offset, radius: Float) {
+    val path = Path().apply {
+        moveTo(center.x + radius * 0.25f, center.y - radius * 0.55f)
+        lineTo(center.x - radius * 0.15f, center.y + radius * 0.10f)
+        lineTo(center.x + radius * 0.10f, center.y + radius * 0.10f)
+        lineTo(center.x - radius * 0.30f, center.y + radius * 0.95f)
+        lineTo(center.x + radius * 0.35f, center.y + radius * 0.05f)
+        lineTo(center.x + radius * 0.08f, center.y + radius * 0.05f)
+        close()
+    }
+    drawPath(path, Kiosk.color.accent)
+}
+
+private fun DrawScope.drawFog(center: Offset, radius: Float) {
+    repeat(3) { index ->
+        val y = center.y + (index - 1) * radius * 0.55f
+        val half = radius * (1f - index * 0.12f)
+        drawLine(
+            color = Kiosk.color.textSecondary,
+            start = Offset(center.x - half, y),
+            end = Offset(center.x + half, y),
+            strokeWidth = radius * 0.16f,
+            cap = StrokeCap.Round,
+        )
     }
 }
