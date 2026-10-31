@@ -15,6 +15,11 @@ object AppPrefs {
     private const val KEY_HOUR24 = "hour24"
     private const val KEY_CELSIUS = "celsius"
     private const val KEY_LOCALE = "locale"
+    private const val KEY_ROTATE = "rotate"
+    private const val KEY_DWELL_CALENDAR = "dwell_calendar"
+    private const val KEY_DWELL_WEATHER = "dwell_weather"
+    private const val KEY_DWELL_CLOCK = "dwell_clock"
+    private const val KEY_TOUCH_STOP = "touch_stop"
 
     private lateinit var prefs: SharedPreferences
 
@@ -39,6 +44,29 @@ object AppPrefs {
         get() = prefs.getString(KEY_LOCALE, LOCALE_SYSTEM) ?: LOCALE_SYSTEM
         set(value) = writeString(KEY_LOCALE, value)
 
+    /** 3화면 자동 전환. 기본 켬. */
+    var rotationEnabled: Boolean
+        get() = prefs.getBoolean(KEY_ROTATE, true)
+        set(value) = write { putBoolean(KEY_ROTATE, value) }
+
+    /** 화면별 머무는 시간(초). 허용값 10·20·30·60. */
+    var dwellCalendar: Int
+        get() = prefs.getInt(KEY_DWELL_CALENDAR, DEFAULT_DWELL_CALENDAR)
+        set(value) = write { putInt(KEY_DWELL_CALENDAR, value) }
+
+    var dwellWeather: Int
+        get() = prefs.getInt(KEY_DWELL_WEATHER, DEFAULT_DWELL_WEATHER)
+        set(value) = write { putInt(KEY_DWELL_WEATHER, value) }
+
+    var dwellClock: Int
+        get() = prefs.getInt(KEY_DWELL_CLOCK, DEFAULT_DWELL_CLOCK)
+        set(value) = write { putInt(KEY_DWELL_CLOCK, value) }
+
+    /** true면 터치 시 현재 화면에서 멈춤, false면 대시보드(달력)로 복귀. */
+    var touchStop: Boolean
+        get() = prefs.getBoolean(KEY_TOUCH_STOP, false)
+        set(value) = write { putBoolean(KEY_TOUCH_STOP, value) }
+
     private fun writeString(key: String, value: String) = write { putString(key, value) }
 
     private fun write(block: SharedPreferences.Editor.() -> Unit) {
@@ -48,4 +76,11 @@ object AppPrefs {
             DebugLogger.e(ErrorCode.STORE_WRITE, "write failed: ${t.javaClass.simpleName}")
         }
     }
+
+    const val DEFAULT_DWELL_CALENDAR = 30
+    const val DEFAULT_DWELL_WEATHER = 20
+    const val DEFAULT_DWELL_CLOCK = 20
+
+    /** 설정에서 고를 수 있는 머무는 시간(초). */
+    val DWELL_OPTIONS = listOf(10, 20, 30, 60)
 }

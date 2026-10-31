@@ -7,10 +7,6 @@ import android.view.ViewTreeObserver
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -19,7 +15,6 @@ import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.ui.DashboardScreen
 import com.borasarang.daon.ui.DashboardViewModel
-import com.borasarang.daon.ui.SettingsPanel
 import com.borasarang.daon.ui.theme.DaonTheme
 
 /**
@@ -42,12 +37,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DaonTheme {
                 val viewModel: DashboardViewModel = viewModel()
-                var settingsOpen by remember { mutableStateOf(false) }
-
-                DashboardScreen(vm = viewModel, onOpenSettings = { settingsOpen = true })
-                if (settingsOpen) {
-                    SettingsPanel(vm = viewModel, onDismiss = { settingsOpen = false })
-                }
+                DashboardScreen(vm = viewModel)
             }
         }
 

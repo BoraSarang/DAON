@@ -1,5 +1,5 @@
 # PLAN_v0.2_android.md — 농사 달력 키오스크 재설계
-> 생성일: 2026-10-31 | 플랫폼: android | 작성자: AI agent | 상태: **제안·목업 완료, 구현 전 승인 대기**
+> 생성일: 2026-10-31 | 플랫폼: android | 작성자: AI agent | 상태: **구현 진행 — T-013~T-017 완료**
 > 선행: `PLAN_v0.1_android.md` (v0.1 구현·실기기 검증 완료)
 > 목업: `docs/mockups/v0.2/index.html` + `docs/mockups/v0.2/screens/`
 

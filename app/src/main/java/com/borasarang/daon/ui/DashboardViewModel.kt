@@ -64,6 +64,16 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var localeTag by mutableStateOf(AppPrefs.localeTag)
         private set
+    var rotationEnabled by mutableStateOf(AppPrefs.rotationEnabled)
+        private set
+    var dwellCalendar by mutableStateOf(AppPrefs.dwellCalendar)
+        private set
+    var dwellWeather by mutableStateOf(AppPrefs.dwellWeather)
+        private set
+    var dwellClock by mutableStateOf(AppPrefs.dwellClock)
+        private set
+    var touchStop by mutableStateOf(AppPrefs.touchStop)
+        private set
 
     private var refreshJob: Job? = null
 
@@ -128,6 +138,38 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     fun updateLocaleTag(tag: String) {
         AppPrefs.localeTag = tag
         localeTag = tag
+    }
+
+    fun updateRotationEnabled(enabled: Boolean) {
+        AppPrefs.rotationEnabled = enabled
+        rotationEnabled = enabled
+        DebugLogger.i("SETTINGS", "rotation=$enabled")
+    }
+
+    /** [seconds]는 [AppPrefs.DWELL_OPTIONS] 중 하나만 허용한다. */
+    fun updateDwell(mode: ScreenMode, seconds: Int) {
+        if (seconds !in AppPrefs.DWELL_OPTIONS) return
+        when (mode) {
+            ScreenMode.CALENDAR -> {
+                AppPrefs.dwellCalendar = seconds
+                dwellCalendar = seconds
+            }
+            ScreenMode.WEATHER -> {
+                AppPrefs.dwellWeather = seconds
+                dwellWeather = seconds
+            }
+            ScreenMode.CLOCK -> {
+                AppPrefs.dwellClock = seconds
+                dwellClock = seconds
+            }
+        }
+        DebugLogger.i("SETTINGS", "dwell ${mode.name}=$seconds")
+    }
+
+    fun updateTouchStop(enabled: Boolean) {
+        AppPrefs.touchStop = enabled
+        touchStop = enabled
+        DebugLogger.i("SETTINGS", "touchStop=$enabled")
     }
 
     companion object {

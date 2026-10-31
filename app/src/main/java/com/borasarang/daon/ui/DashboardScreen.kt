@@ -1,9 +1,11 @@
 package com.borasarang.daon.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,20 +17,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -44,8 +47,10 @@ import com.borasarang.daon.data.DailyForecast
 import com.borasarang.daon.data.WeatherSnapshot
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
+import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -54,67 +59,105 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * v0.2 달력 홈. 달력 70% + 오른쪽 시계·날씨 30%.
+ * v0.2 키오스크 홈. 달력 → 날씨 → 시계 3화면을 자동 전환한다.
  * 70대 사용자를 기준으로 큰 글씨와 큰 터치 영역을 쓴다.
  */
 @Composable
-fun DashboardScreen(vm: DashboardViewModel, onOpenSettings: () -> Unit) {
+fun DashboardScreen(vm: DashboardViewModel) {
     val now by vm.now.collectAsStateWithLifecycle()
     val weather by vm.weather.collectAsStateWithLifecycle()
     val city by vm.city.collectAsStateWithLifecycle()
     val calendar by vm.calendar.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
-    val today = now.toLocalDate()
+
+    var screen by rememberSaveable { mutableStateOf(ScreenMode.CALENDAR) }
     var detailDate by remember { mutableStateOf<LocalDate?>(null) }
-    BackHandler(enabled = detailDate != null) { detailDate = null }
+    var settingsOpen by remember { mutableStateOf(false) }
+    /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
+    var rotationStopped by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize()) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .background(Kiosk.color.bg)
-                .padding(Home.screenPadding),
-        ) {
-            HomeTopBar(
-                now = now,
-                calendar = calendar,
-                korean = korean,
-                locale = locale,
-                onOpenSettings = onOpenSettings,
-            )
-            Spacer(Modifier.height(Home.panelGap))
+    val paused = settingsOpen || detailDate != null
+    val dwell = when (screen) {
+        ScreenMode.CALENDAR -> vm.dwellCalendar
+        ScreenMode.WEATHER -> vm.dwellWeather
+        ScreenMode.CLOCK -> vm.dwellClock
+    }
 
-            Row(Modifier.fillMaxWidth().weight(1f)) {
-                CalendarPanel(
-                    today = today,
+    LaunchedEffect(screen, dwell, vm.rotationEnabled, paused, rotationStopped) {
+        if (!vm.rotationEnabled || paused || rotationStopped) return@LaunchedEffect
+        delay(dwell * 1_000L)
+        DebugLogger.i("ROTATE", "auto ${screen.name} -> ${screen.next().name} after ${dwell}s")
+        screen = screen.next()
+    }
+
+    BackHandler(enabled = detailDate != null || settingsOpen || screen != ScreenMode.CALENDAR) {
+        when {
+            detailDate != null -> detailDate = null
+            settingsOpen -> settingsOpen = false
+            else -> screen = ScreenMode.CALENDAR
+        }
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Kiosk.color.bg)
+            .pointerInput(vm.touchStop, screen) {
+                detectTapGestures {
+                    DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
+                    if (vm.touchStop) {
+                        rotationStopped = !rotationStopped
+                    } else if (screen != ScreenMode.CALENDAR) {
+                        screen = ScreenMode.CALENDAR
+                    }
+                }
+            },
+    ) {
+        Crossfade(targetState = screen, animationSpec = tween(250), label = "screen") { mode ->
+            when (mode) {
+                ScreenMode.CALENDAR -> CalendarHome(
+                    now = now,
+                    weather = weather,
+                    city = city,
                     calendar = calendar,
                     korean = korean,
                     locale = locale,
-                    modifier = Modifier.weight(0.7f).fillMaxHeight(),
+                    hour24 = vm.hour24,
+                    celsius = vm.celsius,
                     onDateClick = { detailDate = it },
+                    onOpenSettings = { settingsOpen = true },
+                    onRefreshWeather = { vm.refresh() },
                 )
-                Spacer(Modifier.width(Home.panelGap))
-                Column(
-                    modifier = Modifier.weight(0.3f).fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(Home.panelGap),
-                ) {
-                    ClockCard(
-                        now = now,
-                        hour24 = vm.hour24,
-                        korean = korean,
-                        locale = locale,
-                        modifier = Modifier.fillMaxWidth().height(Home.clockCard),
-                    )
-                    WeatherCard(
-                        city = city,
-                        state = weather,
-                        celsius = vm.celsius,
-                        locale = locale,
-                        onRefresh = { vm.refresh() },
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                    )
-                }
+                ScreenMode.WEATHER -> WeatherScreen(
+                    city = city,
+                    state = weather,
+                    celsius = vm.celsius,
+                    locale = locale,
+                    touchStop = vm.touchStop,
+                    stopped = rotationStopped,
+                    onOpenSettings = { settingsOpen = true },
+                    onRefresh = { vm.refresh() },
+                )
+                ScreenMode.CLOCK -> ClockScreen(
+                    now = now,
+                    hour24 = vm.hour24,
+                    korean = korean,
+                    locale = locale,
+                    calendar = calendar,
+                    city = city,
+                    weather = weather,
+                    celsius = vm.celsius,
+                    touchStop = vm.touchStop,
+                    stopped = rotationStopped,
+                    onOpenSettings = { settingsOpen = true },
+                )
+            }
+        }
+
+        if (rotationStopped) {
+            Box(Modifier.align(Alignment.BottomCenter)) {
+                RotationHint(stringResource(R.string.rotation_paused))
             }
         }
 
@@ -126,6 +169,74 @@ fun DashboardScreen(vm: DashboardViewModel, onOpenSettings: () -> Unit) {
                 locale = locale,
                 onClose = { detailDate = null },
             )
+        }
+
+        if (settingsOpen) {
+            SettingsPanel(vm = vm, onDismiss = { settingsOpen = false })
+        }
+    }
+}
+
+/** 달력 홈. 달력 70% + 오른쪽 시계·날씨 30%. */
+@Composable
+private fun CalendarHome(
+    now: LocalDateTime,
+    weather: WeatherUiState,
+    city: City,
+    calendar: CalendarData,
+    korean: Boolean,
+    locale: Locale,
+    hour24: Boolean,
+    celsius: Boolean,
+    onDateClick: (LocalDate) -> Unit,
+    onOpenSettings: () -> Unit,
+    onRefreshWeather: () -> Unit,
+) {
+    val today = now.toLocalDate()
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(Home.screenPadding),
+    ) {
+        HomeTopBar(
+            now = now,
+            calendar = calendar,
+            korean = korean,
+            locale = locale,
+            onOpenSettings = onOpenSettings,
+        )
+        Spacer(Modifier.height(Home.panelGap))
+
+        Row(Modifier.fillMaxWidth().weight(1f)) {
+            CalendarPanel(
+                today = today,
+                calendar = calendar,
+                korean = korean,
+                locale = locale,
+                modifier = Modifier.weight(0.7f).fillMaxHeight(),
+                onDateClick = onDateClick,
+            )
+            Spacer(Modifier.width(Home.panelGap))
+            Column(
+                modifier = Modifier.weight(0.3f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(Home.panelGap),
+            ) {
+                ClockCard(
+                    now = now,
+                    hour24 = hour24,
+                    korean = korean,
+                    locale = locale,
+                    modifier = Modifier.fillMaxWidth().height(Home.clockCard),
+                )
+                WeatherCard(
+                    city = city,
+                    state = weather,
+                    celsius = celsius,
+                    locale = locale,
+                    onRefresh = onRefreshWeather,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                )
+            }
         }
     }
 }
@@ -204,40 +315,9 @@ private fun HomeTopBar(
             }
         }
 
-        ScreenDots()
+        ScreenDots(ScreenMode.CALENDAR)
         Spacer(Modifier.width(18.dp))
-        Box(
-            modifier = Modifier
-                .height(Home.settingsHeight)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Kiosk.color.surface)
-                .border(1.dp, Kiosk.color.rule, RoundedCornerShape(10.dp))
-                .clickable(onClick = onOpenSettings)
-                .padding(horizontal = 18.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.label_settings),
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Kiosk.color.textSecondary,
-            )
-        }
-    }
-}
-
-/** 화면 점 3개. 장식이며 터치 대상이 아니다(달력 화면이 첫 번째). */
-@Composable
-private fun ScreenDots() {
-    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        repeat(3) { index ->
-            Box(
-                Modifier
-                    .size(Home.dot)
-                    .clip(CircleShape)
-                    .background(if (index == 0) Kiosk.color.accent else Kiosk.color.rule),
-            )
-        }
+        SettingsButton(onClick = onOpenSettings)
     }
 }
 
@@ -438,7 +518,7 @@ private fun ColumnScope.WeatherContent(snapshot: WeatherSnapshot, celsius: Boole
     }
 
     Spacer(Modifier.height(12.dp))
-    FarmAdvice(snapshot)
+    FarmAdviceBox(snapshot)
 
     Spacer(Modifier.weight(1f))
     Box(Modifier.fillMaxWidth().height(1.dp).background(Kiosk.color.rule))
@@ -447,61 +527,6 @@ private fun ColumnScope.WeatherContent(snapshot: WeatherSnapshot, celsius: Boole
         snapshot.daily.drop(1).take(3).forEach { day ->
             MiniForecast(day, locale, Modifier.weight(1f))
         }
-    }
-}
-
-@Composable
-private fun FarmAdvice(snapshot: WeatherSnapshot) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(Kiosk.color.accentSoft)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .width(3.dp)
-                .height(30.dp)
-                .background(Kiosk.color.accent, RoundedCornerShape(2.dp)),
-        )
-        Spacer(Modifier.width(10.dp))
-        Column {
-            Text(
-                text = stringResource(R.string.label_farm_advice),
-                style = Home.farmLabel,
-                color = Kiosk.color.accent,
-                maxLines = 1,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = stringResource(farmAdviceRes(snapshot)),
-                style = Home.adviceText,
-                color = Kiosk.color.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WeatherMetric(label: String, value: String, modifier: Modifier) {
-    Column(modifier) {
-        Text(
-            text = label,
-            style = Home.metricKey,
-            color = Kiosk.color.textMuted,
-            maxLines = 1,
-        )
-        Text(
-            text = value,
-            style = Home.metricValue,
-            color = Kiosk.color.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
