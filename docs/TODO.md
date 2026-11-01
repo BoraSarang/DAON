@@ -55,6 +55,11 @@
 - [x] T-040 라디오/TV 동시 재생 방지(하나를 시작하면 다른 하나를 먼저 정지), 오류 코드 `E-AND-TV-0001~0003`, 설정(TV 화면 포함·시간 10/30/60초·기본 채널) (2026-11-01)
 - [x] T-041 실기기 검증: 6채널 전부 재생(KBS1·KBS2·MBC·SBS·EBS1·EBS2), 전체 화면 진입·나가기, 전체 화면 포함 재생 중 자동 전환 정지(75초 이상), 달력·홈 키에서 정지, 라디오→TV 전환 시 라디오 정지, 콜드 스타트 1.945–2.021s(중앙값 1.962s) (2026-11-01)
 
+## v0.8 — 화면 테마·밝기 + 날씨 배경 (2026-11-01)
+> 계기: 키오스크 고정 중에는 기기 설정에 들어갈 수 없어 앱 안에서 테마·밝기를 바꿔야 한다
+- [x] T-049 화면 테마(블랙/라이트)·밝기: 설정 첫 섹션 `화면`. `Kiosk.color` 상태화 + `LightKioskColors`(`#F4F1EA`·흰 카드·`#7A500F`), `onAccent`·`scrim` 토큰. 밝기는 창 속성(`screenBrightness`)으로 20·40·60·80·100%·시스템. 실측 `sbrt=0.2`/`-1`, 재시작 유지, 콜드 스타트 1829ms·PSS 84/91MB, 테스트 69건·i18n 274키. 캡처 `docs/screenshots/22~23` (2026-11-01)
+- [x] T-050 날씨 배경 장면: `WeatherScene.kt` — 시간대별 하늘·해/달/별·구름·들판, 비/흐림에 하늘 가라앉힘, 1분 시간대 확인 + 구름 0.4초 틱, 라이트 팔레트, 카드 alpha 0.88. Weawow APK 분석 근거·목업 `docs/mockups/v0.7-weather/`. 캡처 `docs/screenshots/24~25` (2026-11-01)
+
 ## v0.6 — TV 채널 개편 + 키오스크 고정 복원 (2026-11-01)
 - [x] T-046 TV 채널: EBS 1TV·2TV 제외, **YTN 뉴스**(`aZyD6EPl6KU`)·**MBC 뉴스**(`q9bM12ucTIY`) 추가. 유튜브는 매니페스트가 없어 **공식 IFrame 임베드 플레이어**를 WebView(`assets/yt_player.html`)로 띄운다. `WebViewAssetLoader` 로 https 출처 제공(오류 152 회피), 전체 화면에서도 같은 WebView 재사용, 재생을 멈추면 `destroy()`. `TvStream` sealed(`Hls`/`YouTube`), `TvCatalog` `videoId` 파싱, 테스트 65건. 실기기 YTN·MBC 뉴스 재생·전체 화면 확인. **PSS 유튜브 재생 중 250MB · 멈춘 뒤 184MB** (2026-11-01)
 - [x] T-047 키오스크 고정 복원: `kioskLock` 을 앱 시작 때 다시 적용(`MainActivity.restoreKioskLock`), 설정 토글은 `ON_RESUME` 에 실제 `lockTaskModeState` 로 재동기화. 화면 회전 `라디오`·`TV` 해제 설정이 저장·적용됨을 실기기에서 확인(prefs false, 화면 점 3개, `CALENDAR → WEATHER`) (2026-11-01)

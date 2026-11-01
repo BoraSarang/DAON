@@ -432,7 +432,7 @@ private fun TvPlayGlyph(stop: Boolean) {
         if (stop) {
             val side = size.minDimension * 0.52f
             drawRoundRect(
-                color = Kiosk.color.bg,
+                color = Kiosk.color.onAccent,
                 topLeft = Offset((size.width - side) / 2f, (size.height - side) / 2f),
                 size = Size(side, side),
                 cornerRadius = CornerRadius(side * 0.16f),
@@ -444,7 +444,7 @@ private fun TvPlayGlyph(stop: Boolean) {
                 lineTo(size.width * 0.30f, size.height * 0.78f)
                 close()
             }
-            drawPath(path, Kiosk.color.bg)
+            drawPath(path, Kiosk.color.onAccent)
         }
     }
 }

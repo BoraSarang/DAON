@@ -5,6 +5,7 @@ import android.os.SystemClock
 import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.LocaleController
+import com.borasarang.daon.ui.theme.Kiosk
 
 /**
  * 프로세스 진입점. 콜드 스타트 측정 기준 시각을 남긴다.
@@ -14,6 +15,8 @@ class App : Application() {
         super.onCreate()
         startUptimeMs = SystemClock.uptimeMillis()
         AppPrefs.init(this)
+        // 첫 프레임부터 저장된 테마로 그린다(블랙 → 라이트 깜빡임 방지).
+        Kiosk.applyTheme(AppPrefs.themeLight)
         LocaleController.init()
         DebugLogger.i("APP", "onCreate")
     }

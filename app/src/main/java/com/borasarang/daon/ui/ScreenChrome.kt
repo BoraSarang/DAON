@@ -165,6 +165,7 @@ private fun HomeButton(onClick: () -> Unit) {
         modifier = Modifier
             .height(Home.settingsHeight)
             .clip(RoundedCornerShape(10.dp))
+            .background(Kiosk.color.surface.copy(alpha = 0.86f))
             .background(Kiosk.color.accentSoft)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp),

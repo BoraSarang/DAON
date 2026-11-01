@@ -128,7 +128,7 @@ fun DateDetailPanel(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.62f))
+                .background(Kiosk.color.scrim)
                 .clickable(onClick = onClose),
         )
         Surface(
@@ -758,7 +758,7 @@ private fun SkipAction(label: String, accent: Boolean, onClick: () -> Unit) {
             text = label,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = if (accent) Color(0xFF15181D) else Kiosk.color.textSecondary,
+            color = if (accent) Kiosk.color.onAccent else Kiosk.color.textSecondary,
             maxLines = 1,
         )
     }

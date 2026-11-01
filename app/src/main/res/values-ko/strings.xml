@@ -24,6 +24,14 @@
     <string name="touch_pause">그 화면에서 멈추기</string>
     <string name="touch_note_dashboard">날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.</string>
     <string name="touch_note_pause">날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작되고, `달력` 버튼을 누르면 대시보드로 돌아갑니다.</string>
+    <string name="settings_screen">화면</string>
+    <string name="settings_screen_note">화면이 고정된 상태에서도 여기서 바꿀 수 있습니다.</string>
+    <string name="settings_theme">테마</string>
+    <string name="theme_black">블랙</string>
+    <string name="theme_light">라이트</string>
+    <string name="settings_brightness">화면 밝기</string>
+    <string name="brightness_system">기기 설정</string>
+    <string name="brightness_percent">%1$d%%</string>
     <string name="settings_text_size">글씨 크기</string>
     <string name="settings_text_size_desc">멀리서도 잘 보이도록 화면 글씨를 키웁니다.</string>
     <string name="settings_clock_face">시계 모양</string>

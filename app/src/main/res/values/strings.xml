@@ -24,6 +24,14 @@
     <string name="touch_pause">Pause on this screen</string>
     <string name="touch_note_dashboard">Tapping the weather or clock screen returns to the calendar and restarts auto-rotation.</string>
     <string name="touch_note_pause">Tapping the weather or clock screen pauses there. Tap again to resume auto-rotation, or tap the Calendar button to return to the dashboard.</string>
+    <string name="settings_screen">Screen</string>
+    <string name="settings_screen_note">You can change these here even while the screen is pinned.</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_black">Black</string>
+    <string name="theme_light">Light</string>
+    <string name="settings_brightness">Screen brightness</string>
+    <string name="brightness_system">Device setting</string>
+    <string name="brightness_percent">%1$d%%</string>
     <string name="settings_text_size">Text size</string>
     <string name="settings_text_size_desc">Make the text larger so it is easy to read from a distance.</string>
     <string name="settings_clock_face">Clock face</string>

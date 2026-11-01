@@ -31,6 +31,8 @@ object AppPrefs {
     private const val KEY_TEXT_SCALE = "text_scale"
     private const val KEY_WEATHER_MOTION = "weather_motion"
     private const val KEY_CLOCK_FACE = "clock_face"
+    private const val KEY_THEME_LIGHT = "theme_light"
+    private const val KEY_SCREEN_BRIGHTNESS = "screen_brightness"
     private const val KEY_LOCATION_ENABLED = "location_enabled"
     private const val KEY_LOCATION_ASKED = "location_asked"
     private const val KEY_LOCATION_LAT = "location_lat"
@@ -146,6 +148,22 @@ object AppPrefs {
     var clockFace: String
         get() = prefs.getString(KEY_CLOCK_FACE, ClockFace.ANALOG.name) ?: ClockFace.ANALOG.name
         set(value) = writeString(KEY_CLOCK_FACE, value)
+
+    /**
+     * 밝은 테마를 쓸지. 기본은 블랙(어두운) 테마다.
+     * 키오스크 고정 중에는 기기 설정에 들어갈 수 없어 앱 안에서 바꾼다.
+     */
+    var themeLight: Boolean
+        get() = prefs.getBoolean(KEY_THEME_LIGHT, false)
+        set(value) = write { putBoolean(KEY_THEME_LIGHT, value) }
+
+    /**
+     * 화면 밝기(%). [BRIGHTNESS_SYSTEM] 이면 기기 설정을 그대로 따른다.
+     * 창 밝기만 바꾸므로 기기의 자동 밝기 설정은 건드리지 않는다.
+     */
+    var screenBrightness: Int
+        get() = prefs.getInt(KEY_SCREEN_BRIGHTNESS, BRIGHTNESS_SYSTEM)
+        set(value) = write { putInt(KEY_SCREEN_BRIGHTNESS, value) }
 
     /** 현재 위치로 날씨를 조회할지. 기본 켬. 끄면 [cityId] 도시를 쓴다. */
     var locationEnabled: Boolean
@@ -278,4 +296,13 @@ object AppPrefs {
 
     /** 글씨 배율 선택지(%). */
     val TEXT_SCALE_OPTIONS = listOf(90, 100, 115)
+
+    /** 기기 밝기 설정을 그대로 쓰는 값. 창 밝기 지정값은 0..100 이다. */
+    const val BRIGHTNESS_SYSTEM = -1
+
+    /**
+     * 설정에서 고를 수 있는 화면 밝기(%). [BRIGHTNESS_SYSTEM] 은 기기 설정.
+     * 상시 켜짐 기기라 밤에는 눈부시지 않게, 낮에는 잘 보이게 고른다.
+     */
+    val BRIGHTNESS_OPTIONS = listOf(BRIGHTNESS_SYSTEM, 20, 40, 60, 80, 100)
 }

@@ -40,6 +40,7 @@ import com.borasarang.daon.data.tv.TvException
 import com.borasarang.daon.data.tv.TvPlayer
 import com.borasarang.daon.data.tv.TvResolver
 import com.borasarang.daon.data.tv.TvStream
+import com.borasarang.daon.ui.theme.Kiosk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -216,6 +217,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     var weatherMotion by mutableStateOf(AppPrefs.weatherMotion)
         private set
     var clockFace by mutableStateOf(ClockFace.fromName(AppPrefs.clockFace))
+        private set
+    var themeLight by mutableStateOf(AppPrefs.themeLight)
+        private set
+    var screenBrightness by mutableStateOf(AppPrefs.screenBrightness)
         private set
 
     var radioInRotation by mutableStateOf(AppPrefs.radioInRotation)
@@ -836,6 +841,22 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         AppPrefs.clockFace = face.name
         clockFace = face
         DebugLogger.i("SETTINGS", "clockFace=${face.name}")
+    }
+
+    /** 테마를 바꾸면 [Kiosk.applyTheme] 로 토큰까지 함께 바꾼다. 화면은 즉시 다시 그려진다. */
+    fun updateThemeLight(light: Boolean) {
+        AppPrefs.themeLight = light
+        themeLight = light
+        Kiosk.applyTheme(light)
+        DebugLogger.i("SETTINGS", "themeLight=$light")
+    }
+
+    /** [percent]는 [AppPrefs.BRIGHTNESS_OPTIONS] 중 하나만 허용한다. 실제 창 밝기는 화면에서 적용한다. */
+    fun updateScreenBrightness(percent: Int) {
+        if (percent !in AppPrefs.BRIGHTNESS_OPTIONS) return
+        AppPrefs.screenBrightness = percent
+        screenBrightness = percent
+        DebugLogger.i("SETTINGS", "brightness=$percent")
     }
 
     // ---------- 라디오 ----------

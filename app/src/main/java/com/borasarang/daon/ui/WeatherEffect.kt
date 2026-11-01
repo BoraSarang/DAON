@@ -19,9 +19,10 @@ import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
 
-private enum class EffectKind { NONE, RAIN, SNOW, THUNDER }
+internal enum class EffectKind { NONE, RAIN, SNOW, THUNDER }
 
-private fun effectOf(code: Int): EffectKind = when (code) {
+/** 코드 분류는 [WeatherScene] 의 하늘 판정과 공유한다. */
+internal fun effectOf(code: Int): EffectKind = when (code) {
     95, 96, 99 -> EffectKind.THUNDER
     71, 73, 75, 77, 85, 86 -> EffectKind.SNOW
     51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82 -> EffectKind.RAIN
@@ -101,7 +102,8 @@ private fun RainEffect(modifier: Modifier) {
             val y = ((drop.offset + travel) % 1f) * (size.height + length) - length
             val x = drop.x * size.width
             drawLine(
-                color = Kiosk.color.rain.copy(alpha = 0.26f),
+                // 라이트 테마의 흰 카드 위에서는 빗줄기가 글자를 가리지 않도록 더 옅게 그린다.
+                color = Kiosk.color.rain.copy(alpha = if (Kiosk.isLight) 0.16f else 0.26f),
                 start = Offset(x, y),
                 end = Offset(x - length * 0.25f, y + length),
                 strokeWidth = stroke,
@@ -126,6 +128,11 @@ private fun SnowEffect(modifier: Modifier) {
             )
         }
     }
+    val flakeColor = if (Kiosk.isLight) {
+        Kiosk.color.textSecondary.copy(alpha = 0.30f)
+    } else {
+        Color.White.copy(alpha = 0.42f)
+    }
     Canvas(modifier) {
         val elapsed = time.value
         val drift = 16.dp.toPx()
@@ -135,7 +142,7 @@ private fun SnowEffect(modifier: Modifier) {
             val x = flake.x * size.width +
                 sin(elapsed / 7000f * 2f * PI.toFloat() + flake.phase) * drift
             drawCircle(
-                color = Color.White.copy(alpha = 0.42f),
+                color = flakeColor,
                 radius = flake.radius.dp.toPx(),
                 center = Offset(x, y),
             )

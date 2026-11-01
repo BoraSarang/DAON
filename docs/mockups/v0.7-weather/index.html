@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>DAON v0.7 — 날씨 화면 배경 목업</title>
+<!--
+  목업 전용 파일이다. 실제 앱은 Compose Canvas 로 같은 장면을 그린다.
+  - 기준: 1920×1200 (Fire HD 10), 1dp = 1.5px
+  - ?shot=day|rain|night|photo 로 한 장면만 1920×1200 으로 렌더한다(캡처용)
+-->
+<style>
+  :root{
+    --bg:#0B0D10; --surface:#12151A; --text:#F2F4F7; --text2:#A7AFBB;
+    --muted:#6E7683; --rule:#232932; --accent:#E8B45A; --rain:#7FB0FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05070A;color:var(--text);
+       font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased}
+
+  .sheet{display:flex;flex-direction:column;gap:34px;padding:40px;align-items:center}
+  .sheet-head{width:calc(1840px * var(--z,.92));margin-bottom:-6px}
+  .sheet-head h2{font-size:30px;font-weight:800;letter-spacing:-.4px}
+  .sheet-head p{margin-top:8px;font-size:16px;color:#8b93a0;line-height:1.6}
+  .frame{width:calc(1920px * var(--z,.92))}
+  .frame .screen{zoom:var(--z,.92)}
+  .frame figcaption{display:flex;gap:14px;align-items:baseline;margin-top:14px;font-size:16px;color:#9aa3b0}
+  .frame b{color:var(--accent);font-size:18px}
+  .frame .cost{color:#6f7783}
+
+  body.shot{padding:0;background:#000}
+  body.shot .sheet{padding:0;gap:0}
+  body.shot .sheet-head,body.shot figcaption{display:none}
+  body.shot .frame{width:1920px}
+  body.shot .sheet-head{width:1840px}
+  body.shot .frame .screen{zoom:1}
+
+  /* ---------- 화면 ---------- */
+  .screen{position:relative;width:1920px;height:1200px;overflow:hidden;background:var(--bg);isolation:isolate}
+  .scene{position:absolute;inset:0;z-index:0}
+  .scrim{position:absolute;inset:0;z-index:1;pointer-events:none}
+  .content{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;padding:40px 40px 24px}
+
+  /* 하늘 */
+  .sky{position:absolute;inset:0}
+  .day .sky{background:
+    radial-gradient(120% 80% at 66% 40%, rgba(255,236,196,.55) 0%, rgba(255,214,150,.16) 32%, rgba(255,200,140,0) 58%),
+    linear-gradient(180deg,#0C1622 0%,#16304a 26%,#2C5670 48%,#6D8F93 68%,#C9B98A 88%,#E3CFA0 100%)}
+  .rain .sky{background:
+    radial-gradient(110% 70% at 30% 10%, rgba(120,150,175,.28) 0%, rgba(0,0,0,0) 60%),
+    linear-gradient(180deg,#0A1219 0%,#14212C 30%,#253947 55%,#41595F 74%,#5A6C64 92%,#5F6D60 100%)}
+  .night .sky{background:
+    radial-gradient(90% 60% at 72% 22%, rgba(150,175,220,.22) 0%, rgba(0,0,0,0) 55%),
+    linear-gradient(180deg,#05080F 0%,#0A1220 34%,#132033 60%,#1B2A3A 80%,#233240 100%)}
+  .photo .sky{background:#0a0d10}
+
+  .photo .photo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    filter:saturate(.92) brightness(.86)}
+
+  /* 해 */
+  .sun-disc{position:absolute;width:340px;height:340px;border-radius:50%;
+       background:radial-gradient(circle,rgba(255,248,224,.9) 0 18%,rgba(255,224,163,.42) 38%,rgba(255,204,128,0) 70%);
+       animation:breathe 16s ease-in-out infinite}
+  .day .sun-disc{left:61%;top:6%}
+  .rays{position:absolute;left:50%;top:50%;width:820px;height:820px;margin:-410px 0 0 -410px;
+        background:repeating-conic-gradient(from 0deg,rgba(255,236,198,.13) 0deg 1.1deg,transparent 1.1deg 8deg);
+        -webkit-mask:radial-gradient(circle,#000 22%,transparent 68%);
+        mask:radial-gradient(circle,#000 22%,transparent 68%);
+        animation:spin 200s linear infinite;pointer-events:none}
+  .photo .sun-disc,.rain .sun-disc{display:none}
+
+  /* 달 */
+  .moon{position:absolute;left:44%;top:2%;width:104px;height:104px;border-radius:50%;
+        background:radial-gradient(circle at 36% 34%,#FFFDF4 0%,#EDE6D2 58%,#CFC7B2 100%);
+        box-shadow:0 0 90px 26px rgba(214,226,255,.16),0 0 240px 90px rgba(160,190,255,.10);
+        animation:breathe 22s ease-in-out infinite}
+  .moon::after{content:"";position:absolute;inset:0;border-radius:50%;
+        background:radial-gradient(circle at 74% 26%,rgba(11,15,22,.92) 0 44%,transparent 46%)}
+  .star{position:absolute;border-radius:50%;background:#EAF0FF;animation:twinkle 7s ease-in-out infinite}
+
+  /* 구름 */
+  .cloud{position:absolute;border-radius:50%;filter:blur(30px);background:rgba(206,220,235,.13);animation:drift linear infinite}
+  .rain .cloud{background:rgba(150,170,190,.16);filter:blur(38px)}
+  .night .cloud{background:rgba(90,110,145,.12)}
+
+  /* 능선·들판 */
+  .field{position:absolute;left:-12%;right:-12%;bottom:-14%;height:52%;pointer-events:none;
+    background:radial-gradient(62% 100% at 50% 100%,rgba(9,15,13,.96) 0%,rgba(9,15,13,.72) 42%,rgba(9,15,13,0) 78%)}
+  .rain .field{background:radial-gradient(62% 100% at 50% 100%,rgba(7,12,11,.97) 0%,rgba(7,12,11,.8) 44%,rgba(7,12,11,0) 80%)}
+  .night .field{background:radial-gradient(62% 100% at 50% 100%,rgba(2,5,7,.98) 0%,rgba(2,5,7,.8) 44%,rgba(2,5,7,0) 80%)}
+
+  /* 비 */
+  .rain-layer{position:absolute;inset:-10%;z-index:5;pointer-events:none;
+    background-image:repeating-linear-gradient(100deg,rgba(206,228,255,.20) 0 1.2px,transparent 1.2px 74px);
+    -webkit-mask:linear-gradient(180deg,transparent 0%,#000 18%,#000 84%,transparent 100%);
+    mask:linear-gradient(180deg,transparent 0%,#000 18%,#000 84%,transparent 100%);
+    animation:rainfall 1.1s linear infinite;opacity:.20}
+  .rain-layer.b{background-image:repeating-linear-gradient(100deg,rgba(214,234,255,.14) 0 1px,transparent 1px 43px);
+    animation-duration:1.7s;opacity:.10}
+
+  .vignette{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 40%,rgba(0,0,0,0) 40%,rgba(3,5,8,.5) 100%),
+               linear-gradient(180deg,rgba(4,6,9,0) 58%,rgba(4,6,9,.62) 100%)}
+  .photo .vignette{background:linear-gradient(180deg,rgba(4,6,10,.86) 0%,rgba(4,6,10,.45) 34%,rgba(4,6,10,.30) 52%,rgba(4,6,10,.88) 100%)}
+
+  /* ---------- 헤더 ---------- */
+  header{display:flex;align-items:flex-start;justify-content:space-between}
+  .head-left h1{font-size:46px;font-weight:800;letter-spacing:-.8px}
+  .head-left p{margin-top:8px;font-size:25px;font-weight:500;color:var(--text2)}
+  .head-right{display:flex;align-items:center;gap:16px;padding-top:6px}
+  .dots{display:flex;gap:11px;margin-right:12px}
+  .dots i{width:13px;height:13px;border-radius:50%;background:#39424F;display:block}
+  .dots i.on{background:var(--accent)}
+  .btn{height:64px;padding:0 30px;display:flex;align-items:center;border-radius:13px;
+       background:rgba(18,21,26,.86);border:1px solid var(--rule);font-size:24px;font-weight:600;color:var(--text)}
+  .photo .btn,.photo .card{background:rgba(10,13,18,.62);-webkit-backdrop-filter:blur(22px) saturate(130%);
+       backdrop-filter:blur(22px) saturate(130%);border-color:rgba(255,255,255,.10)}
+
+  /* ---------- 카드 ---------- */
+  main{flex:1;display:flex;flex-direction:column;gap:18px;margin-top:20px;min-height:0}
+  .card{background:rgba(18,21,26,.76);
+        background-image:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,0) 42%);
+        border:1px solid rgba(35,41,50,.92);border-radius:27px;
+        box-shadow:0 24px 60px rgba(0,0,0,.32)}
+  .row1{display:flex;gap:20px;height:540px;flex:none}
+  .hero{flex:64;display:flex;flex-direction:column;padding:26px 34px 24px}
+  .week{flex:36;display:flex;flex-direction:column;padding:24px 30px 20px}
+
+  .hero-top{display:flex;align-items:center;justify-content:space-between;font-size:21px;color:var(--muted)}
+  .chip{height:44px;padding:0 20px;display:flex;align-items:center;border-radius:11px;
+        border:1px solid var(--rule);background:rgba(23,27,33,.9);color:var(--text2);font-size:19px}
+  .hero-main{flex:1;display:flex;align-items:center;gap:26px}
+  .hero-main svg{flex:none}
+  .hero-temp{font-size:196px;line-height:1;font-weight:800;letter-spacing:-10px;font-feature-settings:"tnum"}
+  .cond{font-size:50px;line-height:1.1;font-weight:700;letter-spacing:-.6px}
+  .cond span{display:block;margin-top:14px;font-size:27px;font-weight:600;color:var(--text2);letter-spacing:0}
+  .metrics{display:flex;gap:14px}
+  .metric{flex:1;padding:16px 20px;border-radius:16px;background:rgba(23,27,33,.78);border:1px solid rgba(35,41,50,.8)}
+  .metric .k{font-size:18px;color:var(--muted);font-weight:600}
+  .metric .v{margin-top:6px;font-size:30px;font-weight:700;letter-spacing:-.3px}
+
+  .card-title{display:flex;align-items:baseline;justify-content:space-between}
+  .card-title b{font-size:22px;font-weight:700;color:var(--text2)}
+  .card-title span{font-size:18px;color:var(--muted)}
+  .week-list{flex:1;display:flex;flex-direction:column;margin-top:10px}
+  .week-row{flex:1;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(35,41,50,.7)}
+  .week-row:first-child{border-top:0}
+  .week-row .wd{width:56px;font-size:24px;font-weight:700}
+  .week-row .wd.sunday{color:#F07A6A}
+  .week-row .wd.saturday{color:#82B4FF}
+  .week-row .pop{margin-left:auto;font-size:20px;color:var(--rain);font-weight:700;width:58px;text-align:right}
+  .week-row .hi{width:76px;text-align:right;font-size:27px;font-weight:700}
+  .week-row .lo{width:70px;text-align:right;font-size:25px;font-weight:600;color:var(--muted)}
+
+  .advisory{height:74px;display:flex;align-items:center;gap:18px;padding:0 26px;border-radius:20px;
+    background:rgba(26,22,16,.86);
+    background-image:linear-gradient(90deg,rgba(232,180,90,.16),rgba(232,180,90,.03) 60%);
+    border:1px solid rgba(232,180,90,.34)}
+  .advisory .bar{width:6px;height:38px;border-radius:3px;background:var(--accent)}
+  .advisory b{font-size:20px;letter-spacing:.6px;color:var(--accent)}
+  .advisory span{font-size:25px;font-weight:600}
+
+  .hourly{flex:1;display:flex;flex-direction:column;padding:18px 30px 10px;min-height:0}
+  .hours{flex:1;display:flex;margin-top:6px;min-height:0}
+  .hour{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+  .hour .t{font-size:20px;color:var(--text2);font-weight:600;flex:none}
+  .hour .barbox{width:100%;height:150px;flex:none;display:flex;align-items:flex-end;justify-content:center}
+  .hour .bar{width:26px;border-radius:6px 6px 2px 2px;
+    background:linear-gradient(180deg,rgba(127,176,255,.95),rgba(127,176,255,.35))}
+  .hour .temp{font-size:26px;font-weight:700;flex:none}
+  .hour .pop{font-size:19px;color:var(--rain);font-weight:700;min-height:24px;flex:none}
+
+  .hint{margin-top:14px;line-height:1.2;text-align:center;font-size:22px;color:var(--muted)}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes breathe{0%,100%{opacity:.92;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+  @keyframes drift{0%{transform:translateX(-6%)}100%{transform:translateX(10%)}}
+  @keyframes rainfall{to{transform:translate3d(-46px,150px,0)}}
+  @keyframes twinkle{0%,100%{opacity:.35}50%{opacity:1}}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="sheet-head">
+    <h2>DAON v0.7 — 날씨 화면 배경·움직임 목업</h2>
+    <p>1920×1200 기준. 네 장면은 배경과 시간대만 다르고, 카드·활자 크기·색은 v0.6 토큰 그대로다. 아래로 내리면 비·밤·사진 안이 이어진다.</p>
+  </div>
+  <div id="frames"></div>
+</div>
+
+<script>
+const ICONS = {
+  sun: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke="#E8B45A" stroke-width="6" stroke-linecap="round">
+    <circle cx="50" cy="50" r="21" fill="rgba(232,180,90,.18)"/>
+    <g><path d="M50 8v11M50 81v11M8 50h11M81 50h11M20 20l8 8M72 72l8 8M80 20l-8 8M28 72l-8 8"/></g></svg>`,
+  drizzle: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M28 60a16 16 0 0 1 1-32 22 22 0 0 1 42 5 13 13 0 0 1 3 26z" fill="rgba(167,175,187,.14)" stroke="#C9D2DE"/>
+    <path d="M36 72l-4 10M52 72l-4 10M68 72l-4 10" stroke="#7FB0FF" stroke-width="5"/></svg>`,
+  cloud: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M26 66a17 17 0 0 1 1-34 23 23 0 0 1 44 5 14 14 0 0 1 3 29z" fill="rgba(167,175,187,.14)" stroke="#C9D2DE"/></svg>`,
+  moon: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M64 16a34 34 0 1 0 20 48A30 30 0 0 1 64 16z" fill="rgba(237,230,210,.12)" stroke="#EDE6D2"/>
+    <path d="M76 30l1.6 4.4L82 36l-4.4 1.6L76 42l-1.6-4.4L70 36l4.4-1.6z" fill="#EDE6D2" stroke="none"/></svg>`,
+  cloudSun: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="6">
+    <circle cx="62" cy="34" r="15" stroke="#E8B45A"/>
+    <path d="M62 8v8M88 34h8M82 14l6 6" stroke="#E8B45A"/>
+    <path d="M22 76a15 15 0 0 1 1-30 20 20 0 0 1 38 5 12 12 0 0 1 3 25z" fill="rgba(167,175,187,.14)" stroke="#C9D2DE"/></svg>`,
+  rainIcon: `<svg width="{s}" height="{s}" viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M28 58a16 16 0 0 1 1-32 22 22 0 0 1 42 5 13 13 0 0 1 3 26z" fill="rgba(167,175,187,.14)" stroke="#C9D2DE"/>
+    <path d="M36 70l-6 14M54 70l-6 14M72 70l-6 14" stroke="#7FB0FF" stroke-width="6"/></svg>`
+};
+const icon = (k, s) => ICONS[k].replaceAll('{s}', s);
+
+const RIDGE = `
+  <svg class="ridge" viewBox="0 0 1920 400" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="far" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#16303a"/><stop offset="1" stop-color="#0d1a20"/>
+      </linearGradient>
+      <linearGradient id="near" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#101c18"/><stop offset="1" stop-color="#070d0c"/>
+      </linearGradient>
+    </defs>
+    <path d="M0 210 C 180 150 300 190 430 172 C 560 154 640 96 780 108 C 920 120 980 176 1120 168 C 1260 160 1340 118 1480 128 C 1620 138 1740 168 1920 148 L1920 400 L0 400 Z" fill="url(#far)" opacity=".9"/>
+    <path d="M0 286 C 160 258 300 272 430 262 C 600 248 700 214 860 226 C 1020 238 1120 276 1280 268 C 1440 260 1560 232 1700 240 C 1800 246 1860 258 1920 252 L1920 400 L0 400 Z" fill="url(#near)"/>
+  </svg>`;
+
+const CLOUDS = [
+  {w:760,h:210,l:2,t:20,o:.55,d:120},
+  {w:620,h:170,l:44,t:8,o:.5,d:150},
+  {w:900,h:240,l:20,t:44,o:.42,d:180},
+  {w:520,h:150,l:64,t:34,o:.36,d:210},
+  {w:680,h:200,l:-6,t:12,o:.5,d:240},
+];
+
+const STARS = [[120,90],[260,150],[420,60],[560,120],[700,70],[880,130],[1020,55],[1180,110],
+               [1320,70],[1470,140],[1600,60],[1740,120],[90,220],[340,260],[600,240],[900,280]];
+
+function scene(v){
+  if(v==='photo'){
+    return `<div class="scene">
+      <img class="photo-img" src="assets/field.jpg" alt="">
+    </div><div class="vignette"></div>`;
+  }
+  if(v==='night'){
+    return `<div class="scene">
+      <div class="sky"></div>
+      ${STARS.map(([x,y],i)=>`<span class="star" style="left:${x}px;top:${y}px;width:${i%4===0?4:2.6}px;height:${i%4===0?4:2.6}px;animation-delay:${(i%7)*0.8}s"></span>`).join('')}
+      <div class="moon"></div>
+      ${CLOUDS.slice(0,2).map(c=>`<div class="cloud" style="left:${c.l}%;top:${c.t}%;width:${c.w}px;height:${c.h}px;animation-duration:${c.d}s"></div>`).join('')}
+      <div class="field"></div>
+    </div><div class="vignette"></div>`;
+  }
+  const rain = v==='rain';
+  return `<div class="scene">
+    <div class="sky"></div>
+    <div class="sun-disc" style="${rain?'left:46%;top:2%;width:300px;height:300px;opacity:.3':''}"><div class="rays"></div></div>
+    ${CLOUDS.map((c,i)=>`<div class="cloud" style="left:${c.l}%;top:${c.t}%;width:${c.w}px;height:${c.h}px;opacity:${rain?c.o+0.12:c.o};animation-duration:${c.d}s;animation-delay:-${i*17}s"></div>`).join('')}
+    <div class="field"></div>
+  </div>
+  ${rain?'<div class="rain-layer"></div><div class="rain-layer b"></div>':''}
+  <div class="vignette"></div>`;
+}
+
+const DATA = {
+  day:{temp:'12°',cond:'맑음',feels:'체감 10°C',glyph:'sun',pop:[0,0,0,0,0,0,0,0],
+       temps:[12,14,13,10,8,6,5,8],hours:['12시','15시','18시','21시','0시','3시','6시','9시'],
+       advisory:'오후에는 바람이 붑니다 — 비료 살포는 바람이 잦아든 뒤에 하세요.',
+       week:[['월','sun','16°','6°'],['화','cloudSun','17°','7°'],['수','cloudSun','18°','8°'],
+             ['목','cloud','15°','6°'],['금','rainIcon','13°','5°'],['토','cloudSun','15°','6°'],['일','sun','17°','7°']]},
+  rain:{temp:'9°',cond:'이슬비',feels:'체감 6°C',glyph:'drizzle',pop:[70,65,55,40,30,20,15,25],
+        temps:[9,10,9,8,7,6,5,7],hours:['12시','15시','18시','21시','0시','3시','6시','9시'],
+        advisory:'비가 옵니다 — 약제·비료 살포는 미루세요.',
+        week:[['월','rainIcon','15°','7°'],['화','rainIcon','17°','6°'],['수','cloud','18°','7°'],
+              ['목','cloudSun','14°','5°'],['금','sun','13°','4°'],['토','cloudSun','15°','6°'],['일','sun','16°','7°']]},
+  night:{temp:'3°',cond:'맑음',feels:'체감 0°C',glyph:'moon',pop:[0,0,0,0,0,0,0,0],
+        temps:[3,1,0,-1,-2,-3,-2,2],hours:['0시','3시','6시','9시','12시','15시','18시','21시'],
+        advisory:'내일 아침 서리가 내립니다 — 비닐하우스 보온을 확인하세요.',
+        week:[['월','moon','12°','2°'],['화','cloudSun','14°','4°'],['수','cloudSun','15°','5°'],
+              ['목','cloud','13°','3°'],['금','sun','12°','1°'],['토','sun','13°','2°'],['일','cloudSun','14°','4°']]},
+  photo:{temp:'9°',cond:'흐림',feels:'체감 6°C',glyph:'cloud',pop:[30,30,20,10,10,0,0,10],
+        temps:[9,10,9,8,7,6,5,7],hours:['12시','15시','18시','21시','0시','3시','6시','9시'],
+        advisory:'비가 옵니다 — 약제·비료 살포는 미루세요.',
+        week:[['월','cloud','15°','7°'],['화','rainIcon','17°','6°'],['수','cloud','18°','7°'],
+              ['목','cloudSun','14°','5°'],['금','sun','13°','4°'],['토','cloudSun','15°','6°'],['일','sun','16°','7°']]}
+};
+
+function screen(v, caption){
+  const d = DATA[v];
+  const maxT = Math.max(...d.temps), minT = Math.min(...d.temps);
+  const week = d.week.map(([wd,ic,hi,lo],i)=>{
+    const cls = wd==='일'?'sunday':wd==='토'?'saturday':'';
+    return `<div class="week-row"><span class="wd ${cls}">${wd}</span>
+      ${icon(ic, 40)}<span class="pop">${i<3&&d.pop[i]?d.pop[i]+'%':''}</span>
+      <span class="hi">${hi}</span><span class="lo">${lo}</span></div>`;
+  }).join('');
+  const hours = d.temps.map((t,i)=>{
+    const h = 30 + (t-minT)/Math.max(1,(maxT-minT))*112;
+    return `<div class="hour"><span class="t">${d.hours[i]}</span>
+      <div class="barbox"><div class="bar" style="height:${h}px"></div></div>
+      <span class="temp">${t}°</span><span class="pop">${d.pop[i]?d.pop[i]+'%':''}</span></div>`;
+  }).join('');
+
+  return `<div class="frame" data-variant="${v}">
+    <section class="screen ${v}">
+      ${scene(v)}
+      <div class="content">
+        <header>
+          <div class="head-left"><h1>날씨</h1><p>우성면, 공주시 · 지금</p></div>
+          <div class="head-right">
+            <div class="dots"><i></i><i></i><i class="on"></i></div>
+            <div class="btn">라디오</div><div class="btn">TV</div><div class="btn">설정</div>
+          </div>
+        </header>
+        <main>
+          <div class="row1">
+            <div class="card hero">
+              <div class="hero-top"><span>업데이트 12:19</span><span class="chip">새로고침</span></div>
+              <div class="hero-main">
+                ${icon(d.glyph, 132)}
+                <div class="hero-temp">${d.temp}</div>
+                <div class="cond">${d.cond}<span>${d.feels}</span></div>
+              </div>
+              <div class="metrics">
+                <div class="metric"><div class="k">습도</div><div class="v">84%</div></div>
+                <div class="metric"><div class="k">바람</div><div class="v">3.1 m/s</div></div>
+                <div class="metric"><div class="k">일교차</div><div class="v">2°</div></div>
+                <div class="metric"><div class="k">강수</div><div class="v">${d.pop[0]?d.pop[0]+'%':'0%'}</div></div>
+              </div>
+            </div>
+            <div class="card week">
+              <div class="card-title"><b>이번 주</b><span>최고 / 최저</span></div>
+              <div class="week-list">${week}</div>
+            </div>
+          </div>
+          <div class="advisory"><div class="bar"></div><b>농사 참고</b><span>${d.advisory}</span></div>
+          <div class="card hourly">
+            <div class="card-title"><b>시간별 날씨</b><span>3시간 간격 · 막대는 예상 강수량</span></div>
+            <div class="hours">${hours}</div>
+          </div>
+        </main>
+        <div class="hint">화면을 누르면 자동 전환이 멈춥니다</div>
+      </div>
+    </section>
+    <figcaption>${caption}</figcaption>
+  </div>`;
+}
+
+const CAPTIONS = {
+  day:'<b>A. 낮 · 하늘 장면</b> 시간대에 맞춘 하늘 그라디언트 + 해·구름·능선. 카드는 지금과 같은 불투명 카드라 글자 대비가 그대로 유지된다.<span class="cost">비용: 에셋 0KB · 상시 6fps 이하</span>',
+  rain:'<b>B. 비 · 입자 강화</b> 기존 빗줄기 위에 구름 층과 하늘을 어둡게. 비가 오는 날만 배경이 실제로 어두워져 한눈에 구분된다.<span class="cost">비용: 기존 효과 재사용 · 추가 메모리 0</span>',
+  night:'<b>C. 밤 · 달과 별</b> 해가 지면 하늘·능선 색이 밤으로 바뀌고 달·별이 나온다. 상시 켜 두는 기기에서 밤에 눈부심이 줄어든다.<span class="cost">비용: 에셋 0KB · 별은 정적 점</span>',
+  photo:'<b>D. 사진 배경 (Weawow 방식)</b> 그 지방 사진을 깔고 스크림 + 반투명 카드. 가장 예쁘지만 사진 라이선스·용량·대비 문제가 있고, 이 기기(API 28)는 카드 블러가 안 된다.<span class="cost">비용: 사진 1장 300KB+ · 디코드 12MB · 대비 재검증 필요</span>'
+};
+
+// 미리보기 창 폭에 맞춰 전체 시트를 축소한다(캡처 모드에는 적용하지 않는다).
+function fitSheet(){
+  if (document.body.classList.contains('shot')) return;
+  const w = document.documentElement.clientWidth;
+  const z = Math.max(.2, Math.min(.92, (w - 80) / 1920));
+  document.documentElement.style.setProperty('--z', z);
+}
+addEventListener('resize', fitSheet);
+
+const ORDER = ['day','rain','night','photo'];
+const shot = new URLSearchParams(location.search).get('shot');
+if (shot){
+  document.body.classList.add('shot');
+  document.getElementById('frames').outerHTML = screen(shot, '');
+} else {
+  document.getElementById('frames').innerHTML = ORDER.map(v=>screen(v, CAPTIONS[v])).join('');
+  fitSheet();
+}
+</script>
+</body>
+</html>

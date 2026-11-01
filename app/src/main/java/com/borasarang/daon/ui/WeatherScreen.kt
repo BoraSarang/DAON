@@ -99,6 +99,13 @@ private val SmallNote = TextStyle(
 )
 
 /**
+ * 하늘 장면이 비치도록 카드를 살짝 투명하게 둔다.
+ * 최악(밝은 지평선 위)에서도 본문 대비 13:1 이상이라 70대 가독성 기준을 지킨다.
+ */
+private val CardSurface: Color
+    @Composable get() = Kiosk.color.surface.copy(alpha = 0.88f)
+
+/**
  * 날씨 메인. 현재·오늘 요약 + 이번 주 7일 + 농사 참고 + 3시간 간격 8칸.
  * 배경에는 비·눈·천둥 효과를 그린다(설정에서 끌 수 있음).
  */
@@ -125,6 +132,13 @@ fun WeatherScreen(
     )
 
     Box(Modifier.fillMaxSize().background(Kiosk.color.bg)) {
+        WeatherScene(
+            code = snapshot?.current?.weatherCode,
+            isDay = snapshot?.current?.isDay ?: true,
+            motion = weatherMotion,
+            light = Kiosk.isLight,
+            modifier = Modifier.fillMaxSize(),
+        )
         WeatherEffect(
             code = snapshot?.current?.weatherCode,
             motion = weatherMotion,
@@ -205,7 +219,7 @@ private fun WeatherHero(
 
     Surface(
         modifier = modifier,
-        color = Kiosk.color.surface,
+        color = CardSurface,
         shape = RoundedCornerShape(Home.panelRadiusLarge),
         border = BorderStroke(1.dp, Kiosk.color.rule),
     ) {
@@ -297,7 +311,7 @@ private fun WeekPanel(
     val unit = stringResource(if (celsius) R.string.unit_celsius else R.string.unit_fahrenheit)
     Surface(
         modifier = modifier,
-        color = Kiosk.color.surface,
+        color = CardSurface,
         shape = RoundedCornerShape(Home.panelRadiusLarge),
         border = BorderStroke(1.dp, Kiosk.color.rule),
     ) {
@@ -373,6 +387,7 @@ private fun AdvisoryBanner(snapshot: WeatherSnapshot, locale: Locale) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
+            .background(CardSurface)
             .background(Kiosk.color.accentSoft)
             .padding(horizontal = 22.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -418,7 +433,7 @@ private fun HourlyPanel(
     val unit = stringResource(if (celsius) R.string.unit_celsius else R.string.unit_fahrenheit)
     Surface(
         modifier = modifier,
-        color = Kiosk.color.surface,
+        color = CardSurface,
         shape = RoundedCornerShape(Home.panelRadiusLarge),
         border = BorderStroke(1.dp, Kiosk.color.rule),
     ) {
@@ -657,6 +672,9 @@ private fun glyphKind(code: Int): GlyphKind = when (code) {
 @Composable
 private fun WeatherGlyph(code: Int, isDay: Boolean = true, modifier: Modifier) {
     val kind = glyphKind(code)
+    // 라이트 카드 위에서는 밝은 달이 보이지 않아 글자색으로 그린다.
+    val moonInk = if (Kiosk.isLight) Kiosk.color.textSecondary else MoonInk
+    val cardSurface = Kiosk.color.surface
     Canvas(modifier) {
         val w = size.width
         val h = size.height
@@ -665,13 +683,13 @@ private fun WeatherGlyph(code: Int, isDay: Boolean = true, modifier: Modifier) {
             GlyphKind.SUN -> if (isDay) {
                 drawSun(Offset(w / 2f, h / 2f), s * 0.20f)
             } else {
-                drawMoon(Offset(w / 2f, h / 2f), s * 0.26f)
+                drawMoon(Offset(w / 2f, h / 2f), s * 0.26f, moonInk, cardSurface)
             }
             GlyphKind.PARTLY -> {
                 if (isDay) {
                     drawSun(Offset(w * 0.36f, h * 0.34f), s * 0.15f)
                 } else {
-                    drawMoon(Offset(w * 0.36f, h * 0.34f), s * 0.19f)
+                    drawMoon(Offset(w * 0.36f, h * 0.34f), s * 0.19f, moonInk, cardSurface)
                 }
                 drawCloud(Offset(w * 0.54f, h * 0.56f), s * 0.18f, Kiosk.color.textSecondary)
             }
@@ -715,11 +733,13 @@ private fun DrawScope.drawSun(center: Offset, radius: Float) {
     }
 }
 
-private fun DrawScope.drawMoon(center: Offset, radius: Float) {
-    val moon = Color(0xFFE8E2D0)
+/** 블랙 카드 위 달 색. 라이트 테마는 글자색으로 대신한다. */
+private val MoonInk = Color(0xFFE8E2D0)
+
+private fun DrawScope.drawMoon(center: Offset, radius: Float, moon: Color, background: Color) {
     drawCircle(moon, radius, center)
     drawCircle(
-        color = Kiosk.color.surface,
+        color = background,
         radius = radius * 0.86f,
         center = Offset(center.x + radius * 0.44f, center.y - radius * 0.30f),
     )
@@ -764,9 +784,10 @@ private fun DrawScope.drawRain(center: Offset, radius: Float) {
 }
 
 private fun DrawScope.drawSnow(center: Offset, radius: Float) {
+    val flake = if (Kiosk.isLight) Kiosk.color.textSecondary else Color.White
     repeat(3) { index ->
         drawCircle(
-            color = Color.White.copy(alpha = 0.85f),
+            color = flake.copy(alpha = 0.85f),
             radius = radius * 0.22f,
             center = Offset(center.x + (index - 1) * radius * 0.9f, center.y),
         )

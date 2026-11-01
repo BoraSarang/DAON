@@ -43,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -65,6 +64,7 @@ import com.borasarang.daon.core.ClockFace
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.KioskMode
 import com.borasarang.daon.core.LocaleController
+import com.borasarang.daon.core.ScreenBrightness
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.PlaceResult
 import com.borasarang.daon.ui.theme.Kiosk
@@ -94,7 +94,7 @@ fun SettingsPanel(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Kiosk.color.scrim)
                 .clickable(onClick = onDismiss),
         )
         Surface(
@@ -133,6 +133,55 @@ fun SettingsPanel(
                         .verticalScroll(settingsScroll),
                     verticalArrangement = Arrangement.spacedBy(Kiosk.lg),
                 ) {
+                    SettingsSection(stringResource(R.string.settings_screen)) {
+                        Text(
+                            text = stringResource(R.string.settings_screen_note),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                            SettingChip(
+                                selected = !vm.themeLight,
+                                label = stringResource(R.string.theme_black),
+                                onClick = { vm.updateThemeLight(false) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            SettingChip(
+                                selected = vm.themeLight,
+                                label = stringResource(R.string.theme_light),
+                                onClick = { vm.updateThemeLight(true) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.settings_brightness),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Kiosk.color.textPrimary,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(Kiosk.sm),
+                            verticalArrangement = Arrangement.spacedBy(Kiosk.sm),
+                        ) {
+                            AppPrefs.BRIGHTNESS_OPTIONS.forEach { percent ->
+                                SettingChip(
+                                    selected = vm.screenBrightness == percent,
+                                    label = if (percent < 0) {
+                                        stringResource(R.string.brightness_system)
+                                    } else {
+                                        stringResource(R.string.brightness_percent, percent)
+                                    },
+                                    onClick = {
+                                        vm.updateScreenBrightness(percent)
+                                        ScreenBrightness.apply(activity, percent)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
                     SettingsGroup {
                         RotationRow(
                             checked = vm.rotationEnabled,

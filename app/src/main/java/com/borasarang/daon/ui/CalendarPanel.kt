@@ -49,8 +49,12 @@ import java.time.format.TextStyle as DateTextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 
-private val TodayInk = Color(0xFF15181D)
-private val TodayLunarInk = Color(0xFF4B3A1D)
+/** 오늘 칸은 강조색 바탕 위에 [Kiosk.color.onAccent] 글자를 얹는다(테마별 자동). */
+private val TodayInk: Color
+    @Composable get() = Kiosk.color.onAccent
+
+private val TodayLunarInk: Color
+    @Composable get() = Kiosk.color.onAccent.copy(alpha = 0.74f)
 
 /**
  * 달력 홈의 왼쪽 70% 패널. 6주 고정 그리드에 양력·음력·공휴일·절기를 함께 보여준다.

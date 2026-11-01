@@ -15,6 +15,7 @@ import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.KioskMode
 import com.borasarang.daon.core.LocaleController
+import com.borasarang.daon.core.ScreenBrightness
 import com.borasarang.daon.ui.DashboardScreen
 import com.borasarang.daon.ui.DashboardViewModel
 import com.borasarang.daon.ui.theme.DaonTheme
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         hideSystemBars()
+        ScreenBrightness.apply(this, AppPrefs.screenBrightness)
 
         setContent {
             DaonTheme {
@@ -67,6 +69,12 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 기기(또는 키오스크 런처)가 밝기를 되돌리는 경우가 있어 화면에 돌아올 때마다 다시 적용한다.
+        ScreenBrightness.apply(this, AppPrefs.screenBrightness)
     }
 
     private fun hideSystemBars() {
