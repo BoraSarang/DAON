@@ -68,9 +68,14 @@ import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.core.ScreenBrightness
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.PlaceResult
+import com.borasarang.daon.data.news.NewsSchedule
+import com.borasarang.daon.data.news.NewsSource
 import com.borasarang.daon.ui.theme.Kiosk
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -89,6 +94,7 @@ fun SettingsPanel(
     val city by vm.city.collectAsStateWithLifecycle()
     val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
     val tvChannels by vm.tvChannels.collectAsStateWithLifecycle()
+    val news by vm.news.collectAsStateWithLifecycle()
     val korean = java.util.Locale.getDefault().language == "ko"
     val settingsScroll = rememberScrollState()
 
@@ -333,6 +339,61 @@ fun SettingsPanel(
                         }
                         Text(
                             text = stringResource(R.string.settings_tv_note),
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            color = Kiosk.color.textMuted,
+                        )
+                    }
+
+                    SettingsSection(stringResource(R.string.settings_news)) {
+                        ToggleRow(
+                            title = stringResource(R.string.settings_news_ticker),
+                            desc = stringResource(R.string.settings_news_ticker_desc),
+                            checked = news.enabled,
+                            onToggle = { vm.updateNewsEnabled(it) },
+                            stateText = stringResource(
+                                if (news.enabled) R.string.motion_on else R.string.motion_off,
+                            ),
+                        )
+                        if (news.enabled) {
+                            Text(
+                                text = stringResource(R.string.settings_news_interval),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Kiosk.color.textPrimary,
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(Kiosk.sm),
+                                verticalArrangement = Arrangement.spacedBy(Kiosk.sm),
+                            ) {
+                                NewsSchedule.INTERVAL_OPTIONS.forEach { minutes ->
+                                    SettingChip(
+                                        selected = news.intervalMinutes == minutes,
+                                        label = stringResource(newsIntervalLabel(minutes)),
+                                        onClick = { vm.updateNewsInterval(minutes) },
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = newsStatusText(news),
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp,
+                                    color = Kiosk.color.textMuted,
+                                )
+                                SettingChip(
+                                    selected = false,
+                                    label = stringResource(R.string.news_refresh_now),
+                                    onClick = { vm.refreshNewsNow() },
+                                )
+                            }
+                        }
+                        Text(
+                            text = stringResource(R.string.settings_news_note),
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = Kiosk.color.textMuted,
@@ -663,6 +724,30 @@ private fun formatAccuracy(meters: Float): String =
     } else {
         String.format(java.util.Locale.getDefault(), "%.1fkm", meters / 1_000f)
     }
+
+/** 설정의 간격 칩 이름. 목록에 없는 값은 기본값(1시간)으로 보인다. */
+private fun newsIntervalLabel(minutes: Int): Int = when (minutes) {
+    30 -> R.string.news_interval_30
+    180 -> R.string.news_interval_180
+    360 -> R.string.news_interval_360
+    else -> R.string.news_interval_60
+}
+
+/** `마지막 17:53 · 연합뉴스 10 · SBS 10`. 아직 받은 것이 없으면 안내 한 줄. */
+@Composable
+private fun newsStatusText(news: NewsUiState): String {
+    if (news.loading) return stringResource(R.string.news_status_updating)
+    val updated = news.updatedAt ?: return stringResource(R.string.news_status_none)
+    val time = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+        .withZone(ZoneId.systemDefault())
+        .format(updated)
+    return stringResource(
+        if (news.failed) R.string.news_status_failed else R.string.news_status_line,
+        time,
+        news.items.count { it.source == NewsSource.YONHAP },
+        news.items.count { it.source == NewsSource.SBS },
+    )
+}
 
 @Composable
 private fun calendarStatusText(vm: DashboardViewModel): String = when (vm.calendarStatus) {

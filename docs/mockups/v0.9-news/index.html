@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>DAON v0.9 — 오늘의 뉴스 티커 목업</title>
+<!--
+  목업 전용 파일. 실제 앱은 Compose 로 같은 배치를 그린다.
+  - 기준: 1920×1200 (Fire HD 10), 1dp = 1.5px
+  - ?shot=home|light|list|article|settings|spec 으로 한 장면만 1920×1200 렌더
+  - 목업의 뉴스 제목·본문은 2026-11-01 연합뉴스·SBS RSS 실제 값(읽기용 예시)
+-->
+<style>
+  :root{
+    --bg:#0B0D10; --surface:#12151A; --surface2:#171B21; --surface3:#1E242D;
+    --text:#F2F4F7; --text2:#A7AFBB; --muted:#6E7683;
+    --rule:#232932; --accent:#E8B45A; --accentSoft:rgba(232,180,90,.15);
+    --danger:#E2695C; --sunday:#F07A6A; --saturday:#82B4FF;
+    --ok:#57C99B; --term:#9ADB8A; --rain:#7FB0FF;
+    --onAccent:#0B0D10; --scrim:rgba(0,0,0,.60);
+  }
+  .light{
+    --bg:#F4F1EA; --surface:#FFFFFF; --surface2:#EAE5DB; --surface3:#E1DBCE;
+    --text:#1A1D21; --text2:#4B525C; --muted:#5E656F;
+    --rule:#D9D2C6; --accent:#7A500F; --accentSoft:rgba(122,80,15,.12);
+    --danger:#B3352A; --sunday:#B3352A; --saturday:#1F5FA8;
+    --ok:#1F7A4E; --term:#2C6B1E; --rain:#1F5FA8;
+    --onAccent:#FFFFFF; --scrim:rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05070A;color:var(--text);
+       font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
+
+  /* ---------- 시트 ---------- */
+  .sheet{display:flex;flex-direction:column;gap:34px;padding:40px;align-items:center}
+  .sheet-head{width:calc(1840px * var(--z,.86));margin-bottom:-6px}
+  .sheet-head h1{font-size:30px;font-weight:800;letter-spacing:-.4px}
+  .sheet-head p{margin-top:8px;font-size:16px;color:#8b93a0;line-height:1.6}
+  .frame{width:calc(1920px * var(--z,.86))}
+  .frame .screen{zoom:var(--z,.86)}
+  .frame figcaption{display:flex;gap:14px;align-items:baseline;margin-top:14px;font-size:16px;color:#9aa3b0}
+  .frame b{color:var(--accent);font-size:18px}
+  .frame .cost{color:#6f7783}
+
+  body.shot{padding:0;background:#000}
+  body.shot .sheet{padding:0;gap:0}
+  body.shot .sheet-head,body.shot figcaption{display:none}
+  body.shot .frame{display:none;width:1920px}
+  body.shot .frame.on{display:block}
+  body.shot .frame .screen{zoom:1}
+
+  /* ---------- 화면 ---------- */
+  .screen{position:relative;width:1920px;height:1200px;padding:40px;display:flex;flex-direction:column;
+          background:var(--bg);color:var(--text);overflow:hidden;isolation:isolate}
+  .screen .bgscene{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .screen > *{position:relative;z-index:1}
+
+  /* 상단 바 */
+  .topbar{height:88px;flex:0 0 88px;display:flex;align-items:center;gap:24px;margin-bottom:24px}
+  .head-l{flex:0 0 auto}
+  .head-l .title{font-size:48px;font-weight:700;letter-spacing:-.022em;line-height:1.05;white-space:nowrap}
+  .head-l .sub{font-size:27px;color:var(--text2);font-weight:500;margin-top:4px;white-space:nowrap}
+  .accent{color:var(--accent)}
+  .term{color:var(--term)}
+
+  /* 뉴스 티커 */
+  .ticker{flex:1;min-width:0;height:64px;display:flex;align-items:center;
+          border:1px solid var(--rule);border-radius:15px;background:var(--surface);overflow:hidden}
+  .ticker .tag{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:0 18px 0 22px;
+               font-size:23px;font-weight:800;letter-spacing:.02em;color:var(--accent)}
+  .ticker .tag i{width:9px;height:9px;border-radius:50%;background:var(--accent);display:block}
+  .ticker .tag::after{content:"";width:1px;height:32px;background:var(--rule)}
+  .ticker .window{position:relative;flex:1;height:100%;overflow:hidden}
+  .ticker .window::before,.ticker .window::after{content:"";position:absolute;top:0;bottom:0;z-index:2;pointer-events:none}
+  .ticker .window::before{left:0;width:34px;background:linear-gradient(90deg,var(--surface),transparent)}
+  .ticker .window::after{right:0;width:62px;background:linear-gradient(270deg,var(--surface),transparent)}
+  .ticker .track{display:flex;height:100%;align-items:center;width:max-content;
+       animation:marquee 52s linear infinite}
+  .ticker .half{display:flex;align-items:center;gap:76px;padding-right:76px}
+  .ticker .item{font-size:27px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;color:var(--text)}
+  .ticker .item b{color:var(--accent);font-weight:800}
+  .ticker.off .tag{color:var(--muted)}
+  .ticker.off .tag i{background:var(--muted)}
+  .ticker.off .item{color:var(--text2)}
+  .ticker .stamp{flex:0 0 auto;padding:0 20px 0 4px;font-size:21px;font-weight:600;color:var(--muted);white-space:nowrap}
+  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  .right{flex:0 0 auto;display:flex;align-items:center;gap:14px}
+  .dots{display:flex;gap:10px;align-items:center;margin-right:12px}
+  .dots i{width:11px;height:11px;border-radius:999px;background:#3A424E;display:block}
+  .dots i.on{background:var(--accent)}
+  .btn{height:64px;padding:0 27px;display:flex;align-items:center;border-radius:15px;
+       border:1px solid var(--rule);background:var(--surface);color:var(--text2);
+       font-size:25px;font-weight:600;letter-spacing:-.01em}
+  .btn.strong{color:var(--text)}
+
+  /* 공통 패널 */
+  .grid{flex:1;display:grid;grid-template-columns:70fr 30fr;gap:24px;min-height:0}
+  .panel{background:var(--surface);border:1px solid var(--rule);border-radius:20px;overflow:hidden;
+         display:flex;flex-direction:column;min-height:0}
+
+  /* 달력 */
+  .cal-head{height:92px;flex:0 0 92px;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid var(--rule)}
+  .nav{width:64px;height:64px;border:1px solid var(--rule);border-radius:14px;background:var(--surface2);
+       color:var(--text2);font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center}
+  .cal-title{font-size:58px;font-weight:700;letter-spacing:-.02em;line-height:1;margin-left:6px}
+  .cal-title .year{font-size:34px;font-weight:600;color:var(--text2);margin-right:10px;vertical-align:7px}
+  .today-btn{margin-left:auto;height:56px;padding:0 24px;border:1px solid rgba(232,180,90,.55);border-radius:13px;
+       background:var(--accentSoft);color:var(--accent);font-size:24px;font-weight:700}
+  .weekdays{height:50px;flex:0 0 50px;display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--rule)}
+  .weekdays span{display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:600;color:var(--text2)}
+  .weekdays .sun{color:var(--sunday)} .weekdays .sat{color:var(--saturday)}
+  .cells{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);
+         gap:1px;background:var(--rule);min-height:0}
+  .cell{background:var(--surface);padding:10px 12px 9px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .cell .r1{display:flex;align-items:baseline;gap:10px}
+  .cell .num{font-size:47px;font-weight:700;line-height:1;letter-spacing:-.02em}
+  .cell .lunar{margin-left:auto;font-size:24px;line-height:1.1;font-weight:500;color:#A7B0BD;white-space:nowrap}
+  .light .cell .lunar{color:#6B6355}
+  .cell .line{margin-top:auto;display:flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap}
+  .cell .ev{font-size:21px;font-weight:500;color:var(--text2);overflow:hidden;text-overflow:ellipsis}
+  .cell .tag2{font-size:21px;font-weight:700;color:var(--term);flex:0 0 auto}
+  .cell .tag2.holiday{color:var(--danger)}
+  .cell.sun .num{color:var(--sunday)} .cell.sat .num{color:var(--saturday)}
+  .cell.out{opacity:.34}
+  .cell.today{background:var(--accent)}
+  .cell.today .num,.cell.today .ev,.cell.today .tag2{color:var(--onAccent)}
+  .cell.today .lunar{color:var(--onAccent);opacity:.72}
+  .farm{flex:0 0 98px;height:98px;display:flex;align-items:center;gap:18px;padding:0 26px;
+        border-top:1px solid var(--rule);background:var(--accentSoft)}
+  .farm .lbl{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+  .farm .txt{font-size:27px;font-weight:600;line-height:1.15;margin-top:3px;color:var(--text)}
+  .farm svg{width:46px;height:46px;flex:0 0 46px;color:var(--accent)}
+
+  /* 오른쪽 카드 */
+  .side{display:grid;grid-template-rows:320px 1fr;gap:24px;min-height:0}
+  .clock{padding:30px 32px;display:flex;flex-direction:column;justify-content:center}
+  .k{font-size:24px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+  .clock-time{font-size:112px;font-weight:700;letter-spacing:-.04em;line-height:.94;margin-top:10px}
+  .clock-time .ampm{font-size:38px;font-weight:600;letter-spacing:0;margin-right:12px;color:var(--text2);vertical-align:22px}
+  .clock-sec{font-size:30px;color:var(--muted);font-weight:600;margin-top:8px}
+  .clock-day{font-size:31px;color:var(--text2);font-weight:600;margin-top:12px}
+  .weather{padding:28px 32px;display:flex;flex-direction:column;min-height:0}
+  .wc-top{display:flex;align-items:center;gap:18px;margin-top:6px}
+  .wc-temp{font-size:126px;font-weight:700;line-height:.86;letter-spacing:-.05em}
+  .wc-cond{font-size:38px;font-weight:600;color:var(--text2);line-height:1.15}
+  .wc-cond .hi{display:block;font-size:27px;color:var(--muted);font-weight:500;margin-top:6px}
+  .wc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:22px}
+  .wc-item .kk{font-size:21px;color:var(--muted);font-weight:600}
+  .wc-item .vv{font-size:32px;font-weight:700;margin-top:2px}
+  .wc-div{height:1px;background:var(--rule);margin:20px 0 14px}
+  .mini3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .mini3 .m3{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;border-radius:12px;background:var(--surface2)}
+  .mini3 .d{font-size:21px;color:var(--text2);font-weight:700}
+  .mini3 .t{font-size:25px;font-weight:700}
+  .wc-note{margin-top:auto;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;
+      background:rgba(232,180,90,.10);border:1px solid rgba(232,180,90,.30)}
+  .wc-note .nt{font-size:21px;font-weight:700;color:var(--accent)}
+  .wc-note .ns{font-size:20px;color:var(--text2);font-weight:500;margin-top:2px}
+
+  /* ---------- 겹침 패널 공통 ---------- */
+  .scrim{position:absolute;inset:0;background:var(--scrim);z-index:5}
+  .side-panel{position:absolute;top:0;right:0;bottom:0;z-index:6;background:var(--surface);
+       border-left:1px solid var(--rule);border-radius:27px 0 0 27px;display:flex;flex-direction:column}
+  .side-panel .phead{display:flex;align-items:center;gap:14px;padding:34px 40px 18px}
+  .side-panel .phead h2{font-size:44px;font-weight:700;letter-spacing:-.02em}
+  .side-panel .phead .close{margin-left:auto;width:60px;height:60px;border:1px solid var(--rule);border-radius:15px;
+       background:var(--surface2);color:var(--text2);font-size:30px;display:flex;align-items:center;justify-content:center}
+  .side-panel .phead .close.back{margin-left:0;width:auto;padding:0 26px;gap:10px;font-size:26px;font-weight:600}
+  .pmeta{display:flex;align-items:center;gap:12px;padding:0 40px;font-size:22px;color:var(--muted);font-weight:600}
+  .pmeta .src{color:var(--accent);font-weight:700}
+
+  /* 뉴스 목록 */
+  .news-list{width:900px}
+  .news-list .rows{flex:1;min-height:0;overflow:hidden;padding:14px 24px 0;display:flex;flex-direction:column;position:relative}
+  .news-list .rows::after{content:"";position:absolute;left:0;right:0;bottom:0;height:54px;pointer-events:none;
+       background:linear-gradient(180deg,transparent,var(--surface))}
+  .news-row{display:flex;align-items:center;gap:16px;padding:18px 16px;border-top:1px solid var(--rule)}
+  .news-row:first-child{border-top:0}
+  .news-row .time{flex:0 0 78px;font-size:23px;font-weight:700;color:var(--muted)}
+  .news-row .txt{flex:1;min-width:0;font-size:27px;font-weight:600;line-height:1.22;color:var(--text);
+       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .news-row .src-chip{flex:0 0 auto;height:34px;padding:0 11px;display:flex;align-items:center;
+       border:1px solid var(--rule);border-radius:9px;background:var(--surface2);
+       font-size:17px;font-weight:700;color:var(--text2);letter-spacing:-.01em}
+  .news-row .src-chip.sbs{color:var(--accent);border-color:rgba(232,180,90,.42);background:var(--accentSoft)}
+  .news-row .chev{flex:0 0 auto;color:var(--muted);font-size:30px}
+  .news-row.new .txt{color:var(--text)}
+  .news-row.new .time{color:var(--accent)}
+  .list-foot{flex:0 0 auto;padding:18px 40px 30px;font-size:21px;color:var(--muted);border-top:1px solid var(--rule)}
+
+  /* 기사 */
+  .article{width:900px}
+  .article .scroll{flex:1;min-height:0;overflow:hidden;padding:6px 40px 0;position:relative}
+  .article .scroll::after{content:"";position:absolute;left:0;right:0;bottom:0;height:70px;
+       background:linear-gradient(180deg,transparent,var(--surface))}
+  .article h1{font-size:52px;line-height:1.22;font-weight:700;letter-spacing:-.025em;margin:10px 0 26px}
+  .article .body{font-size:27px;line-height:1.66;font-weight:400;color:var(--text2);letter-spacing:-.01em}
+  .article .body p{margin-bottom:22px}
+  .article .body p.lead{color:var(--text);font-weight:500}
+  .article .foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
+       padding:22px 40px 30px;border-top:1px solid var(--rule)}
+  .article .foot .navb{height:64px;padding:0 26px;border:1px solid var(--rule);border-radius:14px;background:var(--surface2);
+       color:var(--text2);font-size:24px;font-weight:600;display:flex;align-items:center;gap:8px;justify-self:start}
+  .article .foot .navb.next{justify-self:end}
+  .article .foot .idx{font-size:23px;font-weight:700;color:var(--muted)}
+
+  /* 설정 */
+  .settings{width:1020px;padding:0 48px 0}
+  .settings .phead{padding:38px 0 10px}
+  .settings .scroll{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:26px;padding-top:14px}
+  .sec{border:1px solid var(--rule);border-radius:20px;background:var(--surface2);padding:26px 28px}
+  .sec.hi{border-color:rgba(232,180,90,.45);background:linear-gradient(180deg,rgba(232,180,90,.08),transparent 70%),var(--surface2)}
+  .sec h3{font-size:26px;font-weight:700;color:var(--text2);letter-spacing:.02em;margin-bottom:18px}
+  .sec.hi h3{color:var(--accent)}
+  .row{display:flex;align-items:center;gap:18px}
+  .row + .row{margin-top:18px}
+  .row .lab{font-size:23px;font-weight:600;color:var(--text)}
+  .row .desc{font-size:19px;color:var(--muted);margin-top:4px}
+  .toggle{width:74px;height:42px;border-radius:999px;background:var(--accent);position:relative;flex:0 0 auto;margin-left:auto}
+  .toggle::after{content:"";position:absolute;top:4px;right:4px;width:34px;height:34px;border-radius:50%;background:var(--onAccent)}
+  .chips{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .chip{height:56px;padding:0 22px;display:flex;align-items:center;border-radius:12px;
+        border:1px solid var(--rule);background:var(--surface);color:var(--text2);font-size:22px;font-weight:700}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:var(--onAccent)}
+  .note{margin-top:16px;font-size:19px;line-height:1.5;color:var(--muted)}
+  .subhead{font-size:22px;font-weight:700;color:var(--text2);margin-top:22px}
+  .mini-btn{height:56px;padding:0 22px;border:1px solid var(--rule);border-radius:12px;background:var(--surface);
+        color:var(--text);font-size:22px;font-weight:600;display:flex;align-items:center}
+  .stamp2{font-size:19px;color:var(--muted);margin-left:12px}
+
+  /* ---------- 스펙 보드 ---------- */
+  .spec{background:#0E1116}
+  .spec .inner{padding:34px 44px;height:100%;display:flex;flex-direction:column;gap:15px}
+  .spec h1{font-size:35px;font-weight:800;letter-spacing:-.5px}
+  .spec .lead{font-size:18px;color:var(--text2);line-height:1.55;margin-top:-6px}
+  .cols{display:grid;grid-template-columns:1.06fr .94fr;gap:16px}
+  .box{border:1px solid var(--rule);border-radius:16px;background:var(--surface);padding:18px 22px;min-width:0}
+  .box h4{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.05em;margin-bottom:12px}
+  .demo{margin:2px 0 14px;overflow:hidden;border-radius:12px}
+  .demo .ticker{height:58px;border-radius:12px}
+  .demo .ticker .track{animation:none}
+  .demo .ticker .item{font-size:23px}
+  .demo .ticker .tag{font-size:20px;padding:0 14px 0 16px;gap:10px}
+  .callouts{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px;font-size:16px;line-height:1.45;color:var(--text2)}
+  .callouts b{color:var(--text);font-weight:700}
+  .strip{height:54px;display:flex;align-items:center;border:1px solid var(--rule);border-radius:11px;
+         background:var(--surface);overflow:hidden;margin-top:9px}
+  .strip .tag{padding:0 14px;font-size:18px;font-weight:800;color:var(--accent);flex:0 0 auto}
+  .strip .txt{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:12px;color:var(--text);min-width:0}
+  .strip.off .tag{color:var(--muted)} .strip.off .txt{color:var(--text2)}
+  .strip .st{margin-left:auto;padding:0 14px;font-size:16px;color:var(--muted);white-space:nowrap;flex:0 0 auto}
+  .tiny{font-size:15px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .step{flex:1;min-width:0;padding:11px 13px;border-radius:11px;border:1px solid var(--rule);background:var(--surface2);color:var(--text);font-size:16px;line-height:1.35}
+  .step b{display:block;font-size:13px;color:var(--muted);font-weight:800;letter-spacing:.06em;margin-bottom:4px}
+  .step span{display:block;font-size:14px;color:var(--muted);margin-top:3px}
+  .arrow{color:var(--muted);font-size:20px;flex:0 0 auto}
+  .retain{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+  .retain div{font-size:15px;line-height:1.4;color:var(--text2);padding-right:12px}
+  .retain div + div{border-left:1px solid var(--rule);padding-left:12px}
+  .retain b{display:block;font-size:13.5px;font-weight:800;color:var(--accent);letter-spacing:.05em;margin-bottom:3px}
+  .bottom{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+  table.src{border-collapse:collapse;width:100%;font-size:15.5px}
+  table.src th{text-align:left;color:var(--muted);font-weight:700;font-size:13.5px;letter-spacing:.05em;padding:0 10px 7px 0}
+  table.src td{padding:7px 10px 7px 0;border-top:1px solid var(--rule);color:var(--text2);vertical-align:top}
+  table.src td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+  .yes{color:var(--ok);font-weight:800}
+  .no{color:var(--danger);font-weight:800}
+  .notes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:15.5px;line-height:1.5;color:var(--text2)}
+  .notes b{color:var(--text)}
+  .notes .n{border-left:3px solid var(--accent);padding-left:12px}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header class="sheet-head">
+    <h1>DAON v0.9 — 달력 상단 ‘오늘의 뉴스’ 티커</h1>
+    <p>기준 1920×1200 · 1dp=1.5px · 실제 연합뉴스·SBS RSS(2026-11-01 17:53) 제목 사용 · 키오스크를 벗어나지 않고 목록·본문까지 본다</p>
+  </header>
+
+  <figure class="frame" data-shot="home"><div class="screen" id="f-home"></div>
+    <figcaption><b>1. 달력 + 티커</b> 상단 빈 곳에 43dp 높이의 얇은 띠. 45px/s로 왼쪽으로 흐른다 <span class="cost">· 18sp · 간격 76px</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="light"><div class="screen light" id="f-light"></div>
+    <figcaption><b>2. 라이트 테마</b> 같은 배치. 티커는 흰 카드 위 짙은 황토 라벨 <span class="cost">· 대비 8:1 이상</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="list"><div class="screen" id="f-list"></div>
+    <figcaption><b>3. 티커를 누르면 — 오늘의 뉴스 목록</b> 오른쪽 600dp 패널. 연합 10 + SBS 10 = 20건, 시간·출처·제목 <span class="cost">· 성공하면 즉시 교체, 실패하면 유지</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="article"><div class="screen" id="f-article"></div>
+    <figcaption><b>4. 기사 본문</b> 목록에서 고르면 같은 패널에서 본문. 27px·줄간 1.66 <span class="cost">· SBS는 JSON-LD articleBody, 연합뉴스는 &lt;p&gt; 추출</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="settings"><div class="screen" id="f-settings"></div>
+    <figcaption><b>5. 설정 — 뉴스</b> 표시 켬/끔, 새로 고침 30분·1시간·3시간·6시간(기본 1시간) <span class="cost">· 지금 갱신 · 48시간 뒤 자동 정리</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="spec"><div class="screen spec" id="f-spec"></div>
+    <figcaption><b>6. 동작·수치</b> 크기·속도·상태·데이터 흐름·유지 기간을 한 장에 <span class="cost">· 구현 판단 근거</span></figcaption>
+  </figure>
+</div>
+
+<script>
+/* ---------------- 데이터 ---------------- */
+/* 두 피드(연합뉴스 최신기사 + SBS 사회)에서 실제로 받은 제목. 앞의 값은 출처, 뒤는 발행 시각 */
+const NEWS = [
+  {s:"연합", t:"울산 폐기물처리업체 화재 진압 중… 인명피해 없어", time:"17:53"},
+  {s:"SBS",  t:"부하 직원에 \"아이는 남편에게 보라 해\"…법원 '괴롭힘' 인정", time:"17:50"},
+  {s:"SBS",  t:"'60억 전세사기' 전 경찰관 2심 10년→8년 감형…\"일부 변제\"", time:"17:50"},
+  {s:"SBS",  t:"고교 교사가 휴직 중 국회의원 보좌관행…대법 \"정치 중립 훼손\"", time:"17:47"},
+  {s:"SBS",  t:"서울 관악구 숙박업소 화재…16명 대피해 인명피해 없어", time:"17:45"},
+  {s:"연합", t:"딥시크, 여러 작업 동시 가능한 '슈퍼 에이전트' 발표", time:"17:39"},
+  {s:"연합", t:"드론 방어에 철망·타이어… 러시아 그림자함대도 도입", time:"17:33"},
+  {s:"연합", t:"밤부터 비 그치고 월요일 오전 맑아져… 아침 최저 5∼13도", time:"17:28"},
+];
+
+const ARTICLE = {
+  src: "SBS",
+  title: "부하 직원에 \"아이는 남편에게 보라 해\"…법원 '괴롭힘' 인정",
+  time: "17:50",
+  body: [
+    "서울행정법원 행정12부(강재원 부장판사)는 A 씨가 서울시 한 구청장을 상대로 낸 감봉처분 취소 소송을 최근 원고 패소로 판결했습니다.",
+    "A 씨는 구청에서 일하며 직장 내 괴롭힘으로 감봉 징계를 받자 불복 소송을 냈습니다.",
+    "그는 업무 보고를 받던 중 하급자에게 \"나한테 설명하려 하지 마\"라고 말했고, 근태에 문제가 없는 직원에게 \"늦게 왔네, 몇 시에 왔어\"라고 지적한 것으로 나타났습니다.",
+    "이 외에도 자녀 돌봄 때문에 연가를 쓰려 한 직원에게 \"(자녀는) 남편에게 보라고 해\"라고 말하는 등 직원들에게 압박감을 주는 발언을 여러 차례 했습니다.",
+    "A 씨는 \"부서장으로서 부하 직원의 반복적인 지시 불이행과 업무 관리 소홀에 시정을 요구하는 과정에서 한 발언으로, 일상적인 대화 수준에 불과하다\"며 징계가 부당하다고 주장했습니다.",
+    "하지만 법원은 A 씨의 각 발언이 직장 내 괴롭힘에 해당한다고 판단했습니다.",
+    "구체적으로 \"'나한테 설명하려 하지 마'라는 발언은 업무 지시가 아니라 직원의 발언 태도를 질책하며 보고나 설명을 차단하는 것으로 업무상 적정 범위를 벗어났다\"며 \"상대방에게 부당한 압박감이 발생해 업무환경이 위축됐을 것으로 보인다\"고 지적했습니다.",
+    "또 \"'늦게 왔네'라는 발언은 직원의 지각이나 근태를 문제 삼은 게 아니라 일반적인 출근시간 이전에 출근할 것을 기대하며 발언한 것으로 보인다\"고 해석했습니다.",
+    "이어 \"자녀는 남편에게 보라고 한 발언은 정당한 연가 사용을 곤란하게 하고 업무가 아닌 개인 생활에 대한 지시\"라고 짚었습니다.",
+    "재판부는 \"직장 내 괴롭힘을 방지해 공직 사회의 기강을 확립한다는 공익의 중요성을 고려하면 감봉 처분이 A씨의 비위 행위와 비교해 과하다고 볼 수 없다\"며 징계 수준도 적정하다고 판단했습니다.",
+  ],
+};
+
+/* ---------------- 달력 ---------------- */
+/* 음력 값은 앱 자산(lunar_2025_2040.json)에서 그대로 읽었다 — 2026-11-01 = 음 9/22, 11-09 = 음 10/1(9월이 29일) */
+const LUNAR = [
+  "9/22","9/23","9/24","9/25","9/26","9/27","9/28","9/29","10/1","10/2","10/3","10/4","10/5","10/6",
+  "10/7","10/8","10/9","10/10","10/11","10/12","10/13","10/14","10/15","10/16","10/17","10/18","10/19","10/20","10/21","10/22",
+  "10/23","10/24","10/25","10/26","10/27","10/28","10/29","10/30","11/1","11/2","11/3","11/4"
+];
+
+function cells(){
+  const out = [];
+  for (let i = 0; i < 42; i++) {
+    const dayIndex = i + 1;              // 11/1 = 1
+    const isDec = dayIndex > 30;
+    const d = isDec ? dayIndex - 30 : dayIndex;
+    const ev = (isDec && d === 2) ? "생일 이사랑" : "";
+    const term = (!isDec && d === 7) ? "입동" : (!isDec && d === 22) ? "소설" : (isDec && d === 7) ? "대설" : "";
+    out.push({d, isDec, lunar:`음 ${LUNAR[i]}`, ev, term, today: !isDec && d === 1});
+  }
+  return out;
+}
+
+function cellHtml(c, i){
+  const col = i % 7;
+  const cls = ["cell", col===0?"sun":"", col===6?"sat":"", c.isDec?"out":"", c.today?"today":""].filter(Boolean).join(" ");
+  const tags = [];
+  if (c.ev) tags.push(`<span class="ev">${c.ev}</span>`);
+  if (c.term) tags.push(`<span class="tag2">${c.term}</span>`);
+  return `<div class="${cls}">
+    <div class="r1"><span class="num">${c.d}</span><span class="lunar">${c.lunar}</span></div>
+    ${tags.length ? `<div class="line">${tags.join("")}</div>` : ""}
+  </div>`;
+}
+
+function tickerHtml(items, opt={}){
+  const cls = "ticker" + (opt.off ? " off" : "");
+  const half = `<div class="half">${items.map(n=>`<span class="item">${n}</span>`).join("")}</div>`;
+  return `<div class="${cls}">
+     <div class="tag"><i></i>뉴스</div>
+     <div class="window"><div class="track">${opt.single ? half : half + half}</div></div>
+     ${opt.stamp ? `<div class="stamp">${opt.stamp}</div>` : ""}
+   </div>`;
+}
+
+function topbar(opt={}){
+  const items = (opt.items || NEWS.map(n=>n.t));
+  return `<header class="topbar">
+    <div class="head-l">
+      <div class="title">2026년 11월 1일 <span class="accent">일요일</span></div>
+      <div class="sub">음력 9월 22일 · <span class="term">상강</span> · 서리가 내리기 시작하는 때</div>
+    </div>
+    ${tickerHtml(items, {off:!!opt.off, stamp:opt.stamp})}
+    <div class="right">
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="btn">라디오</div>
+      <div class="btn">TV</div>
+      <div class="btn strong">설정</div>
+    </div>
+  </header>`;
+}
+
+function dashboard(){
+  return `${topbar()}
+  <div class="grid">
+    <section class="panel">
+      <div class="cal-head">
+        <div class="nav">‹</div>
+        <div class="cal-title"><span class="year">2026</span>11월</div>
+        <div class="nav">›</div>
+        <div class="today-btn">오늘</div>
+      </div>
+      <div class="weekdays"><span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span></div>
+      <div class="cells">${cells().map(cellHtml).join("")}</div>
+      <div class="farm">
+        <svg viewBox="0 0 64 64" fill="none"><path d="M32 58V30" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M32 34C20 34 12 26 12 14c12 0 20 8 20 20Z" fill="#9ADB8A"/><path d="M32 42c12 0 20-8 20-20-12 0-20 8-20 20Z" fill="#57C99B"/><path d="M18 58h28" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+        <div>
+          <div class="lbl">오늘의 농사 · 상강</div>
+          <div class="txt">김장 배추·무를 뽑아 저장할 준비를 합니다.</div>
+        </div>
+      </div>
+    </section>
+    <aside class="side">
+      <section class="panel clock">
+        <div class="k">지금</div>
+        <div class="clock-time"><span class="ampm">오후</span>5:56</div>
+        <div class="clock-sec">8초</div>
+        <div class="clock-day">일요일 · 11월 1일</div>
+      </section>
+      <section class="panel weather">
+        <div class="k">우성면, 공주시 · 지금</div>
+        <div class="wc-top"><div class="wc-temp">10°</div><div class="wc-cond">비<span class="hi">오늘 11° / 8°</span></div></div>
+        <div class="wc-grid">
+          <div class="wc-item"><div class="kk">체감</div><div class="vv">7°C</div></div>
+          <div class="wc-item"><div class="kk">습도</div><div class="vv">92%</div></div>
+          <div class="wc-item"><div class="kk">바람</div><div class="vv">4.6 m/s</div></div>
+          <div class="wc-item"><div class="kk">일교차</div><div class="vv">3°</div></div>
+        </div>
+        <div class="wc-div"></div>
+        <div class="mini3">
+          <div class="m3"><div class="d">월</div><div class="t">15° / 7°</div></div>
+          <div class="m3"><div class="d">화</div><div class="t">16° / 6°</div></div>
+          <div class="m3"><div class="d">수</div><div class="t">18° / 8°</div></div>
+        </div>
+        <div class="wc-note"><div><div class="nt">농사 참고</div><div class="ns">비가 옵니다 — 약제·비료 살포는 미루세요</div></div></div>
+      </section>
+    </aside>
+  </div>`;
+}
+
+/* ---------------- 뉴스 목록 패널 ---------------- */
+function listPanel(){
+  const rows = [
+    {s:"연합", t:"울산 폐기물처리업체 화재 진압 중… 인명피해 없어", time:"17:53"},
+    {s:"SBS",  t:"부하 직원에 \"아이는 남편에게 보라 해\"…법원 '괴롭힘' 인정", time:"17:50"},
+    {s:"SBS",  t:"'60억 전세사기' 전 경찰관 2심 10년→8년 감형…\"일부 변제\"", time:"17:50"},
+    {s:"SBS",  t:"고교 교사가 휴직 중 국회의원 보좌관행…대법 \"정치 중립 훼손\"", time:"17:47"},
+    {s:"SBS",  t:"서울 관악구 숙박업소 화재…16명 대피해 인명피해 없어", time:"17:45"},
+    {s:"연합", t:"딥시크, 여러 작업 동시 가능한 '슈퍼 에이전트' 발표", time:"17:39"},
+    {s:"연합", t:"드론 방어에 철망·타이어… 러시아 그림자함대도 도입", time:"17:33"},
+    {s:"연합", t:"밤부터 비 그치고 월요일 오전 맑아져… 아침 최저 5∼13도", time:"17:28"},
+    {s:"연합", t:"서울 관악구 숙박업소 화재로 16명 대피… 사상자 없어", time:"17:09"},
+    {s:"연합", t:"부안서 지게차 전도 사고… 50대 운전자 중상", time:"17:08"},
+    {s:"연합", t:"kt 이강철 감독 \"삼성, 만만치 않은 팀… 우리의 야구 하겠다\"", time:"17:06"},
+    {s:"SBS",  t:"출동한 경찰관에 흉기 휘두른 여성…현행범 체포", time:"16:27"},
+  ].map((n,i)=>`<div class="news-row${i<3?" new":""}">
+      <div class="time">${n.time}</div><div class="txt">${n.t}</div>
+      <div class="src-chip${n.s==="SBS"?" sbs":""}">${n.s==="SBS"?"SBS":"연합뉴스"}</div>
+      <div class="chev">›</div></div>`).join("");
+  return `<div class="scrim"></div>
+  <aside class="side-panel news-list">
+    <div class="phead"><h2>오늘의 뉴스</h2><div class="close">✕</div></div>
+    <div class="pmeta"><span class="src">연합뉴스</span><span>·</span><span class="src">SBS</span><span>·</span><span>18:02 갱신</span><span>·</span><span>20건</span></div>
+    <div class="rows">${rows}</div>
+    <div class="list-foot">출처별 10건씩 · 제목을 누르면 기사 본문이 열립니다 · 달력으로 돌아가려면 ✕</div>
+  </aside>`;
+}
+
+/* ---------------- 기사 패널 ---------------- */
+function articlePanel(){
+  const ps = ARTICLE.body.map((p,i)=>`<p${i===0?' class="lead"':''}>${p}</p>`).join("");
+  return `<div class="scrim"></div>
+  <aside class="side-panel article">
+    <div class="phead"><div class="close back">‹ 목록</div><div class="close">✕</div></div>
+    <div class="pmeta"><span class="src">SBS</span><span>·</span><span>17:50</span><span>·</span><span>사회</span></div>
+    <div class="scroll">
+      <h1>${ARTICLE.title}</h1>
+      <div class="body">${ps}</div>
+    </div>
+    <div class="foot">
+      <div class="navb">‹ 이전 기사</div>
+      <div class="idx">2 / 20</div>
+      <div class="navb next">다음 기사 ›</div>
+    </div>
+  </aside>`;
+}
+
+/* ---------------- 설정 패널 ---------------- */
+function settingsPanel(){
+  return `<div class="scrim"></div>
+  <aside class="side-panel settings">
+    <div class="phead"><h2>설정</h2><div class="close" style="margin-left:auto">✕</div></div>
+    <div class="scroll">
+      <div class="sec">
+        <h3>화면</h3>
+        <div class="row"><div><div class="lab">테마</div><div class="desc">키오스크 고정 중에도 앱 안에서 바꿉니다</div></div></div>
+        <div class="chips" style="margin-left:0"><div class="chip on">블랙</div><div class="chip">라이트</div></div>
+      </div>
+
+      <div class="sec hi">
+        <h3>뉴스</h3>
+        <div class="row">
+          <div><div class="lab">뉴스 티커 표시</div><div class="desc">달력 화면 위쪽에 최신 제목을 흘려 보냅니다</div></div>
+          <div class="toggle"></div>
+        </div>
+        <div class="subhead">새로 고침 간격</div>
+        <div class="chips">
+          <div class="chip">30분</div><div class="chip on">1시간</div><div class="chip">3시간</div><div class="chip">6시간</div>
+        </div>
+        <div class="row" style="margin-top:22px">
+          <div class="mini-btn">지금 갱신</div>
+          <div class="stamp2">마지막 18:02 · 연합뉴스 10 · SBS 10</div>
+        </div>
+        <div class="note">출처: 연합뉴스 최신기사 · SBS 사회. 인터넷이 끊기면 마지막으로 받은 소식을 그대로 보여 주고, 다시 연결되면 스스로 갱신합니다. 48시간이 지난 기사는 자동으로 정리합니다.</div>
+      </div>
+
+      <div class="sec">
+        <h3>자동 전환</h3>
+        <div class="row"><div class="lab">화면 자동 전환</div><div class="toggle"></div></div>
+        <div class="chips"><div class="chip">달력 30초</div><div class="chip">날씨 20초</div><div class="chip">시계 20초</div></div>
+      </div>
+    </div>
+  </aside>`;
+}
+
+/* ---------------- 스펙 보드 ---------------- */
+function specBoard(){
+  return `<div class="inner">
+    <div>
+      <h1>오늘의 뉴스 티커 — 동작과 수치</h1>
+      <div class="lead">달력 화면에서만 보인다 · 연합뉴스 + SBS 두 곳을 섞는다 · 화면을 벗어나지 않는다 · 실패해도 조용히 마지막 소식을 유지한다</div>
+    </div>
+
+    <div class="cols">
+      <div class="box">
+        <h4>치수 · 움직임</h4>
+        <div class="demo">
+          ${tickerHtml(["울산 폐기물처리업체 화재 진압 중… 인명피해 없어"], {single:true})}
+        </div>
+        <div class="callouts">
+          <div><b>높이 43dp</b> — 옆 버튼과 같은 높이</div>
+          <div><b>글자 18sp</b> Medium · textPrimary</div>
+          <div><b>라벨 15sp</b> Bold accent + 1px 세로선</div>
+          <div><b>속도 45px/s</b> (30dp/s) · 70대 기준</div>
+          <div><b>제목 간격 76px</b> — 구분점 없이 여백만</div>
+          <div><b>좌우 페이드 34/60px</b> — 띠 밖으로 새지 않게</div>
+        </div>
+        <div class="tiny">남는 폭은 제목·오른쪽 버튼 사이(약 700~840px). 오늘 일정 알약이 있으면 그만큼 줄고, 420px 아래로는 줄이지 않는다(그 아래면 티커를 숨긴다).</div>
+      </div>
+
+      <div class="box">
+        <h4>상태</h4>
+        <div class="strip"><div class="tag">뉴스</div><div class="txt">울산 폐기물처리업체 화재 진압 중… 인명피해 없어</div></div>
+        <div class="tiny">정상 — 흐르는 중. 누르면 오늘의 뉴스 목록.</div>
+
+        <div class="strip off"><div class="tag">뉴스</div><div class="txt">마지막 소식 · 밤부터 비 그치고…</div><div class="st">어제 17:30</div></div>
+        <div class="tiny">연결 실패 — 빨간 경고 대신 라벨을 흐리게, 오른쪽에 마지막 갱신 시각만(자정을 넘기면 ‘어제’).</div>
+
+        <div class="strip off"><div class="tag">뉴스</div><div class="txt">뉴스를 불러오지 못했습니다 · 눌러서 다시 시도</div></div>
+        <div class="tiny">받은 소식이 하나도 없을 때만. 누르면 다시 요청.</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4>흐름</h4>
+      <div class="flow">
+        <div class="step"><b>1시간마다 · 두 곳 병렬</b>연합뉴스 RSS<span>94KB · 120건</span></div>
+        <div class="arrow">+</div>
+        <div class="step"><b>동시에</b>SBS 사회 RSS<span>187KB · 29건</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><b>파싱·정리</b>전적·자막 제외<span>같은 제목 합치기</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><b>보관</b>출처별 30건<span>표시는 10+10=20건</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><b>티커</b>45px/s<span>달력 화면에서만</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><b>누르면</b>목록 20건<span>자동 전환 정지</span></div>
+        <div class="arrow">→</div>
+        <div class="step"><b>기사</b>본문 추출<span>실패하면 RSS 요약</span></div>
+      </div>
+      <div class="retain">
+        <div><b>성공 — 즉시 교체</b>새로 받은 목록으로 바꾼다. 피드에서 빠진 기사는 바로 사라진다.</div>
+        <div><b>실패 — 그대로 둔다</b>한 곳만 실패하면 그 출처의 마지막 목록을 유지한다. 지우지 않는다.</div>
+        <div><b>48시간 — 자동 정리</b>그보다 오래된 기사는 표시에서 빼고 다음 저장 때 지운다. 본문은 저장하지 않는다.</div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="box">
+        <h4>출처 검증 — 2026-11-01 실측, 대상 기기 신뢰 저장소 대조</h4>
+        <table class="src">
+          <tr><th>후보</th><th>응답</th><th>루트 인증서</th><th>기기</th><th>판정</th></tr>
+          <tr><td>연합뉴스 최신기사</td><td>200 · 94KB · 120건</td><td>DigiCert Global Root G2</td><td class="yes">있음</td><td class="yes">채택</td></tr>
+          <tr><td>SBS 사회</td><td>200 · 187KB · 29건</td><td>Amazon Root CA 1</td><td class="yes">있음</td><td class="yes">채택</td></tr>
+          <tr><td>SBS 전체 속보</td><td>200 · 776KB · 101건</td><td>Amazon Root CA 1</td><td class="yes">있음</td><td class="no">제외(너무 큼)</td></tr>
+          <tr><td>Google News RSS</td><td>200 · 100KB</td><td>GTS Root R4</td><td class="no">없음</td><td class="no">제외</td></tr>
+          <tr><td>JTBC 속보</td><td>200 · 10KB · 1건</td><td>DigiCert Global Root G2</td><td class="yes">있음</td><td class="no">제외(2024년 정지)</td></tr>
+        </table>
+        <div class="tiny">Fire OS 7.3.1.2(보안 패치 2018-10)는 137개 루트만 신뢰한다. Google 뉴스는 루트가 없어 이 기기에서 HTTPS 가 실패한다(TBS FM 과 같은 이유). 합계 281KB/시간 ≈ 하루 6.7MB.</div>
+      </div>
+
+      <div class="box">
+        <h4>왜 ‘바로 기사’가 아니라 ‘목록 먼저’인가</h4>
+        <div style="font-size:17px;line-height:1.6;color:var(--text2)">
+          티커가 흐르는 중이라, 지금 보이는 제목을 정확히 눌렀는지 사용자가 확인할 수 없다.
+          그래서 티커를 누르면 <b style="color:var(--text)">최신순 목록(연합 10 + SBS 10)</b>을 열고, 목록에서 고른 기사를 같은 패널에서 읽는다.
+          <div style="margin-top:10px">· 한 번 더 누르는 대신 <b style="color:var(--text)">오탭이 없다</b> — 70대 사용자 기준</div>
+          <div>· 행마다 출처 칩이 있어 어디 기사인지 바로 보인다</div>
+          <div>· 기사 화면에서 <b style="color:var(--text)">‹ 목록</b>으로 바로 돌아온다</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="n"><b>키오스크 유지</b><br>브라우저·다른 앱을 열지 않는다. 본문은 HTTP로 받아 글자만 뽑아 앱 안에서 그린다. 홈/최근 앱은 지금과 같다.</div>
+      <div class="n"><b>상시 표시 예산</b><br>티커는 달력 화면에서만 30fps로 제한(1프레임 1.5px). 패널·설정·다른 화면·백그라운드에서는 완전히 멈춘다. 네트워크는 1시간에 1회 281KB.</div>
+      <div class="n"><b>실패 처리</b><br>E-AND-NEWS-0001(피드)·0003(형식). 연속 실패 시 5분→15분→1시간으로 물러난다. 본문 추출 실패는 오류가 아니라 RSS 요약으로 대체.</div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- 조립 ---------------- */
+document.getElementById("f-home").innerHTML = dashboard();
+document.getElementById("f-light").innerHTML = dashboard();
+document.getElementById("f-list").innerHTML = dashboard() + listPanel();
+document.getElementById("f-article").innerHTML = dashboard() + articlePanel();
+document.getElementById("f-settings").innerHTML = dashboard() + settingsPanel();
+document.getElementById("f-spec").innerHTML = specBoard();
+
+const shot = new URLSearchParams(location.search).get("shot");
+if (shot) {
+  document.body.classList.add("shot");
+  const f = document.querySelector(`.frame[data-shot="${shot}"]`);
+  if (f) f.classList.add("on");
+}
+</script>
+</body>
+</html>

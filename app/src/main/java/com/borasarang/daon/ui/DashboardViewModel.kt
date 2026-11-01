@@ -29,6 +29,14 @@ import com.borasarang.daon.data.event.EventJson
 import com.borasarang.daon.data.event.EventOccurrences
 import com.borasarang.daon.data.event.EventStore
 import com.borasarang.daon.data.event.RepeatRule
+import com.borasarang.daon.data.news.ArticleExtractor
+import com.borasarang.daon.data.news.NewsFeedParser
+import com.borasarang.daon.data.news.NewsItem
+import com.borasarang.daon.data.news.NewsJson
+import com.borasarang.daon.data.news.NewsRepository
+import com.borasarang.daon.data.news.NewsRetention
+import com.borasarang.daon.data.news.NewsSchedule
+import com.borasarang.daon.data.news.NewsSource
 import com.borasarang.daon.data.radio.RadioCatalog
 import com.borasarang.daon.data.radio.RadioChannel
 import com.borasarang.daon.data.radio.RadioException
@@ -55,6 +63,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import kotlin.math.roundToInt
 
@@ -77,6 +86,23 @@ data class RadioUiState(
     val buffering: Boolean = false,
     val errorRes: Int? = null,
     val startedAtMs: Long = 0L,
+)
+
+/** 달력 상단 티커와 뉴스 목록이 함께 쓰는 상태. [items] 는 표시용 20건(출처별 10건)이다. */
+data class NewsUiState(
+    val items: List<NewsItem> = emptyList(),
+    val loading: Boolean = false,
+    val updatedAt: Instant? = null,
+    val failed: Boolean = false,
+    val enabled: Boolean = true,
+    val intervalMinutes: Int = NewsSchedule.DEFAULT_INTERVAL_MIN,
+)
+
+/** 기사 패널의 한 건. [content] 가 null 이면 아직 받는 중이다. */
+data class NewsArticleUiState(
+    val item: NewsItem,
+    val loading: Boolean,
+    val content: ArticleExtractor.ArticleContent? = null,
 )
 
 /**
@@ -261,6 +287,27 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val tvPlayer = TvPlayer(app)
     private var tvJob: Job? = null
 
+    private val newsRepository = NewsRepository()
+    private val _news = MutableStateFlow(
+        NewsUiState(
+            enabled = AppPrefs.newsEnabled,
+            intervalMinutes = NewsSchedule.normalizedInterval(AppPrefs.newsIntervalMinutes),
+        ),
+    )
+    val news: StateFlow<NewsUiState> = _news.asStateFlow()
+
+    private val _newsArticle = MutableStateFlow<NewsArticleUiState?>(null)
+    val newsArticle: StateFlow<NewsArticleUiState?> = _newsArticle.asStateFlow()
+
+    private var newsJob: Job? = null
+    private var articleJob: Job? = null
+    private var newsStored: List<NewsItem> = emptyList()
+    private var newsFailures = 0
+
+    /** 앱이 화면에 보이는 동안에만 갱신한다. ON_STOP 에서 false 가 된다. */
+    private var newsForeground = true
+    private var newsStarted = false
+
     /** 화면의 `PlayerView` 에 붙일 플레이어. 첫 재생 전에는 null. */
     var tvPlayerInstance by mutableStateOf<ExoPlayer?>(null)
         private set
@@ -357,6 +404,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
         refreshDeviceCalendar()
         refresh()
+        startNews()
         startLocationRefresh(force = false)
         viewModelScope.launch {
             while (true) {
@@ -1178,6 +1226,161 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
         DebugLogger.i("SETTINGS", "tvChannel=${channel.id}")
     }
+
+    // ---------- 뉴스 ----------
+
+    /**
+     * 캐시를 먼저 읽어 화면에 보여 주고, 그 뒤에 네트워크로 갱신한다.
+     * 첫 프레임 예산을 지키기 위해 [startBackgroundWork] 에서만 부른다.
+     */
+    fun startNews() {
+        if (newsStarted) return
+        newsStarted = true
+        newsForeground = true
+        viewModelScope.launch {
+            newsStored = withContext(Dispatchers.IO) { loadNewsCache() }
+            publishNews(newsStored)
+            restartNewsLoop(fetchFirst = true)
+        }
+    }
+
+    /** 설정의 `지금 갱신`. 진행 중이면 무시하고, 아니면 즉시 한 번 받는다. */
+    fun refreshNewsNow() {
+        if (!AppPrefs.newsEnabled || _news.value.loading) return
+        DebugLogger.i("NEWS", "manual refresh")
+        restartNewsLoop(fetchFirst = true)
+    }
+
+    fun updateNewsEnabled(enabled: Boolean) {
+        AppPrefs.newsEnabled = enabled
+        _news.update { it.copy(enabled = enabled) }
+        if (enabled) {
+            if (newsStarted) restartNewsLoop(fetchFirst = true)
+        } else {
+            newsJob?.cancel()
+            newsJob = null
+            _news.update { it.copy(loading = false) }
+        }
+        DebugLogger.i("SETTINGS", "newsEnabled=$enabled")
+    }
+
+    fun updateNewsInterval(minutes: Int) {
+        val normalized = NewsSchedule.normalizedInterval(minutes)
+        AppPrefs.newsIntervalMinutes = normalized
+        _news.update { it.copy(intervalMinutes = normalized) }
+        if (newsStarted) restartNewsLoop(fetchFirst = false)
+        DebugLogger.i("SETTINGS", "newsInterval=$normalized")
+    }
+
+    /** 앱이 다시 앞으로 나왔을 때. 간격이 지났으면 한 번 받고 타이머를 다시 건다. */
+    fun onAppForeground() {
+        if (newsForeground) return
+        newsForeground = true
+        if (!AppPrefs.newsEnabled || !newsStarted) return
+        val updated = newestNewsUpdate()
+        val intervalMs = NewsSchedule.normalizedInterval(AppPrefs.newsIntervalMinutes) * 60_000L
+        val stale = updated == null || Instant.now().toEpochMilli() - updated.toEpochMilli() >= intervalMs
+        restartNewsLoop(fetchFirst = stale)
+    }
+
+    /** 앱이 화면에서 내려가면 네트워크를 멈춘다. 상시 켜짐 기기의 발열·배터리 예산. */
+    fun onAppBackground() {
+        newsForeground = false
+        newsJob?.cancel()
+        newsJob = null
+        _news.update { it.copy(loading = false) }
+    }
+
+    /** 목록에서 고른 기사를 같은 패널에서 연다. 본문은 저장하지 않고 열 때 한 번 받는다. */
+    fun openNewsArticle(item: NewsItem) {
+        articleJob?.cancel()
+        _newsArticle.value = NewsArticleUiState(item = item, loading = true)
+        DebugLogger.i("NEWS", "article open ${item.source.id}")
+        articleJob = viewModelScope.launch {
+            val content = withContext(Dispatchers.IO) { newsRepository.fetchArticle(item) }
+            // 그 사이 다른 기사를 눌렀거나 패널을 닫았으면 결과를 버린다.
+            if (_newsArticle.value?.item?.id != item.id) return@launch
+            _newsArticle.value = NewsArticleUiState(item = item, loading = false, content = content)
+            DebugLogger.perf(
+                "NEWS",
+                "article done chars=${content.paragraphs.sumOf { it.length }} summary=${content.usedSummary}",
+            )
+        }
+    }
+
+    fun closeNewsArticle() {
+        articleJob?.cancel()
+        articleJob = null
+        _newsArticle.value = null
+    }
+
+    private fun loadNewsCache(): List<NewsItem> {
+        val now = Instant.now()
+        val decoded = NewsJson.decode(AppPrefs.newsItemsJson)
+        val pruned = NewsRetention.prune(decoded, now)
+        if (pruned.size != decoded.size) AppPrefs.newsItemsJson = NewsJson.encode(pruned)
+        DebugLogger.i("NEWS", "cache items=${pruned.size}")
+        return pruned
+    }
+
+    private fun restartNewsLoop(fetchFirst: Boolean) {
+        newsJob?.cancel()
+        newsJob = null
+        if (!AppPrefs.newsEnabled || !newsForeground) return
+        newsJob = viewModelScope.launch {
+            if (fetchFirst) fetchNews()
+            while (true) {
+                delay(NewsSchedule.delayMs(newsFailures, AppPrefs.newsIntervalMinutes))
+                if (!newsForeground || !AppPrefs.newsEnabled) break
+                fetchNews()
+            }
+        }
+    }
+
+    private suspend fun fetchNews() {
+        if (!AppPrefs.newsEnabled) return
+        _news.update { it.copy(loading = true, failed = false) }
+        DebugLogger.i("NEWS", "refresh start")
+        val results = newsRepository.fetchAll()
+        val now = Instant.now()
+        var stored = newsStored
+        var success = 0
+        withContext(Dispatchers.IO) {
+            results.forEach { result ->
+                if (result.items.isEmpty()) return@forEach
+                success++
+                stored = NewsRetention.replace(stored, result.source, result.items, now)
+                AppPrefs.setNewsUpdatedAt(result.source.id, now.toEpochMilli())
+            }
+            stored = NewsRetention.prune(stored, now)
+            AppPrefs.newsItemsJson = NewsJson.encode(stored)
+        }
+        newsStored = stored
+        if (success == 0) newsFailures++ else newsFailures = 0
+        publishNews(stored)
+        DebugLogger.perf(
+            "NEWS",
+            "refresh done sources=$success items=${stored.size} failures=$newsFailures",
+        )
+    }
+
+    private fun publishNews(stored: List<NewsItem>) {
+        _news.value = NewsUiState(
+            items = NewsFeedParser.merge(stored),
+            loading = false,
+            updatedAt = newestNewsUpdate(),
+            failed = newsFailures > 0,
+            enabled = AppPrefs.newsEnabled,
+            intervalMinutes = NewsSchedule.normalizedInterval(AppPrefs.newsIntervalMinutes),
+        )
+    }
+
+    private fun newestNewsUpdate(): Instant? =
+        NewsSource.entries
+            .map { AppPrefs.newsUpdatedAt(it.id) }
+            .filter { it > 0L }
+            .maxOrNull()
+            ?.let(Instant::ofEpochMilli)
 
     companion object {
         private const val REFRESH_INTERVAL_MS = 15 * 60 * 1_000L

@@ -6,12 +6,35 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-**v0.6.0-dev** — TV channel change: EBS 1TV/2TV replaced by **YTN News** and **MBC News** (YouTube live, official embed). **v0.5.0-dev** — performance and memory pass (cold start 1.77s median, idle calendar 0 frames/20s) plus `Radio`/`TV` buttons in the calendar top bar. v0.4 added the TV screen (channel list, live video, full screen, rotation paused while watching); the v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
+**v0.9.0-dev** — a slowly scrolling **news ticker** in the calendar top bar (Yonhap + SBS), tap to read the list and full article in a side panel without ever leaving the kiosk. **v0.8.0-dev** — dark/light theme and in-app screen brightness, a time-of-day **weather backdrop**, and a cleaner calendar cell (inline lunar date, one event line, no clipped term names). **v0.6.0-dev** — TV channel change: EBS 1TV/2TV replaced by **YTN News** and **MBC News** (YouTube live, official embed). **v0.5.0-dev** — performance and memory pass (cold start 1.77s median, idle calendar 0 frames/20s) plus `Radio`/`TV` buttons in the calendar top bar. v0.4 added the TV screen (channel list, live video, full screen, rotation paused while watching); the v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
-| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev | v0.5-dev | v0.6-dev |
-|---|---|---|---|---|---|---|---|
-| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) | 1.774s (median) | 1.774s (median) |
-| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) | 100–115MB idle · 97MB radio · 126MB TV | 250MB peak (YouTube live) · 184MB after stop |
+| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev | v0.5-dev | v0.6-dev | v0.8-dev | v0.9-dev |
+|---|---|---|---|---|---|---|---|---|---|
+| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) | 1.774s (median) | 1.774s (median) | 1.844–1.864s | 1.959s (median) |
+| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) | 100–115MB idle · 97MB radio · 126MB TV | 250MB peak (YouTube live) · 184MB after stop | 84MB calendar · 91MB weather | 108MB calendar |
+
+## v0.9 — News ticker
+
+The empty space between the date block and the right-hand buttons now carries a slowly scrolling **news ticker**. Two feeds — Yonhap (`https://www.yna.co.kr/rss/news.xml`) and SBS society (`...SectionRssFeed.do?sectionId=03`) — are fetched in parallel and merged into 20 headlines (10 each, newest first, one-sided shortage filled from the other), each row tagged with its source.
+
+- The ticker flows left at 30dp/s with a **30fps cap**, animated purely through `graphicsLayer.translationX` (zero recomposition). It pauses whenever another screen, the settings panel, the date detail, the news panel or the background is in front.
+- Tapping it opens a **600dp side panel** — list first, then the article. No browser, no WebView, no app switch: the kiosk stays pinned (`mLockTaskModeState=PINNED` was checked after every open/close).
+- Article bodies are extracted on the fly — Yonhap strips `<figure>` and reads the `<p>`s (37 paragraphs), SBS decodes the JSON-LD `articleBody` and splits it into sentences (5 paragraphs). If extraction fails the RSS summary is shown with a note. Bodies are never cached.
+- Refresh defaults to **1 hour** (30 min / 3 h / 6 h available) plus `Refresh now`. Headlines stay for 48 hours; a successful source replaces its items immediately, a failed source keeps its cache. Failures back off 5 → 15 → 60 minutes. All of this lives in the `News` section of settings, including `Last 20:56 · Yonhap 10 · SBS 10`.
+- Offline behaviour: `E-AND-NEWS-0001/0002` are logged, the 57 cached headlines stay on screen with an `offline` label, and articles fall back to the summary. Everything recovers on its own once the network returns.
+- On device: 92 tests (23 for news) and 301 i18n keys pass, cold start 1,954–1,978ms (budget 2.0s), PSS 108MB (budget 250MB). CPU while the ticker runs is 0.49 core and 0.0 with the ticker off — for reference the existing v0.8 rain scene costs 0.89 core.
+- Captures: [`27`](docs/screenshots/27-v0.9-news-ticker-ko.png) (ticker) · [`28`](docs/screenshots/28-v0.9-news-panel-ko.png) (list) · [`29`](docs/screenshots/29-v0.9-news-article-ko.png) (article) · [`30`](docs/screenshots/30-v0.9-news-settings-ko.png) (settings `News`)
+
+## v0.8 — Theme, brightness and weather backdrop
+
+A pinned kiosk cannot reach the system settings, so theme and screen brightness moved into the app. The first settings section, `Screen`, switches the whole UI between black and light instantly, and brightness applies only to this app window (20/40/60/80/100% or system). The weather screen now paints a time-of-day sky on a `Canvas` instead of using photos (sun/moon/stars/clouds/field, dimmed under rain, snow or thunder). Calendar cells keep the lunar date inline on the right, and show the day's first event title on one line together with the term/holiday name.
+
+- Theme: light palette `#F4F1EA`, white cards, accent `#7A500F`; body contrast 16.4:1, secondary 8.4:1. The saved theme is applied before the first frame, so there is no flash.
+- Brightness: `WindowManager.LayoutParams.screenBrightness` on this window only — system auto-brightness and the lock screen are untouched. Re-applied in `onCreate` and `onResume`.
+- Weather backdrop: zero assets. The time of day is checked once a minute and only the clouds tick at 0.4s (no 60fps loop). Turning off `Weather motion` stops the clouds too.
+- Calendar cell: lunar date 16sp right-aligned, day 31sp, one 14sp event title; the term/holiday name shares that line so nothing clips at 115% text (12/22 `테스트` + `동지`).
+- On device: 69 tests and 274 i18n keys pass, cold start 1.844–1.864s (budget 2.0s), PSS 84MB calendar / 91MB weather (budget 250MB), light and black verified.
+- Captures: [`22`](docs/screenshots/22-v0.8-dashboard-light-ko.png) (light dashboard) · [`23`](docs/screenshots/23-v0.8-settings-screen-light-ko.png) (settings `Screen`) · [`24`](docs/screenshots/24-v0.8-weather-light-rain-ko.png) (light rain) · [`25`](docs/screenshots/25-v0.8-weather-black-rain-ko.png) (black rain) · [`26`](docs/screenshots/26-v0.8-calendar-event-december-ko.png) (December event and term)
 
 ## v0.6 — TV channels: YouTube live
 
@@ -131,6 +154,7 @@ scripts/check-i18n.sh
 
 - `docs/plans/PLAN_v0.1_android.md` — v0.1 scope, budgets, milestones
 - `docs/plans/PLAN_v0.2_android.md` — v0.2 calendar redesign (implemented)
+- `docs/plans/PLAN_v0.9_news.md` — v0.9 news ticker, panel and refresh rules (implemented)
 - `docs/mockups/v0.2/` — interactive mockup and captures
 - `docs/DESIGN.md` — design tokens and kiosk layout
 - `docs/appstore/` — Amazon Appstore listing (en/ko) and data safety
