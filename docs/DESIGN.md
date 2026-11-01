@@ -45,7 +45,7 @@
 
 ### 0.4 달력 표시 규칙
 - 양력 숫자: 기본 `#F5F7FA`, 일요일 `#F07A6A`, 토요일 `#82B4FF`, 공휴일 `#F07A6A`.
-- 음력: `음 9/21` (25px, `#A7B0BD`). 상세 패널에서는 `음력 9월 21일`.
+- 음력: 날짜 숫자 **오른쪽에 작게, 오른쪽 정렬**로 `음 9/21`. 한 줄로 붙여서 아래 줄을 절기·공휴일 이름에 내준다(6주 달에서 `입동` 이 잘리던 문제). 상세 패널에서는 `음력 9월 21일`.
 - 공휴일: 빨강 + 이름(예: `개천절`, `대체공휴일`, `한글날`). 색만으로 구분하지 않는다.
 - 24절기: 초록(`#9ADB8A`) + 이름(예: `한로`, `상강`). 셀 클릭 → 상세 패널.
 - 오늘: amber(`#F0B45E`) 배경 + `오늘` 라벨 + 어두운 글씨.
@@ -258,7 +258,7 @@
 | `docs/screenshots/01-dashboard-ko.png` | 한국어 대시보드 (시계·달력·날씨) |
 | `docs/screenshots/02-dashboard-en.png` | 영어 대시보드 |
 | `docs/screenshots/03-settings-ko.png` | 설정 인앱 패널 (도시·시간형식·단위·언어) |
-| `docs/screenshots/22-v0.8-dashboard-light-ko.png` | 라이트 테마 대시보드 |
+| `docs/screenshots/22-v0.8-dashboard-light-ko.png` | 라이트 테마 대시보드 — 음력 오른쪽 정렬, `입동`·`소설` 온전히 표시 |
 | `docs/screenshots/23-v0.8-settings-screen-light-ko.png` | 설정 `화면` 섹션 (테마·밝기), 라이트 |
 | `docs/screenshots/24-v0.8-weather-light-rain-ko.png` | 라이트 테마 날씨 화면 — 하늘 장면 + 비 |
 | `docs/screenshots/25-v0.8-weather-black-rain-ko.png` | 블랙 테마 날씨 화면 — 하늘 장면 + 비 |

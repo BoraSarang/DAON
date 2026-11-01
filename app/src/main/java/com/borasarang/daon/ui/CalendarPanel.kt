@@ -279,7 +279,12 @@ private fun DayCell(
                 .padding(horizontal = Home.cellPadH, vertical = Home.cellPadV)
                 .alpha(if (inMonth) 1f else 0.32f),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 음력을 날짜 오른쪽에 작게 붙여 한 줄로 만든다. 그래야 절기·공휴일 이름이
+            // 둘째 줄에 온전히 들어간다(6주 달에서 `입동` 이 잘리던 문제).
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = date.dayOfMonth.toString(),
                     style = Home.dayNumber,
@@ -295,18 +300,19 @@ private fun DayCell(
                             .background(if (isToday) TodayInk else Kiosk.color.accent),
                     )
                 }
-            }
-            if (lunar != null) {
-                Text(
-                    text = if (korean) {
-                        "음 ${lunar.month}/${lunar.day}"
-                    } else {
-                        "L ${lunar.month}/${lunar.day}"
-                    },
-                    style = Home.lunar,
-                    color = if (isToday) TodayLunarInk else Kiosk.color.textSecondary,
-                    maxLines = 1,
-                )
+                Spacer(Modifier.weight(1f))
+                if (lunar != null) {
+                    Text(
+                        text = if (korean) {
+                            "음 ${lunar.month}/${lunar.day}"
+                        } else {
+                            "L ${lunar.month}/${lunar.day}"
+                        },
+                        style = Home.lunar,
+                        color = if (isToday) TodayLunarInk else Kiosk.color.textSecondary,
+                        maxLines = 1,
+                    )
+                }
             }
             Spacer(Modifier.weight(1f))
             if (tag != null) {
