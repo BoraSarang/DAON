@@ -34,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +55,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
@@ -479,6 +483,17 @@ fun SettingsPanel(
                             mutableStateOf(KioskMode.isLockTaskActive(activity))
                         }
                         val owner = remember { KioskMode.isDeviceOwner(activity) }
+                        // 시스템 확인 창을 닫고 돌아왔을 때 실제 고정 상태를 다시 읽는다.
+                        val lifecycleOwner = LocalLifecycleOwner.current
+                        DisposableEffect(lifecycleOwner) {
+                            val observer = LifecycleEventObserver { _, event ->
+                                if (event == Lifecycle.Event.ON_RESUME) {
+                                    lockActive = KioskMode.isLockTaskActive(activity)
+                                }
+                            }
+                            lifecycleOwner.lifecycle.addObserver(observer)
+                            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                        }
                         ToggleRow(
                             title = stringResource(R.string.settings_kiosk_lock),
                             desc = stringResource(R.string.settings_kiosk_lock_desc),
@@ -486,7 +501,7 @@ fun SettingsPanel(
                             onToggle = { enabled ->
                                 if (enabled) KioskMode.start(activity) else KioskMode.stop(activity)
                                 vm.updateKioskLock(enabled)
-                                lockActive = enabled
+                                lockActive = KioskMode.isLockTaskActive(activity) || enabled
                                 DebugLogger.i("KIOSK", "lock=$enabled owner=$owner")
                             },
                             stateText = stringResource(

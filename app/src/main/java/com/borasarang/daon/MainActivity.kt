@@ -11,7 +11,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.DebugLogger
+import com.borasarang.daon.core.KioskMode
 import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.ui.DashboardScreen
 import com.borasarang.daon.ui.DashboardViewModel
@@ -42,6 +44,24 @@ class MainActivity : ComponentActivity() {
         }
 
         logColdStart()
+        restoreKioskLock()
+    }
+
+    /**
+     * 앱을 다시 켰을 때 저장된 `이 앱에 고정` 을 되살린다.
+     *
+     * 화면 고정은 프로세스가 내려가면 풀리므로, 설정만 저장해 두면 재부팅 뒤 풀린 채로 남는다.
+     * Device Owner 가 아니면 시스템 확인 창이 한 번 뜬다. 사용자가 고정을 풀 수 있도록
+     * [onResume] 이 아니라 앱을 새로 시작할 때만 적용한다.
+     */
+    private fun restoreKioskLock() {
+        if (!AppPrefs.kioskLock) return
+        window.decorView.post {
+            if (!KioskMode.isLockTaskActive(this)) {
+                val started = KioskMode.start(this)
+                DebugLogger.i("KIOSK", "restore lock=$started active=${KioskMode.isLockTaskActive(this)}")
+            }
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
