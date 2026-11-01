@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -291,15 +290,8 @@ private fun DayCell(
                     color = dayColor,
                     maxLines = 1,
                 )
-                if (eventTitle != null) {
-                    Spacer(Modifier.width(5.dp))
-                    Box(
-                        Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(if (isToday) TodayInk else Kiosk.color.accent),
-                    )
-                }
+                // 일정이 있으면 제목이 곧 표시라 점은 두지 않는다. 날짜·음력이
+                // 좁은 칸에서도 서로 붙지 않게 폭을 비워 둔다.
                 Spacer(Modifier.weight(1f))
                 if (lunar != null) {
                     Text(
@@ -314,25 +306,35 @@ private fun DayCell(
                     )
                 }
             }
-            // 날짜 아래에 그날 첫 일정 제목 한 줄. 길면 말줄임한다.
-            if (eventTitle != null) {
-                Text(
-                    text = eventTitle,
-                    style = Home.eventTitle,
-                    color = if (isToday) TodayLunarInk else Kiosk.color.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            if (tag != null) {
-                Text(
-                    text = tag,
-                    style = Home.tag,
-                    color = tagColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            // 날짜 아래 한 줄: 그날 첫 일정(왼쪽, 길면 말줄임)과 절기·공휴일 이름(오른쪽).
+            // 115% 글씨에서도 잘리지 않도록 태그를 일정과 같은 줄에 둔다.
+            if (eventTitle != null || tag != null) {
+                Spacer(Modifier.height(2.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (eventTitle != null) {
+                        Text(
+                            text = eventTitle,
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = Home.eventTitle,
+                            color = if (isToday) TodayLunarInk else Kiosk.color.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (tag != null) {
+                        if (eventTitle != null) Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = tag,
+                            style = Home.tag,
+                            color = tagColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
     }
