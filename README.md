@@ -2,6 +2,10 @@
 
 [한국어](README.ko.md) · **English**
 
+[![Android](https://img.shields.io/badge/Android-API%2028-3DDC84?logo=android&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://github.com/BoraSarang/DAON)
+
 A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tablet: a large clock, the current month calendar, and live weather on a single dark screen — designed to be read from a few meters away.
 
 ## Status
@@ -98,6 +102,10 @@ v0.4 TV: ![tv](docs/screenshots/16-v0.4-tv-ko.png) · ![playing](docs/screenshot
 
 v0.6 TV channels: ![youtube](docs/screenshots/21-v0.6-tv-youtube-ko.png)
 
+v0.8 theme and weather: ![light](docs/screenshots/22-v0.8-dashboard-light-ko.png) · ![screen settings](docs/screenshots/23-v0.8-settings-screen-light-ko.png) · ![light rain](docs/screenshots/24-v0.8-weather-light-rain-ko.png) · ![black rain](docs/screenshots/25-v0.8-weather-black-rain-ko.png)
+
+v0.9 news: ![ticker](docs/screenshots/27-v0.9-news-ticker-ko.png) · ![list](docs/screenshots/28-v0.9-news-panel-ko.png) · ![article](docs/screenshots/29-v0.9-news-article-ko.png) · ![news settings](docs/screenshots/30-v0.9-news-settings-ko.png)
+
 
 ## Target device
 
@@ -154,8 +162,10 @@ scripts/check-i18n.sh
 
 - `docs/plans/PLAN_v0.1_android.md` — v0.1 scope, budgets, milestones
 - `docs/plans/PLAN_v0.2_android.md` — v0.2 calendar redesign (implemented)
+- `docs/plans/PLAN_v0.3_radio.md` — v0.3 radio screen (implemented)
+- `docs/plans/PLAN_v0.4_tv.md` — v0.4 TV screen (implemented)
 - `docs/plans/PLAN_v0.9_news.md` — v0.9 news ticker, panel and refresh rules (implemented)
-- `docs/mockups/v0.2/` — interactive mockup and captures
+- `docs/mockups/` — interactive mockups (v0.2, v0.3 radio, v0.7 weather, v0.9 news)
 - `docs/DESIGN.md` — design tokens and kiosk layout
 - `docs/appstore/` — Amazon Appstore listing (en/ko) and data safety
 - `docs/TODO.md` — follow-up work
@@ -163,4 +173,4 @@ scripts/check-i18n.sh
 
 ## License
 
-Private project. All rights reserved.
+Source is published for reference. All rights reserved — no license is granted for reuse, redistribution, or derivative works.

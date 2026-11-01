@@ -2,6 +2,10 @@
 
 **English** · [한국어](README.ko.md)
 
+[![Android](https://img.shields.io/badge/Android-API%2028-3DDC84?logo=android&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://github.com/BoraSarang/DAON)
+
 **Amazon Fire HD 10 (2019)** 태블릿을 벽시계처럼 세워두는 **전체화면 상시 표시(키오스크) 대시보드**입니다. 큰 시계, 이번 달 달력, 실시간 날씨를 어두운 한 화면에 담았고, 2~3m 거리에서도 읽히도록 설계했습니다.
 
 ## 상태
@@ -98,6 +102,10 @@ v0.4 TV: ![TV](docs/screenshots/16-v0.4-tv-ko.png) · ![재생](docs/screenshots
 
 v0.6 TV 채널: ![유튜브](docs/screenshots/21-v0.6-tv-youtube-ko.png)
 
+v0.8 테마·날씨: ![라이트](docs/screenshots/22-v0.8-dashboard-light-ko.png) · ![화면 설정](docs/screenshots/23-v0.8-settings-screen-light-ko.png) · ![라이트 비](docs/screenshots/24-v0.8-weather-light-rain-ko.png) · ![블랙 비](docs/screenshots/25-v0.8-weather-black-rain-ko.png)
+
+v0.9 뉴스: ![티커](docs/screenshots/27-v0.9-news-ticker-ko.png) · ![목록](docs/screenshots/28-v0.9-news-panel-ko.png) · ![기사](docs/screenshots/29-v0.9-news-article-ko.png) · ![뉴스 설정](docs/screenshots/30-v0.9-news-settings-ko.png)
+
 
 ## 대상 기기
 
@@ -154,8 +162,10 @@ scripts/check-i18n.sh
 
 - `docs/plans/PLAN_v0.1_android.md` — v0.1 범위·예산·마일스톤
 - `docs/plans/PLAN_v0.2_android.md` — v0.2 달력 재설계(구현 완료)
+- `docs/plans/PLAN_v0.3_radio.md` — v0.3 라디오 화면(구현 완료)
+- `docs/plans/PLAN_v0.4_tv.md` — v0.4 TV 화면(구현 완료)
 - `docs/plans/PLAN_v0.9_news.md` — v0.9 뉴스 티커·패널·갱신 규칙(구현 완료)
-- `docs/mockups/v0.2/` — 상호작용 목업·캡처
+- `docs/mockups/` — 상호작용 목업(v0.2, v0.3 라디오, v0.7 날씨, v0.9 뉴스)
 - `docs/DESIGN.md` — 디자인 토큰·키오스크 레이아웃
 - `docs/appstore/` — Amazon Appstore 등록 문안(en/ko)·Data safety
 - `docs/TODO.md` — 후속 작업
@@ -163,4 +173,4 @@ scripts/check-i18n.sh
 
 ## 라이선스
 
-비공개 프로젝트. 모든 권리 보유.
+소스는 참고용으로 공개합니다. 모든 권리 보유 — 재사용·재배포·2차 저작물 제작에 대한 라이선스는 허여하지 않습니다.
