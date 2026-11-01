@@ -128,7 +128,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val nowState = rememberNow(perSecond = screen == ScreenMode.CLOCK)
     // 날짜가 바뀔 때만 알린다. 매초 달력 42칸을 다시 그리지 않게 하는 핵심이다.
     val today by remember { derivedStateOf { nowState.value.toLocalDate() } }
-    val eventDates = remember(events) { events.mapTo(HashSet()) { it.date } }
+    // 날짜별로 셀에 보여줄 일정 제목 1개. 목록은 시간순이라 첫 건이 그날 첫 일정이다.
+    val eventTitles = remember(events) {
+        events.groupBy { it.date }.mapValues { (_, list) -> list.first().title }
+    }
     val todayEvents = remember(events, today) { events.filter { it.date == today } }
     val baseDensity = LocalDensity.current
     val scaledDensity = remember(baseDensity, vm.textScale) {
@@ -231,7 +234,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         locale = locale,
                         hour24 = vm.hour24,
                         celsius = vm.celsius,
-                        eventDates = eventDates,
+                        eventTitles = eventTitles,
                         todayEvents = todayEvents,
                         onDateClick = { detailDate = it },
                         onOpenClock = {
@@ -387,7 +390,7 @@ private fun CalendarHome(
     locale: Locale,
     hour24: Boolean,
     celsius: Boolean,
-    eventDates: Set<LocalDate>,
+    eventTitles: Map<LocalDate, String>,
     todayEvents: List<CalendarEvent>,
     onDateClick: (LocalDate) -> Unit,
     onOpenClock: () -> Unit,
@@ -427,7 +430,7 @@ private fun CalendarHome(
                 calendar = calendar,
                 korean = korean,
                 locale = locale,
-                eventDates = eventDates,
+                eventTitles = eventTitles,
                 modifier = Modifier.weight(0.7f).fillMaxHeight(),
                 onDateClick = onDateClick,
             )

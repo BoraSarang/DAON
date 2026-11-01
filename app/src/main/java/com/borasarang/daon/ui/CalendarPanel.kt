@@ -65,7 +65,7 @@ fun CalendarPanel(
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
-    eventDates: Set<LocalDate> = emptySet(),
+    eventTitles: Map<LocalDate, String> = emptyMap(),
     modifier: Modifier = Modifier,
     onDateClick: (LocalDate) -> Unit = {},
 ) {
@@ -138,7 +138,7 @@ fun CalendarPanel(
                                 calendar = calendar,
                                 korean = korean,
                                 selected = selected == date,
-                                hasEvents = date in eventDates,
+                                eventTitle = eventTitles[date],
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                                 onClick = {
                                     selected = date
@@ -237,7 +237,7 @@ private fun DayCell(
     calendar: CalendarData,
     korean: Boolean,
     selected: Boolean,
-    hasEvents: Boolean,
+    eventTitle: String?,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
@@ -291,7 +291,7 @@ private fun DayCell(
                     color = dayColor,
                     maxLines = 1,
                 )
-                if (hasEvents) {
+                if (eventTitle != null) {
                     Spacer(Modifier.width(5.dp))
                     Box(
                         Modifier
@@ -313,6 +313,16 @@ private fun DayCell(
                         maxLines = 1,
                     )
                 }
+            }
+            // 날짜 아래에 그날 첫 일정 제목 한 줄. 길면 말줄임한다.
+            if (eventTitle != null) {
+                Text(
+                    text = eventTitle,
+                    style = Home.eventTitle,
+                    color = if (isToday) TodayLunarInk else Kiosk.color.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             Spacer(Modifier.weight(1f))
             if (tag != null) {

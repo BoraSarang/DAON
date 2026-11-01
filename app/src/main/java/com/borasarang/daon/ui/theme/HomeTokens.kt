@@ -71,8 +71,8 @@ object Home {
         fontFeatureSettings = TABULAR,
     )
     val lunar = TextStyle(
-        fontSize = 17.sp,
-        lineHeight = 19.sp,
+        fontSize = 16.sp,
+        lineHeight = 18.sp,
         fontWeight = FontWeight.Medium,
         fontFeatureSettings = TABULAR,
     )
@@ -80,6 +80,12 @@ object Home {
         fontSize = 14.sp,
         lineHeight = 15.sp,
         fontWeight = FontWeight.Bold,
+    )
+    /** 달력 셀의 일정 제목 한 줄. 절기 이름보다 한 단계 부드럽게 둔다. */
+    val eventTitle = TextStyle(
+        fontSize = 14.sp,
+        lineHeight = 16.sp,
+        fontWeight = FontWeight.Medium,
     )
     val farmLabel = TextStyle(
         fontSize = 13.5.sp,
