@@ -483,12 +483,18 @@ fun SettingsPanel(
                             mutableStateOf(KioskMode.isLockTaskActive(activity))
                         }
                         val owner = remember { KioskMode.isDeviceOwner(activity) }
-                        // 시스템 확인 창을 닫고 돌아왔을 때 실제 고정 상태를 다시 읽는다.
+                        // 시스템 확인 창을 닫고 돌아왔을 때 실제 고정 상태를 다시 읽고,
+                        // 실제 상태만 저장한다. 창을 취소했는데 `고정됨`으로 남지 않게 한다.
                         val lifecycleOwner = LocalLifecycleOwner.current
                         DisposableEffect(lifecycleOwner) {
                             val observer = LifecycleEventObserver { _, event ->
                                 if (event == Lifecycle.Event.ON_RESUME) {
-                                    lockActive = KioskMode.isLockTaskActive(activity)
+                                    val active = KioskMode.isLockTaskActive(activity)
+                                    lockActive = active
+                                    if (AppPrefs.kioskLock != active) {
+                                        vm.updateKioskLock(active)
+                                        DebugLogger.i("KIOSK", "saved active=$active")
+                                    }
                                 }
                             }
                             lifecycleOwner.lifecycle.addObserver(observer)
@@ -499,10 +505,15 @@ fun SettingsPanel(
                             desc = stringResource(R.string.settings_kiosk_lock_desc),
                             checked = lockActive,
                             onToggle = { enabled ->
-                                if (enabled) KioskMode.start(activity) else KioskMode.stop(activity)
-                                vm.updateKioskLock(enabled)
-                                lockActive = KioskMode.isLockTaskActive(activity) || enabled
-                                DebugLogger.i("KIOSK", "lock=$enabled owner=$owner")
+                                if (enabled) {
+                                    // 시스템 확인 창이 뜬다. 실제 고정은 ON_RESUME 에서 확인해 저장한다.
+                                    KioskMode.start(activity)
+                                } else {
+                                    KioskMode.stop(activity)
+                                    vm.updateKioskLock(false)
+                                }
+                                lockActive = KioskMode.isLockTaskActive(activity)
+                                DebugLogger.i("KIOSK", "requested=$enabled owner=$owner")
                             },
                             stateText = stringResource(
                                 if (lockActive) R.string.settings_kiosk_on else R.string.settings_kiosk_off,

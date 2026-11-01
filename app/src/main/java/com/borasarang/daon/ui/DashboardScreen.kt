@@ -152,7 +152,15 @@ fun DashboardScreen(vm: DashboardViewModel) {
         ScreenMode.CLOCK -> vm.dwellClock
     }
 
-    LaunchedEffect(screen, dwell, vm.rotationEnabled, paused, rotationStopped) {
+    LaunchedEffect(
+        screen,
+        dwell,
+        vm.rotationEnabled,
+        vm.radioInRotation,
+        vm.tvInRotation,
+        paused,
+        rotationStopped,
+    ) {
         if (!vm.rotationEnabled || paused || rotationStopped) return@LaunchedEffect
         delay(dwell * 1_000L)
         val next = screen.next(vm.radioInRotation, vm.tvInRotation)

@@ -247,7 +247,11 @@ object AppPrefs {
 
     private fun write(block: SharedPreferences.Editor.() -> Unit) {
         try {
-            prefs.edit().apply(block).apply()
+            // 설정은 드물게 바뀌고 양이 적다. apply() 는 메모리에만 먼저 반영하고 디스크
+            // 기록은 미뤄서, 곧바로 앱이 내려가면(키오스크 재부팅·강제 종료) 값이 사라질 수
+            // 있다. 사용자가 바꾼 설정은 바로 확정되도록 commit() 을 쓴다.
+            val saved = prefs.edit().apply(block).commit()
+            if (!saved) DebugLogger.e(ErrorCode.STORE_WRITE, "commit returned false")
         } catch (t: Throwable) {
             DebugLogger.e(ErrorCode.STORE_WRITE, "write failed: ${t.javaClass.simpleName}")
         }
