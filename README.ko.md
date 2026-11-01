@@ -5,6 +5,7 @@
 [![Android](https://img.shields.io/badge/Android-API%2028-3DDC84?logo=android&logoColor=white)](https://github.com/BoraSarang/DAON)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)](https://github.com/BoraSarang/DAON)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Amazon Fire HD 10 (2019)** 태블릿을 벽시계처럼 세워두는 **전체화면 상시 표시(키오스크) 대시보드**입니다. 큰 시계, 이번 달 달력, 실시간 날씨를 어두운 한 화면에 담았고, 2~3m 거리에서도 읽히도록 설계했습니다.
 
@@ -173,4 +174,4 @@ scripts/check-i18n.sh
 
 ## 라이선스
 
-소스는 참고용으로 공개합니다. 모든 권리 보유 — 재사용·재배포·2차 저작물 제작에 대한 라이선스는 허여하지 않습니다.
+MIT 라이선스 — [LICENSE](LICENSE) 참고.

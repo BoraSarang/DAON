@@ -5,6 +5,7 @@
 [![Android](https://img.shields.io/badge/Android-API%2028-3DDC84?logo=android&logoColor=white)](https://github.com/BoraSarang/DAON)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF?logo=kotlin&logoColor=white)](https://github.com/BoraSarang/DAON)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://github.com/BoraSarang/DAON)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tablet: a large clock, the current month calendar, and live weather on a single dark screen — designed to be read from a few meters away.
 
@@ -173,4 +174,4 @@ scripts/check-i18n.sh
 
 ## License
 
-Source is published for reference. All rights reserved — no license is granted for reuse, redistribution, or derivative works.
+MIT License — see [LICENSE](LICENSE).
