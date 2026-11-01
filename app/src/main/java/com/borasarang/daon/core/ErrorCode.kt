@@ -30,6 +30,15 @@ object ErrorCode {
     /** TV 채널 정보가 없거나 목록이 깨졌다. */
     const val TV_CHANNEL = "E-AND-TV-0001"
 
+    /** 뉴스 피드 요청·응답 실패. 로그에 출처 이름을 함께 남긴다. */
+    const val NEWS_FEED = "E-AND-NEWS-0001"
+
+    /** 기사 본문 요청 실패. 사용자에게는 오류가 아니라 RSS 요약으로 보인다. */
+    const val NEWS_ARTICLE = "E-AND-NEWS-0002"
+
+    /** 피드 형식 오류(파싱 0건). 그 출처만 캐시를 유지한다. */
+    const val NEWS_FORMAT = "E-AND-NEWS-0003"
+
     /** 방송사 TV 스트림 주소 확인 실패. */
     const val TV_RESOLVE = "E-AND-TV-0002"
 

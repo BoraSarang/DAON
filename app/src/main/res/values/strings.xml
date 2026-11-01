@@ -296,4 +296,35 @@
     <string name="wmo_thunderstorm">Thunderstorm</string>
     <string name="wmo_thunderstorm_hail">Thunderstorm with hail</string>
     <string name="wmo_unknown">Unknown</string>
+    <!-- 뉴스 티커 -->
+    <string name="news_ticker_label">News</string>
+    <string name="news_ticker_empty">No news yet</string>
+    <!-- 뉴스 패널 -->
+    <string name="news_panel_title">Latest news</string>
+    <string name="news_panel_empty">No news yet</string>
+    <string name="news_retry">Try again</string>
+    <string name="news_panel_hint">Tap a headline to read the article</string>
+    <string name="news_article_summary_note">Showing the summary only</string>
+    <string name="news_article_loading">Loading article…</string>
+    <string name="news_article_empty">No article text available</string>
+    <string name="news_article_back">List</string>
+    <string name="news_article_previous">‹ Previous</string>
+    <string name="news_article_next">Next ›</string>
+    <string name="news_article_index">%1$d / %2$d</string>
+
+    <!-- 뉴스 설정 -->
+    <string name="settings_news">News</string>
+    <string name="settings_news_ticker">News ticker</string>
+    <string name="settings_news_ticker_desc">Slowly scrolls the latest headlines across the top of the calendar.</string>
+    <string name="settings_news_interval">Refresh interval</string>
+    <string name="news_interval_30">30 min</string>
+    <string name="news_interval_60">1 hour</string>
+    <string name="news_interval_180">3 hours</string>
+    <string name="news_interval_360">6 hours</string>
+    <string name="news_refresh_now">Refresh now</string>
+    <string name="news_status_updating">Updating…</string>
+    <string name="news_status_none">No news received yet</string>
+    <string name="news_status_line">Last %1$s · Yonhap %2$d · SBS %3$d</string>
+    <string name="news_status_failed">Last %1$s · Yonhap %2$d · SBS %3$d · offline</string>
+    <string name="settings_news_note">Sources: Yonhap latest news and SBS society RSS. If the internet drops, the last headlines stay on screen and refresh resumes by themselves.</string>
 </resources>

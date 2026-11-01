@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,6 +89,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val radioChannels by vm.radioChannels.collectAsStateWithLifecycle()
     val tv by vm.tv.collectAsStateWithLifecycle()
     val tvChannels by vm.tvChannels.collectAsStateWithLifecycle()
+    val news by vm.news.collectAsStateWithLifecycle()
+    val newsArticle by vm.newsArticle.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -121,6 +125,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
     var screen by rememberSaveable { mutableStateOf(ScreenMode.CALENDAR) }
     var detailDate by remember { mutableStateOf<LocalDate?>(null) }
     var settingsOpen by remember { mutableStateOf(false) }
+    var newsPanelOpen by remember { mutableStateOf(false) }
     /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
     var rotationStopped by remember { mutableStateOf(false) }
 
@@ -146,7 +151,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
 
     /** TV 영상이 나오는 동안에는 화면을 넘기지 않는다(전체 화면 포함). */
     val tvActive = tv.playing || tv.buffering
-    val paused = settingsOpen || detailDate != null || tvActive || tv.fullscreen
+    val paused = settingsOpen || detailDate != null || newsPanelOpen || tvActive || tv.fullscreen
     val dwell = when (screen) {
         ScreenMode.CALENDAR -> vm.dwellCalendar
         ScreenMode.RADIO -> vm.dwellRadio
@@ -180,9 +185,14 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                vm.stopRadio()
-                vm.stopTv()
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    vm.stopRadio()
+                    vm.stopTv()
+                    vm.onAppBackground()
+                }
+                Lifecycle.Event.ON_RESUME -> vm.onAppForeground()
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -190,12 +200,21 @@ fun DashboardScreen(vm: DashboardViewModel) {
     }
 
     BackHandler(
-        enabled = tv.fullscreen || detailDate != null || settingsOpen || screen != ScreenMode.CALENDAR,
+        enabled = tv.fullscreen || detailDate != null || settingsOpen || newsPanelOpen ||
+            screen != ScreenMode.CALENDAR,
     ) {
         when {
             tv.fullscreen -> vm.setTvFullscreen(false)
             detailDate != null -> detailDate = null
             settingsOpen -> settingsOpen = false
+            newsPanelOpen -> {
+                // 기사 → 목록 → 닫기 순서로 한 단계씩 물러난다.
+                if (newsArticle != null) {
+                    vm.closeNewsArticle()
+                } else {
+                    newsPanelOpen = false
+                }
+            }
             else -> screen = ScreenMode.CALENDAR
         }
     }
@@ -205,10 +224,10 @@ fun DashboardScreen(vm: DashboardViewModel) {
             Modifier
                 .fillMaxSize()
                 .background(Kiosk.color.bg)
-                .pointerInput(vm.touchStop, screen, settingsOpen, detailDate) {
+                .pointerInput(vm.touchStop, screen, settingsOpen, detailDate, newsPanelOpen) {
                     detectTapGestures {
-                        // 설정·날짜 상세가 열려 있으면 화면 전환 터치로 보지 않는다.
-                        if (settingsOpen || detailDate != null) return@detectTapGestures
+                        // 설정·날짜 상세·뉴스 패널이 열려 있으면 화면 전환 터치로 보지 않는다.
+                        if (settingsOpen || detailDate != null || newsPanelOpen) return@detectTapGestures
                         // 라디오·TV 는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
                         if (screen == ScreenMode.RADIO || screen == ScreenMode.TV) {
                             return@detectTapGestures
@@ -236,6 +255,13 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         celsius = vm.celsius,
                         eventTitles = eventTitles,
                         todayEvents = todayEvents,
+                        news = news,
+                        newsPaused = settingsOpen || detailDate != null || newsPanelOpen,
+                        onOpenNews = {
+                            // 지난번에 보던 기사가 남아 있으면 목록부터 보여 준다.
+                            vm.closeNewsArticle()
+                            newsPanelOpen = true
+                        },
                         onDateClick = { detailDate = it },
                         onOpenClock = {
                             rotationStopped = false
@@ -362,6 +388,21 @@ fun DashboardScreen(vm: DashboardViewModel) {
                 )
             }
 
+            if (newsPanelOpen) {
+                NewsPanel(
+                    news = news,
+                    article = newsArticle,
+                    korean = korean,
+                    onSelect = { vm.openNewsArticle(it) },
+                    onBack = { vm.closeNewsArticle() },
+                    onClose = {
+                        vm.closeNewsArticle()
+                        newsPanelOpen = false
+                    },
+                    onRefresh = { vm.refreshNewsNow() },
+                )
+            }
+
             if (settingsOpen) {
                 SettingsPanel(
                     vm = vm,
@@ -392,6 +433,9 @@ private fun CalendarHome(
     celsius: Boolean,
     eventTitles: Map<LocalDate, String>,
     todayEvents: List<CalendarEvent>,
+    news: NewsUiState,
+    newsPaused: Boolean,
+    onOpenNews: () -> Unit,
     onDateClick: (LocalDate) -> Unit,
     onOpenClock: () -> Unit,
     onOpenWeather: () -> Unit,
@@ -414,6 +458,9 @@ private fun CalendarHome(
             korean = korean,
             locale = locale,
             todayEvents = todayEvents,
+            news = news,
+            newsPaused = newsPaused,
+            onOpenNews = onOpenNews,
             onOpenToday = { onDateClick(today) },
             radioName = radioName,
             includeRadio = includeRadio,
@@ -468,6 +515,9 @@ private fun HomeTopBar(
     korean: Boolean,
     locale: Locale,
     todayEvents: List<CalendarEvent>,
+    news: NewsUiState,
+    newsPaused: Boolean,
+    onOpenNews: () -> Unit,
     onOpenToday: () -> Unit,
     radioName: String?,
     includeRadio: Boolean,
@@ -517,11 +567,23 @@ private fun HomeTopBar(
         modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.wrapContentWidth()) {
             if (korean) {
                 Row {
-                    Text(dateText, style = Home.date, color = Kiosk.color.textPrimary)
-                    Text(" $weekday", style = Home.date, color = Kiosk.color.accent)
+                    Text(
+                        text = dateText,
+                        style = Home.date,
+                        color = Kiosk.color.textPrimary,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    Text(
+                        text = " $weekday",
+                        style = Home.date,
+                        color = Kiosk.color.accent,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
                 }
             } else {
                 Text(
@@ -539,6 +601,25 @@ private fun HomeTopBar(
                     color = Kiosk.color.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        BoxWithConstraints(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 18.dp, end = 16.dp),
+        ) {
+            // 설정에서 끄면 자리도 차지하지 않는다.
+            // 420px(=280dp) 보다 좁으면 숨긴다. 오늘 일정·라디오 알약이 둘 다 있을 때.
+            if (news.enabled && maxWidth >= 280.dp) {
+                NewsTicker(
+                    items = news.items,
+                    updatedAt = news.updatedAt,
+                    failed = news.failed,
+                    paused = newsPaused,
+                    onClick = onOpenNews,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

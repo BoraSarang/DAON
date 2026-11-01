@@ -46,6 +46,11 @@ object AppPrefs {
     private const val KEY_DEVICE_CALENDAR_ASKED = "device_calendar_asked"
     private const val KEY_KIOSK_LOCK = "kiosk_lock"
     private const val KEY_KIOSK_BOOT = "kiosk_boot"
+    private const val KEY_NEWS_ENABLED = "news_enabled"
+    private const val KEY_NEWS_INTERVAL = "news_interval_min"
+    private const val KEY_NEWS_ITEMS = "news_items"
+
+    private fun newsUpdatedKey(sourceId: String) = "news_updated_$sourceId"
 
     private lateinit var prefs: SharedPreferences
 
@@ -258,6 +263,29 @@ object AppPrefs {
         get() = prefs.getBoolean(KEY_KIOSK_BOOT, false)
         set(value) = write { putBoolean(KEY_KIOSK_BOOT, value) }
 
+    /** 달력 상단 뉴스 티커 표시. 기본 켬. 끄면 네트워크 요청도 하지 않는다. */
+    var newsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_NEWS_ENABLED, true)
+        set(value) = write { putBoolean(KEY_NEWS_ENABLED, value) }
+
+    /** 뉴스 갱신 간격(분). 30·60·180·360, 기본 60. */
+    var newsIntervalMinutes: Int
+        get() = prefs.getInt(KEY_NEWS_INTERVAL, DEFAULT_NEWS_INTERVAL_MIN)
+        set(value) = write { putInt(KEY_NEWS_INTERVAL, value) }
+
+    /** 출처별 최대 30건(합계 60건) 캐시 JSON. 본문은 저장하지 않는다. */
+    var newsItemsJson: String
+        get() = prefs.getString(KEY_NEWS_ITEMS, "") ?: ""
+        set(value) = writeString(KEY_NEWS_ITEMS, value)
+
+    /** 그 출처의 마지막 성공 시각(epoch millis). 한 번도 성공하지 못했으면 0. */
+    fun newsUpdatedAt(sourceId: String): Long =
+        prefs.getLong(newsUpdatedKey(sourceId), 0L)
+
+    fun setNewsUpdatedAt(sourceId: String, millis: Long) {
+        write { putLong(newsUpdatedKey(sourceId), millis) }
+    }
+
     private fun readDouble(key: String): Double? =
         if (prefs.contains(key)) Double.fromBits(prefs.getLong(key, 0L)) else null
 
@@ -284,6 +312,7 @@ object AppPrefs {
     const val DEFAULT_RADIO_VOLUME = 6
     const val DEFAULT_DWELL_TV = 30
     const val DEFAULT_TV_CHANNEL = "kbs1"
+    const val DEFAULT_NEWS_INTERVAL_MIN = 60
 
     /** 설정에서 고를 수 있는 머무는 시간(초). */
     val DWELL_OPTIONS = listOf(10, 20, 30, 60)
