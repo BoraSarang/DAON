@@ -12,14 +12,22 @@ import java.net.URL
 class TvException(val code: String, message: String) : Exception(message)
 
 /**
- * 확인된 재생 주소와 요청 헤더.
+ * 확인된 재생 주소.
  *
  * MBC CDN 은 `Referer` 가 없으면 403 을 준다. 방송사별 헤더를 주소와 함께 넘긴다.
+ * 유튜브 라이브는 매니페스트 대신 공식 임베드 플레이어로 재생하므로 영상 ID 만 넘긴다.
  */
-data class TvStream(
-    val url: String,
-    val headers: Map<String, String> = emptyMap(),
-)
+sealed interface TvStream {
+
+    /** ExoPlayer 로 재생하는 HLS 주소. */
+    data class Hls(
+        val url: String,
+        val headers: Map<String, String> = emptyMap(),
+    ) : TvStream
+
+    /** 유튜브 공식 임베드 플레이어로 재생하는 라이브. */
+    data class YouTube(val videoId: String) : TvStream
+}
 
 /**
  * 방송사별 TV 스트림 주소 확인.
@@ -34,13 +42,17 @@ class TvResolver(
 
     suspend fun resolve(channel: TvChannel): TvStream = withContext(Dispatchers.IO) {
         when (channel.type) {
-            TvSourceType.DIRECT -> TvStream(
+            TvSourceType.DIRECT -> TvStream.Hls(
                 channel.streamUrl?.takeIf { it.startsWith("http") }
                     ?: throw TvException(ErrorCode.TV_CHANNEL, "no direct stream url: ${channel.id}"),
             )
-            TvSourceType.KBS -> TvStream(parseKbs(fetch(channel, USER_AGENT)))
-            TvSourceType.MBC -> TvStream(parseMbc(fetch(channel, USER_AGENT)), MBC_HEADERS)
-            TvSourceType.SBS -> TvStream(parseSbs(fetch(channel, USER_AGENT)))
+            TvSourceType.KBS -> TvStream.Hls(parseKbs(fetch(channel, USER_AGENT)))
+            TvSourceType.MBC -> TvStream.Hls(parseMbc(fetch(channel, USER_AGENT)), MBC_HEADERS)
+            TvSourceType.SBS -> TvStream.Hls(parseSbs(fetch(channel, USER_AGENT)))
+            TvSourceType.YOUTUBE -> TvStream.YouTube(
+                channel.videoId
+                    ?: throw TvException(ErrorCode.TV_CHANNEL, "no video id: ${channel.id}"),
+            )
         }
     }
 

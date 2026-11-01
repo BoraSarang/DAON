@@ -29,7 +29,7 @@ class TvPlayer(private val context: Context) {
     var onEnded: (() -> Unit)? = null
     var onError: ((String) -> Unit)? = null
 
-    fun play(stream: TvStream) {
+    fun play(stream: TvStream.Hls) {
         val exo = ensurePlayer()
         val source = HlsMediaSource.Factory(dataSourceFactory(stream))
             .createMediaSource(MediaItem.fromUri(stream.url))
@@ -50,7 +50,7 @@ class TvPlayer(private val context: Context) {
         player = null
     }
 
-    private fun dataSourceFactory(stream: TvStream): DefaultHttpDataSource.Factory =
+    private fun dataSourceFactory(stream: TvStream.Hls): DefaultHttpDataSource.Factory =
         DefaultHttpDataSource.Factory()
             .setUserAgent(USER_AGENT)
             .setConnectTimeoutMs(CONNECT_TIMEOUT_MS)

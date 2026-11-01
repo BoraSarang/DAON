@@ -24,7 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,12 +79,32 @@ fun TvScreen(
     onRetry: () -> Unit,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
+    onYouTubeStarted: () -> Unit,
+    onYouTubeFailed: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    // 유튜브 채널을 처음 볼 때만 WebView 를 만든다. 다른 채널·화면에서는 메모리를 쓰지 않는다.
+    val youtube = remember(state.youtubeId != null) {
+        if (state.youtubeId != null) YouTubePlayer(context) else null
+    }
+    DisposableEffect(youtube) {
+        onDispose { youtube?.release() }
+    }
+    SideEffect {
+        youtube?.onStarted = onYouTubeStarted
+        youtube?.onError = onYouTubeFailed
+    }
+    LaunchedEffect(youtube, state.youtubeId) {
+        val id = state.youtubeId
+        if (youtube != null && id != null) youtube.load(id)
+    }
+
     if (state.fullscreen && (state.playing || state.buffering)) {
         TvFullscreen(
             state = state,
             korean = korean,
             player = player,
+            youtube = youtube,
             onExit = { onSetFullscreen(false) },
         )
         return
@@ -112,6 +135,7 @@ fun TvScreen(
                     state = state,
                     korean = korean,
                     player = player,
+                    youtube = youtube,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 )
                 Spacer(Modifier.height(Home.panelGap))
@@ -178,6 +202,7 @@ private fun VideoStage(
     state: TvUiState,
     korean: Boolean,
     player: ExoPlayer?,
+    youtube: YouTubePlayer?,
     modifier: Modifier,
 ) {
     val shape = RoundedCornerShape(Home.panelRadiusLarge)
@@ -199,20 +224,25 @@ private fun VideoStage(
                 height = maxWidth / ratio
             }
             Box(Modifier.width(width).height(height), contentAlignment = Alignment.Center) {
-                if (player != null && (state.playing || state.buffering)) {
-                    AndroidView(
-                        factory = { context ->
-                            PlayerView(context).apply {
-                                useController = false
-                                setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
-                                this.player = player
-                            }
-                        },
-                        update = { view -> if (view.player !== player) view.player = player },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                when {
+                    state.playing || state.buffering -> {
+                        if (youtube != null) {
+                            YouTubeSurface(youtube, Modifier.fillMaxSize())
+                        } else if (player != null) {
+                            AndroidView(
+                                factory = { context ->
+                                    PlayerView(context).apply {
+                                        useController = false
+                                        setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+                                        this.player = player
+                                    }
+                                },
+                                update = { view -> if (view.player !== player) view.player = player },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
+                    else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = state.channel?.displayName(korean) ?: "—",
                             style = Home.radioTileName,
@@ -529,10 +559,13 @@ private fun TvFullscreen(
     state: TvUiState,
     korean: Boolean,
     player: ExoPlayer?,
+    youtube: YouTubePlayer?,
     onExit: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (player != null) {
+        if (youtube != null) {
+            YouTubeSurface(youtube, Modifier.fillMaxSize())
+        } else if (player != null) {
             AndroidView(
                 factory = { context ->
                     PlayerView(context).apply {

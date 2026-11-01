@@ -39,6 +39,7 @@ import com.borasarang.daon.data.tv.TvChannel
 import com.borasarang.daon.data.tv.TvException
 import com.borasarang.daon.data.tv.TvPlayer
 import com.borasarang.daon.data.tv.TvResolver
+import com.borasarang.daon.data.tv.TvStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -89,6 +90,8 @@ data class TvUiState(
     val fullscreen: Boolean = false,
     val errorRes: Int? = null,
     val startedAtMs: Long = 0L,
+    /** 유튜브 라이브 채널이면 영상 ID. 화면은 이 값이 있으면 임베드 플레이어를 띄운다. */
+    val youtubeId: String? = null,
 )
 
 /** 현재 위치 조회 상태. 화면에는 [DashboardViewModel.locationStatus] 로 전달한다. */
@@ -1014,8 +1017,19 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         tvJob = viewModelScope.launch {
             try {
                 val stream = tvResolver.resolveWithRetry(channel)
-                tvPlayer.play(stream)
-                tvPlayerInstance = tvPlayer.exoPlayer
+                when (stream) {
+                    is TvStream.Hls -> {
+                        tvPlayer.play(stream)
+                        tvPlayerInstance = tvPlayer.exoPlayer
+                        _tv.update { it.copy(youtubeId = null) }
+                    }
+                    is TvStream.YouTube -> {
+                        // 유튜브는 공식 임베드 플레이어가 그린다. ExoPlayer 는 비운다.
+                        tvPlayer.stop()
+                        tvPlayerInstance = null
+                        _tv.update { it.copy(youtubeId = stream.videoId) }
+                    }
+                }
             } catch (e: TvException) {
                 DebugLogger.e(e.code, "resolve ${channel.id}: ${e.message}")
                 _tv.update {
@@ -1067,9 +1081,41 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 buffering = false,
                 fullscreen = false,
                 startedAtMs = 0L,
+                youtubeId = null,
             )
         }
         DebugLogger.i("TV", "stop")
+    }
+
+    /** 유튜브 임베드 플레이어가 실제로 재생을 시작했을 때. */
+    fun onTvPlaybackStarted() {
+        _tv.update {
+            it.copy(
+                playing = true,
+                buffering = false,
+                errorRes = null,
+                startedAtMs = if (it.startedAtMs > 0L) {
+                    it.startedAtMs
+                } else {
+                    SystemClock.elapsedRealtime()
+                },
+            )
+        }
+    }
+
+    /** 유튜브 임베드 플레이어가 영상을 재생하지 못했을 때(오프라인·임베드 차단 등). */
+    fun onTvPlaybackFailed(reason: String) {
+        DebugLogger.e(ErrorCode.TV_PLAYBACK, "youtube: $reason")
+        _tv.update {
+            it.copy(
+                playing = false,
+                buffering = false,
+                errorRes = R.string.error_tv_playback,
+                startedAtMs = 0L,
+                // WebView 를 반납하고 `다시 시도` 때 새로 만든다.
+                youtubeId = null,
+            )
+        }
     }
 
     /** 오류 뒤 `다시 시도`. 목록이 비었으면 목록부터 다시 읽는다. */

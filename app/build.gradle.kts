@@ -13,8 +13,8 @@ android {
         // Fire OS 7(Android 9, API 28) 대상. java.time 사용을 위해 26 이상 유지.
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.4.0-dev"
+        versionCode = 5
+        versionName = "0.6.0-dev"
     }
 
     androidResources {
@@ -70,6 +70,8 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer.hls)
     // TV 영상 표시(PlayerView).
     implementation(libs.androidx.media3.ui)
+    // 유튜브 라이브 화면. 로컬 HTML 을 https 출처로 띄워 유튜브 임베드의 Referer 검사를 통과한다.
+    implementation(libs.androidx.webkit)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

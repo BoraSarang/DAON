@@ -6,24 +6,32 @@ A full-screen, always-on kiosk dashboard for an **Amazon Fire HD 10 (2019)** tab
 
 ## Status
 
-**v0.5.0-dev** — performance and memory pass (cold start 1.77s median, idle calendar 0 frames/20s) plus `Radio`/`TV` buttons in the calendar top bar. v0.4 added the TV screen (channel list, live video, full screen, rotation paused while watching); the v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
+**v0.6.0-dev** — TV channel change: EBS 1TV/2TV replaced by **YTN News** and **MBC News** (YouTube live, official embed). **v0.5.0-dev** — performance and memory pass (cold start 1.77s median, idle calendar 0 frames/20s) plus `Radio`/`TV` buttons in the calendar top bar. v0.4 added the TV screen (channel list, live video, full screen, rotation paused while watching); the v0.2 calendar-first redesign is implemented and on-device verification continues (T-006/T-007/T-021). The v0.1 baseline was verified on the target device: Fire HD 10 (2019), Fire OS 7.3.1.2 (API 28), 1920×1200 landscape, immersive full screen. Product name: **DAON** (다온).
 
-| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev | v0.5-dev |
-|---|---|---|---|---|---|---|
-| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) | 1.774s (median) |
-| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) | 100–115MB idle · 97MB radio · 126MB TV |
+| Metric | Budget | v0.1 | v0.2-dev | v0.3-dev | v0.4-dev | v0.5-dev | v0.6-dev |
+|---|---|---|---|---|---|---|---|
+| Cold start | ≤ 2.0s | 1.54s | 1.85–1.90s | 1.96s | 1.96s (median) | 1.774s (median) | 1.774s (median) |
+| Memory (PSS) | ≤ 250MB | 65.5MB | ~94MB (while running) | ~120MB (radio playing) | ~145MB (TV playing) | 100–115MB idle · 97MB radio · 126MB TV | 250MB peak (YouTube live) · 184MB after stop |
+
+## v0.6 — TV channels: YouTube live
+
+EBS 1TV/2TV are gone; **YTN News** (`aZyD6EPl6KU`) and **MBC News** (`q9bM12ucTIY`) join KBS 1TV/2TV, MBC and SBS — still six channels. YouTube does not hand out an HLS/DASH manifest (the watch page only exposes `adaptiveFormats`), so ExoPlayer cannot play these two. They run in YouTube's **official IFrame embed player** inside a WebView (`app/src/main/assets/yt_player.html`) served from `https://appassets.androidplatform.net` with `WebViewAssetLoader`; loading the same page with `loadDataWithBaseURL` fails with player error `152` because YouTube cannot verify the referer. Play/stop, channel switching, the LIVE badge and full screen behave exactly like the other channels: the same WebView is moved into the full-screen layout so the stream does not restart. It is destroyed when playback stops or the screen is left, and an error (offline / embed blocked / 25-second timeout) shows the usual retry row.
+
+- Memory: about **250MB PSS while a YouTube channel plays** (the budget ceiling) and about 184MB after it is released; Chromium keeps roughly 100MB until the process restarts. The four terrestrial channels keep using ExoPlayer (~126MB).
+- Verified on the target device (Fire OS 7 WebView, Chromium 70): YTN and MBC News play, full screen keeps the stream, switching between YouTube and HLS channels releases the right player. Tests 65 (two new catalog tests for YouTube ids).
+- Capture: [`21-v0.6-tv-youtube-ko.png`](docs/screenshots/21-v0.6-tv-youtube-ko.png) (YTN News playing next to the six-channel list)
 
 ## v0.5 — Performance and memory
 
 Startup work (calendar assets, weather, location, device calendar, stored events) moved behind the first frame, so the calendar appears sooner. The clock tick no longer lives in the ViewModel: a `rememberNow(perSecond)` helper updates the clock screen every second and the calendar/weather screens only on the minute boundary, so the 42-cell calendar is no longer recomposed every second. Repeat-event expansion runs on `Dispatchers.Default`, `DateTimeFormatter` instances are cached, and the inactive ExoPlayer is released when switching between radio and TV. The calendar top bar now also has `Radio` and `TV` buttons, so both screens stay reachable when they are excluded from the rotation (the `Radio` button is highlighted while the radio plays).
 
-- Measured on the target device: cold start 1.767–1.793s over 5 runs (median 1.774s, was 1.945–2.021s); calendar screen 0 frames in 20 idle seconds; PSS 100–115MB on the calendar, 97MB with radio playing, 126MB with TV playing.
+- Measured on the target device: cold start 1.767–1.793s over 5 runs (median 1.774s, was 1.945–2.021s); calendar screen 0 frames in 20 idle seconds; PSS 100–115MB on the calendar, 97MB with radio playing, 126MB with TV playing; 250MB peak and 184MB after stopping a YouTube channel.
 - The `budget=2000ms` value in the log is informational only — exceeding it never stops the app.
 - Captures: [`19-v0.5-dashboard-nav-ko.png`](docs/screenshots/19-v0.5-dashboard-nav-ko.png) (Radio/TV buttons in the top bar) · [`20-v0.5-radio-active-nav-ko.png`](docs/screenshots/20-v0.5-radio-active-nav-ko.png) (Radio button highlighted while the radio plays)
 
 ## v0.4 — TV
 
-A fifth screen, calendar → radio → **TV** → weather → clock. Six official free streams (KBS 1TV/2TV, MBC, SBS, EBS 1TV/2TV) in a 2×3 list next to a 16:9 video stage. Tapping a channel starts it immediately; the stream URL is resolved on every play because broadcasters hand out short-lived tokens (SBS uses a 60-second JWT, and MBC's CDN returns 403 without a `Referer` header). A large play/stop button and a `Full screen` button sit under the video, and `Exit full screen` returns to the list.
+A fifth screen, calendar → radio → **TV** → weather → clock. Six official free streams (KBS 1TV/2TV, MBC, SBS, EBS 1TV/2TV — v0.6 replaced the two EBS channels with YTN News and MBC News) in a 2×3 list next to a 16:9 video stage. Tapping a channel starts it immediately; the stream URL is resolved on every play because broadcasters hand out short-lived tokens (SBS uses a 60-second JWT, and MBC's CDN returns 403 without a `Referer` header). A large play/stop button and a `Full screen` button sit under the video, and `Exit full screen` returns to the list.
 
 **While TV is playing — including in full screen — the automatic screen rotation stops.** Stopping the channel or leaving the TV screen resumes it. Leaving the screen (the `Calendar` button, back, or the app going to the background) also stops playback, and starting the radio stops the TV and vice versa, so the two never play at once. A `TV` section in settings controls whether the screen joins the rotation, its dwell time, and the default channel.
 
@@ -65,6 +73,8 @@ v0.3 radio: ![radio](docs/screenshots/13-v0.3-radio-ko.png) · ![playing](docs/s
 
 v0.4 TV: ![tv](docs/screenshots/16-v0.4-tv-ko.png) · ![playing](docs/screenshots/17-v0.4-tv-playing-ko.png) · ![fullscreen](docs/screenshots/18-v0.4-tv-fullscreen-ko.png)
 
+v0.6 TV channels: ![youtube](docs/screenshots/21-v0.6-tv-youtube-ko.png)
+
 
 ## Target device
 
@@ -86,7 +96,7 @@ The app avoids Google Play Services entirely. Weather comes from [Open-Meteo](ht
 - Weather: current, feels-like, humidity, wind, rain chance, 3-hourly and 7-day forecasts, farming note, rain/snow/thunder effects, 15-minute refresh
 - Rotation: calendar → radio → TV → weather → clock (the radio and TV screens can be excluded) with per-screen dwell time and two tap behaviours; tap a dashboard card to open that screen, and the `Calendar` button on weather/clock/radio/TV returns home
 - Radio: 10 official free streams, large now-playing panel with play/stop and volume, `♪ channel` pill on the calendar, retry on network failure
-- TV: 6 official free streams, 16:9 video with play/stop and full screen, rotation paused while watching, retry on network failure
+- TV: 6 channels (KBS 1TV/2TV, MBC, SBS + YTN News and MBC News YouTube live), 16:9 video with play/stop and full screen, rotation paused while watching, retry on network failure
 - Kiosk shell: landscape lock, immersive full screen, keep-screen-on, optional screen pinning and start-on-boot
 - Settings panel (in-app): weather point (device location or saved neighborhood), events, clock face, text size, rotation, °C/°F, 12/24-hour, language (System / English / 한국어)
 

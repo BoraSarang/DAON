@@ -1,6 +1,7 @@
 package com.borasarang.daon.data.tv
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -61,6 +62,39 @@ class TvCatalogTest {
         assertTrue(TvCatalog.parse("{not json").isEmpty())
         assertTrue(TvCatalog.parse(null).isEmpty())
         assertTrue(TvCatalog.parse("").isEmpty())
+    }
+
+    @Test
+    fun `parses youtube channels from id or watch url`() {
+        val text = """
+            [
+              {"id":"ytn","name":"YTN 뉴스","category":"뉴스","type":"YOUTUBE","videoId":"aZyD6EPl6KU"},
+              {"id":"mbcnews","name":"MBC 뉴스","category":"뉴스","type":"YOUTUBE",
+               "streamUrl":"https://www.youtube.com/watch?v=q9bM12ucTIY"},
+              {"id":"broken","name":"깨진 채널","type":"YOUTUBE","videoId":"short"}
+            ]
+        """.trimIndent()
+
+        val channels = TvCatalog.parse(text)
+
+        assertEquals(2, channels.size)
+        assertEquals(TvSourceType.YOUTUBE, channels[0].type)
+        assertEquals("aZyD6EPl6KU", channels[0].videoId)
+        assertEquals("q9bM12ucTIY", channels[1].videoId)
+    }
+
+    @Test
+    fun `extracts youtube id from every link shape`() {
+        assertEquals("aZyD6EPl6KU", TvCatalog.videoIdFrom("aZyD6EPl6KU"))
+        assertEquals(
+            "aZyD6EPl6KU",
+            TvCatalog.videoIdFrom("https://www.youtube.com/watch?v=aZyD6EPl6KU&t=10s"),
+        )
+        assertEquals("aZyD6EPl6KU", TvCatalog.videoIdFrom("https://youtu.be/aZyD6EPl6KU?t=10"))
+        assertEquals("aZyD6EPl6KU", TvCatalog.videoIdFrom("https://www.youtube.com/embed/aZyD6EPl6KU"))
+        assertEquals("aZyD6EPl6KU", TvCatalog.videoIdFrom("https://www.youtube.com/live/aZyD6EPl6KU"))
+        assertNull(TvCatalog.videoIdFrom(""))
+        assertNull(TvCatalog.videoIdFrom("https://example.com/not-youtube"))
     }
 
     @Test

@@ -277,6 +277,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         onSetFullscreen = { vm.setTvFullscreen(it) },
                         onRetry = { vm.retryTv() },
                         onOpenSettings = { settingsOpen = true },
+                        onYouTubeStarted = { vm.onTvPlaybackStarted() },
+                        onYouTubeFailed = { vm.onTvPlaybackFailed(it) },
                         onGoHome = {
                             rotationStopped = false
                             screen = ScreenMode.CALENDAR

@@ -2,6 +2,23 @@
 
 형식: `[platform] version — 날짜 — 요약 (error_code / perf / cache 영향)`
 
+## [android] 0.6.0-dev — 2026-11-01
+
+### TV 채널 개편 — 유튜브 라이브 (T-046)
+- **EBS 1TV·2TV 제외**, **YTN 뉴스**(`aZyD6EPl6KU`)·**MBC 뉴스**(`q9bM12ucTIY`) 추가. KBS 1TV·2TV, MBC, SBS 와 함께 6채널 유지
+- 유튜브는 HLS/DASH 매니페스트를 주지 않는다(실측: watch 페이지에 `adaptiveFormats` 만 있고 `hlsManifestUrl`·`dashManifestUrl` 없음). ExoPlayer 로 재생할 수 없어 **유튜브 공식 IFrame 임베드 플레이어**를 WebView(`assets/yt_player.html`)로 띄운다(약관상 유튜브 콘텐츠는 공식 플레이어만 사용)
+- 자산 페이지는 `WebViewAssetLoader` 로 `https://appassets.androidplatform.net` 출처에서 내려 준다. `loadDataWithBaseURL` 로 띄우면 Referer 가 없어 플레이어 오류 **152**(실측) → https 출처로 해결
+- 재생/멈춤·채널 전환·LIVE 배지·전체 화면은 기존 TV 화면 그대로. **전체 화면 전환 시 같은 WebView 를 새 컨테이너로 옮겨 붙여** 스트림이 다시 시작되지 않는다
+- WebView 는 유튜브 채널을 처음 볼 때 만들고, 재생을 멈추거나 화면을 떠나면 `destroy()` 로 반납. 오프라인·임베드 차단·25초 무응답은 `E-AND-TV-0003` + `다시 시도`
+- `TvStream` 을 sealed 로 바꿔 `Hls(url, headers)` / `YouTube(videoId)` 두 갈래. `TvCatalog` 에 `YOUTUBE` 타입과 `videoId`(watch/youtu.be/embed/live 주소도 허용) 추가
+- 실기기 검증: YTN·MBC 뉴스 재생, 전체 화면(영상 유지), HLS↔유튜브 채널 전환 정상. **PSS 유튜브 재생 중 약 250MB(예산 상한), 멈춘 뒤 약 184MB** — Chromium 몫 약 100MB 는 프로세스가 내려갈 때까지 남는다. 지상파 채널은 기존 ExoPlayer 경로(126MB)
+- 테스트 65건(TvCatalog 유튜브 파싱 2건 추가), i18n 261키. `androidx.webkit` 1.12.1 추가
+
+### 키오스크 고정 복원 (T-047)
+- 설정의 `이 앱에 고정` 값을 앱을 새로 켤 때(`MainActivity.restoreKioskLock`) 다시 적용한다. 이전에는 설정만 저장하고 재시작 뒤에는 풀린 채로 남았다
+- 고정 토글은 시스템 확인 창을 닫고 돌아올 때(`ON_RESUME`) 실제 `lockTaskModeState` 를 다시 읽어 화면 표시를 맞춘다
+- 화면 회전 설정(`라디오 화면 포함`·`TV 화면 포함`) 저장·적용 실기기 확인: prefs `radio_in_rotation=false`·`tv_in_rotation=false`, 화면 점 3개, `[ROTATE] auto CALENDAR -> WEATHER after 60s`(라디오·TV 건너뜀)
+
 ## [android] 0.5.0-dev — 2026-11-01
 
 ### 성능·메모리 정리 (T-035·T-036·T-042~T-045)

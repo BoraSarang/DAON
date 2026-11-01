@@ -55,6 +55,10 @@
 - [x] T-040 라디오/TV 동시 재생 방지(하나를 시작하면 다른 하나를 먼저 정지), 오류 코드 `E-AND-TV-0001~0003`, 설정(TV 화면 포함·시간 10/30/60초·기본 채널) (2026-11-01)
 - [x] T-041 실기기 검증: 6채널 전부 재생(KBS1·KBS2·MBC·SBS·EBS1·EBS2), 전체 화면 진입·나가기, 전체 화면 포함 재생 중 자동 전환 정지(75초 이상), 달력·홈 키에서 정지, 라디오→TV 전환 시 라디오 정지, 콜드 스타트 1.945–2.021s(중앙값 1.962s) (2026-11-01)
 
+## v0.6 — TV 채널 개편 + 키오스크 고정 복원 (2026-11-01)
+- [x] T-046 TV 채널: EBS 1TV·2TV 제외, **YTN 뉴스**(`aZyD6EPl6KU`)·**MBC 뉴스**(`q9bM12ucTIY`) 추가. 유튜브는 매니페스트가 없어 **공식 IFrame 임베드 플레이어**를 WebView(`assets/yt_player.html`)로 띄운다. `WebViewAssetLoader` 로 https 출처 제공(오류 152 회피), 전체 화면에서도 같은 WebView 재사용, 재생을 멈추면 `destroy()`. `TvStream` sealed(`Hls`/`YouTube`), `TvCatalog` `videoId` 파싱, 테스트 65건. 실기기 YTN·MBC 뉴스 재생·전체 화면 확인. **PSS 유튜브 재생 중 250MB · 멈춘 뒤 184MB** (2026-11-01)
+- [x] T-047 키오스크 고정 복원: `kioskLock` 을 앱 시작 때 다시 적용(`MainActivity.restoreKioskLock`), 설정 토글은 `ON_RESUME` 에 실제 `lockTaskModeState` 로 재동기화. 화면 회전 `라디오`·`TV` 해제 설정이 저장·적용됨을 실기기에서 확인(prefs false, 화면 점 3개, `CALENDAR → WEATHER`) (2026-11-01)
+
 ## v0.5 — 성능·메모리 정리 (구현 완료, 실기기 검증 완료)
 > 요구: 앱 전체 리팩터링 + 성능·메모리 최적화. 콜드 스타트 예산(2.0s)·PSS(250MB) 유지, 라디오·TV 공식 무료 스트림 원칙 유지
 - [x] T-042 시작 최적화: `init` 에서 하던 달력 자산·날씨·위치·기기 캘린더 조회를 `startBackgroundWork()` 로 분리해 첫 프레임 뒤(`withFrameNanos`)에 시작. 저장된 일정은 `Dispatchers.IO` 에서 읽는다. 콜드 스타트 1.945–2.021s → **1.767–1.793s(중앙값 1.774s)** (2026-11-01)
@@ -67,5 +71,6 @@
 - Fire OS 에 GMS 없음. 이 태블릿은 GPS 하드웨어가 없고 HERE 네트워크 위치도 좌표를 주지 않는다(`location_mode` 유지 불가, TLS 사설 CA 로 백엔드 연결 실패). 그래서 **설정에서 동네를 한 번 검색해 저장**하고, 위치가 정상인 다른 기기에서는 현재 위치를 자동으로 쓴다.
 - Fire OS 7 에는 캘린더 provider(`com.android.providers.calendar`)가 있다. `READ_CALENDAR`를 허용하면 기기 일정을 읽고, 캘린더 계정이 없으면 0건으로 표시된다. provider 자체가 없는 기기만 `UNAVAILABLE`.
 - 키오스크 고정은 Device Owner 가 아니면 Android 화면 고정(스크린 피닝)이며 처음 1회 확인 창이 뜬다. 부팅 자동 시작은 Fire OS 가 막을 수 있다. 등록 명령은 `docs/appstore/data_safety.md` 참조.
+- 유튜브 라이브(YTN·MBC 뉴스)는 기기 WebView(Chromium 70, Fire OS 7.3.1.2)의 공식 임베드 플레이어로 재생한다. 재생 중 PSS 가 예산(250MB) 상한에 닿고, 멈춘 뒤에도 Chromium 몫 약 100MB 가 프로세스가 내려갈 때까지 남는다. 지상파 4채널은 ExoPlayer(126MB) 그대로다. 기기 WebView 가 아주 오래되면 유튜브가 재생을 거부할 수 있으며, 그때는 `다시 시도` 대신 오류로 안내한다.
 - 날씨 API 는 네트워크 필요: 오프라인 시 마지막 성공값 + 오류 배지.
 - 런처 아이콘 워드마크가 아이콘 대비 작게 보임(제공 세트 그대로 적용). 확대가 필요하면 foreground 스케일 조정.
