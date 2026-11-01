@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
+import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 
@@ -226,6 +227,61 @@ fun RadioPill(name: String, onClick: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.widthIn(max = 210.dp),
         )
+    }
+}
+
+/**
+ * 달력 상단의 오늘 일정 요약(T-025). 한 줄만 보여 주고, 누르면 오늘 날짜 상세를 연다.
+ *
+ * 달력 판 아래에 별도 띠를 두면 6주 그리드가 그만큼 줄어들어, 요약을 상단 바로 옮겼다.
+ * 일정이 없으면 아무것도 그리지 않는다.
+ */
+@Composable
+fun TodayAgendaPill(events: List<CalendarEvent>, onClick: () -> Unit) {
+    val first = events.firstOrNull() ?: return
+    val more = events.size - 1
+    Row(
+        modifier = Modifier
+            .height(Home.settingsHeight)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Kiosk.color.accentSoft)
+            .border(
+                1.dp,
+                Kiosk.color.accent.copy(alpha = 0.45f),
+                RoundedCornerShape(10.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.label_today_events),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = Kiosk.color.accent,
+            maxLines = 1,
+        )
+        Spacer(Modifier.width(9.dp))
+        Text(
+            text = buildString {
+                if (first.time != null) append(first.time).append(' ')
+                append(first.title)
+            },
+            fontSize = 16.sp,
+            color = Kiosk.color.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 240.dp),
+        )
+        if (more > 0) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.agenda_more, more),
+                fontSize = 13.sp,
+                color = Kiosk.color.textSecondary,
+                maxLines = 1,
+            )
+        }
     }
 }
 

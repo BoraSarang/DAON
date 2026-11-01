@@ -67,6 +67,12 @@ class CalendarData internal constructor(
 
     private val sortedTermDates: List<LocalDate> = termsByDate.keys.sorted()
 
+    /**
+     * 번들 공휴일 자산이 확정된 마지막 날짜. 비어 있으면 null.
+     * 해가 바뀌면 자산을 갱신해야 하는데, 그 시점을 앱 로그와 테스트로 알린다(T-023).
+     */
+    val holidayCoverageEnd: LocalDate? = holidaysByDate.keys.maxOrNull()
+
     val isLoaded: Boolean get() = lunarCount > 0
 
     /**

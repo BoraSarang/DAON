@@ -119,4 +119,26 @@ class EventJsonTest {
         assertEquals(false, decoded.first().lunar)
         assertEquals(RepeatRule.WEEKLY, decoded.first().repeat)
     }
+
+    @Test
+    fun `round trip keeps skipped occurrence dates and drops broken ones`() {
+        val skipped = setOf(LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 19))
+        val event = CalendarEvent(
+            id = "weekly",
+            date = LocalDate.of(2026, 10, 1),
+            title = "매주 밭 점검",
+            repeat = RepeatRule.WEEKLY,
+            skipDates = skipped,
+        )
+
+        val decoded = EventJson.decode(EventJson.encode(listOf(event)))
+
+        assertEquals(skipped, decoded.single().skipDates)
+
+        val broken = """
+            [{"id":"w","date":"2026-10-01","title":"t","repeat":"WEEKLY",
+              "skipDates":["2026-11-05","nope","2026-13-01"]}]
+        """.trimIndent()
+        assertEquals(setOf(LocalDate.of(2026, 11, 5)), EventJson.decode(broken).single().skipDates)
+    }
 }

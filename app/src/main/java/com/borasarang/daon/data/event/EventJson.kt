@@ -36,6 +36,12 @@ object EventJson {
                         put(KEY_LUNAR_DAY, event.lunarDay)
                         if (event.lunarLeap) put(KEY_LUNAR_LEAP, true)
                     }
+                    if (event.skipDates.isNotEmpty()) {
+                        put(
+                            KEY_SKIP,
+                            JSONArray(event.skipDates.sorted().map { it.toString() }),
+                        )
+                    }
                 },
             )
         }
@@ -74,6 +80,7 @@ object EventJson {
                             lunarMonth = if (validLunar) lunarMonth else 0,
                             lunarDay = if (validLunar) lunarDay else 0,
                             lunarLeap = validLunar && item.optBoolean(KEY_LUNAR_LEAP, false),
+                            skipDates = decodeSkipDates(item.optJSONArray(KEY_SKIP)),
                         ),
                     )
                 }
@@ -92,6 +99,18 @@ object EventJson {
     private const val KEY_LUNAR_MONTH = "lunarMonth"
     private const val KEY_LUNAR_DAY = "lunarDay"
     private const val KEY_LUNAR_LEAP = "lunarLeap"
+    private const val KEY_SKIP = "skipDates"
+
+    /** 건너뛴 날짜 배열. 깨진 값은 버리고 읽을 수 있는 것만 남긴다. */
+    private fun decodeSkipDates(array: JSONArray?): Set<LocalDate> {
+        if (array == null || array.length() == 0) return emptySet()
+        val dates = HashSet<LocalDate>(array.length())
+        for (index in 0 until array.length()) {
+            val text = array.optString(index)
+            runCatching { LocalDate.parse(text) }.getOrNull()?.let { dates.add(it) }
+        }
+        return dates
+    }
 
     private val TIME_PATTERN = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
 }

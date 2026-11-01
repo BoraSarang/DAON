@@ -39,6 +39,7 @@
     <string name="motion_on">On</string>
     <string name="motion_off">Off</string>
     <string name="label_close">Close</string>
+    <string name="label_cancel">Cancel</string>
     <string name="label_city">City</string>
     <string name="label_hour_format">Hour format</string>
     <string name="label_units">Units</string>
@@ -184,6 +185,10 @@
     <string name="detail_event_hint">Add an event</string>
     <string name="detail_event_add">Add</string>
     <string name="detail_event_remove">Delete event</string>
+    <string name="detail_event_skip">Skip this occurrence</string>
+    <string name="detail_event_skip_short">Skip one</string>
+    <string name="detail_event_skip_note">Only this date is removed; the repeating event stays.</string>
+    <string name="detail_event_skip_do">Skip</string>
     <string name="detail_event_device_source">Device calendar · %1$s</string>
     <string name="detail_event_local_source">Added on this tablet</string>
     <string name="detail_event_date_basis">Date</string>

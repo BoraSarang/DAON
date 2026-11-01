@@ -254,4 +254,32 @@ class CalendarAssetsTest {
         assertTrue(required.all { days.has(it) })
         assertEquals("대체공휴일", days.getJSONArray("2026-10-05").getJSONObject(0).getString("name"))
     }
+
+    /**
+     * T-023 갱신 가드.
+     *
+     * 공휴일 자산은 공식 월력요항이 나온 해만 담는다. 기한이 지나면 앱은 공휴일을 조용히
+     * 빼고 그리므로, 해가 바뀌기 전에 테스트가 먼저 실패해 갱신을 알린다.
+     * 절차: docs/api/CALENDAR_DATA.md §5.
+     */
+    @Test
+    fun `holiday asset covers today and the whole next year`() {
+        val days = asset("holidays_2026_2027.json").getJSONObject("days")
+        val keys = days.keys().asSequence().toList()
+        val last = keys.maxOf { LocalDate.parse(it) }
+        val years = keys.mapTo(HashSet()) { it.substring(0, 4).toInt() }
+        val today = LocalDate.now()
+        val message =
+            "공휴일 데이터가 ${years.minOrNull()}-${years.maxOrNull()}년($last 까지)만 있습니다" +
+                "(오늘 $today). docs/api/CALENDAR_DATA.md §5 절차로 새 월력요항을 받아 " +
+                "holidays_*.json 을 갱신하고 앱 버전을 올리세요."
+
+        // 1) 이미 지난 해는 실패. 2) 내년 공휴일이 없으면 미리 실패해 갱신할 시간을 준다.
+        assertTrue(message, !today.isAfter(last))
+        assertTrue(message, today.year in years && today.year + 1 in years)
+        assertTrue(
+            "올해(${today.year}) 공휴일이 비어 있습니다. 자산 범위와 요일을 확인하세요.",
+            keys.any { it.startsWith("${today.year}-") },
+        )
+    }
 }

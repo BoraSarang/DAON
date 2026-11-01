@@ -10,6 +10,9 @@ object ErrorCode {
     const val NET_HTTP = "E-AND-NET-0003"
     const val STORE_WRITE = "E-AND-STORE-0001"
     const val CALENDAR_ASSET = "E-AND-DATA-0001"
+
+    /** 번들 공휴일 자산이 오늘보다 오래되어 갱신이 필요하다. */
+    const val CALENDAR_STALE = "E-AND-DATA-0002"
     const val PERM_LOCATION = "E-AND-PERM-0001"
     const val PERM_CALENDAR = "E-AND-PERM-0002"
     const val KIOSK_LOCK = "E-AND-KIOSK-0001"

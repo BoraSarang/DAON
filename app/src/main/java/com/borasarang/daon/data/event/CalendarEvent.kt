@@ -25,6 +25,9 @@ enum class RepeatRule {
  * [date] 는 양력 기준 시작일이다. [lunar] 가 true 면 [lunarMonth]·[lunarDay]·[lunarLeap] 로
  * 매년 같은 음력 날짜에 다시 나타난다(예: 제사, 생일).
  * [time] 은 "HH:mm" 이며 종일 일정이면 null 이다.
+ *
+ * [skipDates] 는 반복 일정에서 **이 회차만 건너뛴** 날짜들이다. 원본은 그대로 두고
+ * 펼칠 때 빼기 때문에 시리즈 전체를 지우지 않고도 한 회차를 지울 수 있다.
  */
 data class CalendarEvent(
     val id: String,
@@ -38,6 +41,7 @@ data class CalendarEvent(
     val lunarMonth: Int = 0,
     val lunarDay: Int = 0,
     val lunarLeap: Boolean = false,
+    val skipDates: Set<LocalDate> = emptySet(),
 ) {
     /** 반복 일정인지. */
     val isRepeating: Boolean get() = repeat != RepeatRule.NONE || lunar

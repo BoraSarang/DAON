@@ -9,7 +9,8 @@ import java.time.temporal.ChronoUnit
  * 반복 일정을 화면에 보여 줄 기간만큼 펼친다.
  *
  * 저장은 원본 1건만 하고, 화면에는 회차별 사본을 넘긴다. 사본은 [CalendarEvent.id] 가 원본과
- * 같으므로 삭제하면 반복 전체가 지워진다(회차 하나만 지우는 기능은 v0.3 이후).
+ * 같으므로 삭제하면 반복 전체가 지워진다. 한 회차만 지우려면 [CalendarEvent.skipDates] 에
+ * 그 날짜를 넣는다(원본은 남고 그 회차만 사라진다).
  *
  * 음력 일정은 번들 음력 데이터(2025~2040) 범위 안에서만 펼쳐진다. 범위 밖은 조용히 빠진다.
  */
@@ -34,7 +35,10 @@ object EventOccurrences {
             event.repeat == RepeatRule.WEEKLY -> weeklyDates(event.date, from, to)
             else -> emptyList()
         }
-        return dates.map { event.copy(date = it) }
+        // 건너뛴 회차는 원본을 지우지 않고 펼칠 때만 뺀다.
+        return dates
+            .filterNot { it in event.skipDates }
+            .map { event.copy(date = it) }
     }
 
     private fun weeklyDates(start: LocalDate, from: LocalDate, to: LocalDate): List<LocalDate> {

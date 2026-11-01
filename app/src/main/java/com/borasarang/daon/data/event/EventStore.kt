@@ -52,6 +52,22 @@ class EventStore(context: Context) {
         return updated
     }
 
+    /**
+     * 반복 일정에서 [date] 회차만 건너뛴다. 원본은 남고 그 날짜만 화면에서 빠진다.
+     * 반복이 아닌 일정은 이 함수로 지우지 않는다(그때는 [remove]).
+     */
+    fun skipOccurrence(id: String, date: LocalDate): List<CalendarEvent> {
+        val events = all()
+        val target = events.firstOrNull { it.id == id } ?: return events
+        if (!target.isRepeating) return events
+        if (date in target.skipDates) return events
+        val updated = events.map {
+            if (it.id == id) it.copy(skipDates = it.skipDates + date) else it
+        }
+        save(updated)
+        return updated
+    }
+
     private fun save(events: List<CalendarEvent>) {
         try {
             prefs.edit().putString(KEY_EVENTS, EventJson.encode(events)).apply()

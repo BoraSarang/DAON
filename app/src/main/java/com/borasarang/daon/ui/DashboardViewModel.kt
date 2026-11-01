@@ -578,6 +578,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         DebugLogger.i("EVENT", "removed")
     }
 
+    /** 반복 일정의 한 회차만 건너뛴다. 원본은 남는다. */
+    fun skipEventOccurrence(id: String, date: LocalDate) {
+        _localEvents.value = eventStore.skipOccurrence(id, date)
+        DebugLogger.i("EVENT", "skipped occurrence date=$date")
+    }
+
     fun updateKioskLock(enabled: Boolean) {
         AppPrefs.kioskLock = enabled
         DebugLogger.i("SETTINGS", "kioskLock=$enabled")

@@ -77,6 +77,7 @@ fun DateDetailPanel(
     calendarStatus: CalendarStatus,
     onAddEvent: (String, RepeatRule, Boolean) -> Unit,
     onRemoveEvent: (String) -> Unit,
+    onSkipEvent: (String, LocalDate) -> Unit,
     onRequestCalendarPermission: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -162,6 +163,7 @@ fun DateDetailPanel(
                     calendarStatus = calendarStatus,
                     onAdd = onAddEvent,
                     onRemove = onRemoveEvent,
+                    onSkip = onSkipEvent,
                     onRequestCalendarPermission = onRequestCalendarPermission,
                 )
 
@@ -412,6 +414,7 @@ private fun EventSection(
     calendarStatus: CalendarStatus,
     onAdd: (String, RepeatRule, Boolean) -> Unit,
     onRemove: (String) -> Unit,
+    onSkip: (String, LocalDate) -> Unit,
     onRequestCalendarPermission: () -> Unit,
 ) {
     var draft by remember(date) { mutableStateOf("") }
@@ -437,7 +440,7 @@ private fun EventSection(
                 color = Kiosk.color.textMuted,
             )
         } else {
-            events.forEach { event -> EventRow(event, onRemove) }
+            events.forEach { event -> EventRow(event, onRemove, onSkip) }
         }
 
         // 날짜 기준: 같은 날을 양력으로 볼지 음력으로 볼지. 음력은 매년 반복된다.
@@ -613,8 +616,16 @@ private fun repeatLabelRes(rule: RepeatRule): Int = when (rule) {
 }
 
 @Composable
-private fun EventRow(event: CalendarEvent, onRemove: (String) -> Unit) {
+private fun EventRow(
+    event: CalendarEvent,
+    onRemove: (String) -> Unit,
+    onSkip: (String, LocalDate) -> Unit,
+) {
     val removeLabel = stringResource(R.string.detail_event_remove)
+    val skipLabel = stringResource(R.string.detail_event_skip)
+    // 다이얼로그 대신 줄 안에서 한 번 더 확인한다. 키오스크 전체화면이 유지된다.
+    var confirming by remember(event.id, event.date) { mutableStateOf(false) }
+    val canSkip = event.source == EventSource.LOCAL && event.isRepeating
     val sourceText = if (event.source == EventSource.DEVICE) {
         stringResource(
             R.string.detail_event_device_source,
@@ -633,50 +644,122 @@ private fun EventRow(event: CalendarEvent, onRemove: (String) -> Unit) {
         else -> null
     }
     val meta = listOfNotNull(sourceText, repeatText).joinToString(" · ")
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(Kiosk.color.surfaceAlt)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (event.time != null) {
-            Text(
-                text = event.time,
-                style = Home.detailRow,
-                color = Kiosk.color.accent,
-                maxLines = 1,
-            )
-            Spacer(Modifier.width(10.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = event.title,
-                style = Home.detailBody,
-                color = Kiosk.color.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = meta,
-                style = Home.detailNote,
-                color = Kiosk.color.textMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (event.source == EventSource.LOCAL) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onRemove(event.id) }
-                    .semantics { contentDescription = removeLabel },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("×", fontSize = 20.sp, color = Kiosk.color.textMuted)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(Kiosk.color.surfaceAlt)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (event.time != null) {
+                Text(
+                    text = event.time,
+                    style = Home.detailRow,
+                    color = Kiosk.color.accent,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(10.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = event.title,
+                    style = Home.detailBody,
+                    color = Kiosk.color.textPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = meta,
+                    style = Home.detailNote,
+                    color = Kiosk.color.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (canSkip) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { confirming = true }
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                        .semantics { contentDescription = skipLabel },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.detail_event_skip_short),
+                        fontSize = 13.sp,
+                        color = Kiosk.color.textSecondary,
+                        maxLines = 1,
+                    )
+                }
+            }
+            if (event.source == EventSource.LOCAL) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onRemove(event.id) }
+                        .semantics { contentDescription = removeLabel },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("×", fontSize = 20.sp, color = Kiosk.color.textMuted)
+                }
             }
         }
+
+        if (confirming) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Kiosk.color.accentSoft)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.detail_event_skip_note),
+                    style = Home.detailNote,
+                    color = Kiosk.color.textSecondary,
+                    modifier = Modifier.weight(1f),
+                )
+                SkipAction(
+                    label = stringResource(R.string.label_cancel),
+                    accent = false,
+                    onClick = { confirming = false },
+                )
+                SkipAction(
+                    label = stringResource(R.string.detail_event_skip_do),
+                    accent = true,
+                    onClick = {
+                        confirming = false
+                        onSkip(event.id, event.date)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** 일정 건너뛰기 확인 줄의 버튼. 터치 영역은 40dp 이상으로 둔다. */
+@Composable
+private fun SkipAction(label: String, accent: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (accent) Kiosk.color.accent else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (accent) Color(0xFF15181D) else Kiosk.color.textSecondary,
+            maxLines = 1,
+        )
     }
 }

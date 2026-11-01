@@ -351,6 +351,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         vm.addEvent(date, title, repeat, lunar)
                     },
                     onRemoveEvent = { id -> vm.removeEvent(id) },
+                    onSkipEvent = { id, date -> vm.skipEventOccurrence(id, date) },
                     onRequestCalendarPermission = {
                         calendarPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
                     },
@@ -409,6 +410,8 @@ private fun CalendarHome(
             calendar = calendar,
             korean = korean,
             locale = locale,
+            todayEvents = todayEvents,
+            onOpenToday = { onDateClick(today) },
             radioName = radioName,
             includeRadio = includeRadio,
             includeTv = includeTv,
@@ -425,7 +428,6 @@ private fun CalendarHome(
                 korean = korean,
                 locale = locale,
                 eventDates = eventDates,
-                todayEvents = todayEvents,
                 modifier = Modifier.weight(0.7f).fillMaxHeight(),
                 onDateClick = onDateClick,
             )
@@ -462,6 +464,8 @@ private fun HomeTopBar(
     calendar: CalendarData,
     korean: Boolean,
     locale: Locale,
+    todayEvents: List<CalendarEvent>,
+    onOpenToday: () -> Unit,
     radioName: String?,
     includeRadio: Boolean,
     includeTv: Boolean,
@@ -536,6 +540,10 @@ private fun HomeTopBar(
             }
         }
 
+        if (todayEvents.isNotEmpty()) {
+            TodayAgendaPill(events = todayEvents, onClick = onOpenToday)
+            Spacer(Modifier.width(12.dp))
+        }
         if (radioName != null) {
             RadioPill(name = radioName, onClick = onOpenRadio)
             Spacer(Modifier.width(12.dp))

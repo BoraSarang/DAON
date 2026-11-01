@@ -26,7 +26,6 @@ object Home {
     val todayButtonHeight = 38.dp
     val weekdays = 33.dp
     val farmStrip = 65.dp
-    val agendaStrip = 52.dp
     val cellPadH = 8.dp
     val cellPadV = 6.dp
 

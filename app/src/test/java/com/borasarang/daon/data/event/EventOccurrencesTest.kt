@@ -160,4 +160,42 @@ class EventOccurrencesTest {
         assertTrue(occurrences.all { it.id == event.id })
         assertTrue(occurrences.all { it.repeat == RepeatRule.WEEKLY })
     }
+
+    @Test
+    fun `a skipped occurrence disappears while the rest of the series stays`() {
+        val event = event(LocalDate.of(2026, 10, 1), RepeatRule.WEEKLY)
+        val skipped = LocalDate.of(2026, 11, 12)
+
+        val dates = EventOccurrences.expand(
+            event.copy(skipDates = setOf(skipped)),
+            calendar,
+            LocalDate.of(2026, 11, 1),
+            LocalDate.of(2026, 11, 30),
+        ).map { it.date }
+
+        assertEquals(
+            listOf(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 19),
+                LocalDate.of(2026, 11, 26),
+            ),
+            dates,
+        )
+    }
+
+    @Test
+    fun `skipping one occurrence keeps the series and other occurrences`() {
+        val event = event(LocalDate.of(2026, 10, 1), RepeatRule.WEEKLY)
+        val skipped = LocalDate.of(2026, 11, 12)
+
+        val all = EventOccurrences.expand(
+            event.copy(skipDates = setOf(skipped)),
+            calendar,
+            LocalDate.of(2026, 11, 1),
+            LocalDate.of(2026, 11, 30),
+        )
+
+        assertTrue(all.none { it.date == skipped })
+        assertTrue(all.all { it.id == event.id })
+    }
 }
