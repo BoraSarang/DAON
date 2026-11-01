@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +70,7 @@ import com.borasarang.daon.data.City
 import com.borasarang.daon.data.PlaceResult
 import com.borasarang.daon.ui.theme.Kiosk
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
@@ -532,6 +534,7 @@ fun SettingsPanel(
                             mutableStateOf(KioskMode.isLockTaskActive(activity))
                         }
                         val owner = remember { KioskMode.isDeviceOwner(activity) }
+                        val scope = rememberCoroutineScope()
                         // 시스템 확인 창을 닫고 돌아왔을 때 실제 고정 상태를 다시 읽고,
                         // 실제 상태만 저장한다. 창을 취소했는데 `고정됨`으로 남지 않게 한다.
                         val lifecycleOwner = LocalLifecycleOwner.current
@@ -555,8 +558,20 @@ fun SettingsPanel(
                             checked = lockActive,
                             onToggle = { enabled ->
                                 if (enabled) {
-                                    // 시스템 확인 창이 뜬다. 실제 고정은 ON_RESUME 에서 확인해 저장한다.
                                     KioskMode.start(activity)
+                                    // Fire OS 의 '화면 고정됨' 확인 창은 별도 액티비티가 아니라 SystemUI 창이라
+                                    // ON_RESUME 이 오지 않는다. 확인을 누르면 상태가 바뀌므로 잠깐 지켜본다.
+                                    scope.launch {
+                                        repeat(40) {
+                                            delay(250)
+                                            if (KioskMode.isLockTaskActive(activity)) {
+                                                lockActive = true
+                                                if (!AppPrefs.kioskLock) vm.updateKioskLock(true)
+                                                DebugLogger.i("KIOSK", "saved active=true")
+                                                return@launch
+                                            }
+                                        }
+                                    }
                                 } else {
                                     KioskMode.stop(activity)
                                     vm.updateKioskLock(false)
