@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>DAON v0.11 — 뉴스 전용 화면 목업</title>
+<!--
+  목업 전용 파일. 실제 앱은 Compose 로 같은 배치를 그린다.
+  - 기준: 1920×1200 (Fire HD 10), 1dp = 1.5px, 기기 글씨 115% 기준
+  - 제목 40sp → 69px, 본문 24sp → 41px (115% 반영)
+  - ?shot=dark|light 로 한 장면만 1920×1200 으로 렌더한다(캡처용)
+-->
+<style>
+  :root{
+    --z:.52;
+    --bg:#0B0D10; --surface:#12151A; --surface2:#171B21; --surface3:#1E242D;
+    --text:#F2F4F7; --text2:#A7AFBB; --muted:#6E7683;
+    --rule:#232932; --accent:#E8B45A; --accentSoft:rgba(232,180,90,.15);
+    --ok:#57C99B;
+  }
+  .light{
+    --bg:#F4F1EA; --surface:#FFFFFF; --surface2:#EAE5DB; --surface3:#E1DBCE;
+    --text:#1A1D21; --text2:#4B525C; --muted:#5E656F;
+    --rule:#D9D2C6; --accent:#7A500F; --accentSoft:rgba(122,80,15,.12);
+    --ok:#1F7A4E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#05070A;color:var(--text);
+       font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased;font-feature-settings:"tnum"}
+
+  /* ---------- 시트 ---------- */
+  .sheet{display:flex;flex-direction:column;gap:38px;padding:24px;align-items:center}
+  .sheet-head{width:calc(1840px * var(--z));margin-bottom:-4px}
+  .sheet-head h1{font-size:30px;font-weight:800;letter-spacing:-.4px}
+  .sheet-head p{margin-top:8px;font-size:16px;color:#8b93a0;line-height:1.65}
+  .frame{width:calc(1920px * var(--z))}
+  .frame .screen{zoom:var(--z)}
+  .frame figcaption{display:flex;gap:14px;align-items:baseline;margin-top:14px;font-size:16px;color:#9aa3b0}
+  .frame b{color:var(--accent);font-size:18px}
+  .frame .note{color:#6f7783}
+
+  body.shot{padding:0;background:#000}
+  body.shot .sheet{padding:0;gap:0}
+  body.shot .sheet-head,body.shot figcaption{display:none}
+  body.shot .frame{display:none;width:1920px}
+  body.shot .frame.on{display:block}
+  body.shot .frame .screen{zoom:1}
+
+  /* ---------- 화면 ---------- */
+  .screen{position:relative;width:1920px;height:1200px;padding:40px;display:flex;flex-direction:column;
+          background:var(--bg);color:var(--text);overflow:hidden;isolation:isolate}
+  .screen::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(120% 90% at 78% 0%,rgba(232,180,90,.055) 0%,rgba(232,180,90,0) 55%)}
+  .light.screen::before{background:radial-gradient(120% 90% at 78% 0%,rgba(122,80,15,.05) 0%,rgba(122,80,15,0) 55%)}
+  .screen > *{position:relative;z-index:1}
+
+  /* 상단 바 */
+  .topbar{height:88px;flex:0 0 88px;display:flex;align-items:center;gap:24px;margin-bottom:24px}
+  .head-l{flex:1;min-width:0}
+  .head-l .title{font-size:55px;font-weight:700;letter-spacing:-.022em;line-height:1.05;white-space:nowrap}
+  .head-l .sub{font-size:30px;color:var(--text2);font-weight:500;margin-top:3px;white-space:nowrap;
+               overflow:hidden;text-overflow:ellipsis}
+  .head-r{display:flex;align-items:center;gap:18px;flex:0 0 auto}
+  .dots{display:flex;gap:11px;margin-right:8px}
+  .dots i{width:13px;height:13px;border-radius:50%;background:var(--rule);display:block}
+  .dots i.on{background:var(--accent)}
+  .btn{height:64px;padding:0 28px;display:flex;align-items:center;border-radius:13px;
+       background:var(--surface);border:1px solid var(--rule);font-size:24px;font-weight:600;color:var(--text2)}
+  .btn.home{color:var(--accent);font-weight:800;background:var(--accentSoft);border-color:transparent}
+
+  /* ---------- 뉴스 카드 ---------- */
+  .news-card{flex:1;min-height:0;display:flex;flex-direction:column;
+             background:var(--surface);border:1px solid var(--rule);border-radius:27px;
+             padding:44px 64px 32px;position:relative;overflow:hidden}
+  .news-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--accent)}
+  .card-top{display:flex;align-items:center;gap:18px;flex:0 0 auto}
+  .source{padding:9px 18px;border-radius:10px;font-size:24px;font-weight:800;letter-spacing:.01em;
+          background:var(--surface2);border:1px solid var(--rule);color:var(--text2);white-space:nowrap}
+  .source.sbs{background:var(--accentSoft);border-color:rgba(232,180,90,.42);color:var(--accent)}
+  .time{font-size:24px;font-weight:600;color:var(--muted);white-space:nowrap}
+  .counter{margin-left:auto;font-size:24px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .pause-badge{display:none;padding:7px 14px;border-radius:8px;background:var(--accentSoft);
+               border:1px solid rgba(232,180,90,.42);color:var(--accent);font-size:21px;font-weight:800}
+  .paused .pause-badge{display:inline-flex}
+
+  .headline{margin-top:34px;font-size:69px;line-height:1.32;font-weight:800;letter-spacing:-.032em;
+            max-width:1620px;word-break:keep-all;overflow-wrap:break-word;color:var(--text);flex:0 0 auto}
+
+  .news-body{flex:1;min-height:0;display:flex;flex-direction:column;margin-top:34px;position:relative}
+  .article-label{flex:0 0 auto;font-size:22px;font-weight:800;letter-spacing:.08em;color:var(--muted);
+                 margin-bottom:14px}
+  .article-scroll{flex:1;min-height:0;overflow:hidden;position:relative;padding-right:14px}
+  .article-scroll p{font-size:41px;line-height:1.72;letter-spacing:-.012em;font-weight:500;
+                    color:var(--text2);word-break:keep-all;overflow-wrap:break-word;margin-bottom:24px}
+  .article-scroll p:last-child{margin-bottom:0}
+  .article-scroll::after{content:"";position:absolute;left:0;right:0;bottom:0;height:118px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(18,21,26,0) 0%,var(--surface) 88%)}
+  .light .article-scroll::after{background:linear-gradient(180deg,rgba(255,255,255,0) 0%,var(--surface) 88%)}
+
+  .card-foot{margin-top:16px;padding-top:22px;border-top:1px solid var(--rule);
+             display:flex;align-items:center;gap:22px;flex:0 0 auto}
+  .progress{flex:1;height:9px;border-radius:999px;background:var(--surface3);overflow:hidden}
+  .progress i{display:block;height:100%;width:34%;border-radius:999px;background:var(--accent)}
+  .foot-label{font-size:23px;font-weight:600;color:var(--muted);white-space:nowrap}
+
+  .paused-foot{display:none;margin-top:16px;padding-top:22px;border-top:1px solid var(--rule);
+               align-items:center;gap:20px;flex:0 0 auto}
+  .paused .paused-foot{display:flex}
+  .paused .card-foot{display:none}
+  .swipe-hint{flex:1;font-size:24px;font-weight:600;color:var(--text2);white-space:nowrap}
+  .swipe-hint b{color:var(--accent)}
+  .resume{padding:8px 20px;border-radius:10px;background:var(--accentSoft);border:1px solid rgba(232,180,90,.42);
+          color:var(--accent);font-size:22px;font-weight:800;white-space:nowrap}
+
+  /* 화면 순서 */
+  .flow{width:calc(1840px * var(--z));margin-top:2px;padding:26px 30px;border:1px solid #232932;
+        border-radius:16px;background:#0d1014;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .flow .k{font-size:15px;font-weight:800;letter-spacing:.08em;color:#8b93a0;margin-right:8px}
+  .flow .step{font-size:18px;font-weight:600;color:#A7AFBB;padding:7px 13px;border-radius:9px;background:#171B21}
+  .flow .step.on{color:#0B0D10;background:#E8B45A;font-weight:800}
+  .flow .arrow{color:#4b5563;font-size:18px}
+  .flow .note{font-size:15px;color:#6f7783;margin-left:auto}
+
+  @media (max-width: 900px){
+    .sheet{padding:16px}
+    .sheet-head,.frame,.flow{width:calc(1920px * var(--z,.42))}
+    .frame .screen{zoom:var(--z,.42)}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="sheet-head">
+    <h1>DAON v0.11 — 뉴스 전용 화면</h1>
+    <p>자동 전환에 추가하는 큰 뉴스 화면입니다. 제목 아래에 기사 전문을 24sp로 보여 주고, 넘치는 본문은 위아래로
+       스크롤해 읽습니다. 10초마다 다음 기사로 넘어가며, 화면을 멈추면 좌우로 밀어 이전·다음 기사를 봅니다.</p>
+  </header>
+
+  <figure class="frame" data-shot="dark">
+    <div class="screen" id="f-dark"></div>
+    <figcaption><b>1. 뉴스 화면 · 자동</b> 제목 40sp · 본문 24sp · 10초마다 다음 기사
+      <span class="note">· 본문이 길면 아래로 스크롤 · 하단 페이드로 더 있음을 표시</span></figcaption>
+  </figure>
+
+  <figure class="frame" data-shot="light">
+    <div class="screen light" id="f-light"></div>
+    <figcaption><b>2. 뉴스 화면 · 멈춤</b> 멈춘 상태에서 <b>← →</b> 좌우로 밀면 이전·다음 기사
+      <span class="note">· `자동 넘김 다시 시작`으로 자동 전환 복귀</span></figcaption>
+  </figure>
+
+  <div class="flow">
+    <span class="k">자동 전환 순서</span>
+    <span class="step">달력</span><span class="arrow">→</span>
+    <span class="step on">뉴스</span><span class="arrow">→</span>
+    <span class="step">라디오</span><span class="arrow">→</span>
+    <span class="step">TV</span><span class="arrow">→</span>
+    <span class="step">날씨</span><span class="arrow">→</span>
+    <span class="step">시계</span>
+    <span class="note">라디오·TV는 기존처럼 `사용 안 함`으로 빼면 순서에서 건너뜁니다.</span>
+  </div>
+</div>
+
+<template id="news-screen">
+  <div class="topbar">
+    <div class="head-l">
+      <div class="title">뉴스</div>
+      <div class="sub">연합뉴스 · SBS · 12:17 기준</div>
+    </div>
+    <div class="head-r">
+      <div class="btn home">달력</div>
+      <div class="dots"><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="btn">설정</div>
+    </div>
+  </div>
+
+  <div class="news-card" data-card>
+    <div class="card-top">
+      <span class="source" data-source>연합뉴스</span>
+      <span class="time" data-time>12:17</span>
+      <span class="pause-badge">멈춤</span>
+      <span class="counter" data-counter>3 / 20</span>
+    </div>
+    <h2 class="headline" data-title>보완수사 요구 49% 늘어난 경기남부청…수사 초임 인력 약 10%</h2>
+    <div class="news-body">
+      <div class="article-label">기사 전문</div>
+      <div class="article-scroll" data-article></div>
+    </div>
+    <div class="card-foot">
+      <div class="progress"><i></i></div>
+      <span class="foot-label">10초마다 다음 기사 · 아래로 스크롤</span>
+    </div>
+    <div class="paused-foot">
+      <span class="swipe-hint"><b>← →</b> 좌우로 밀어 이전·다음 기사</span>
+      <span class="resume">▶ 자동 넘김 다시 시작</span>
+    </div>
+  </div>
+</template>
+
+<script>
+  const PARAGRAPHS = [
+    "공소청이 출범한 이후 25일간 경기남부경찰청에 접수된 보완수사 요구 건수가 전년 같은 기간보다 50% 가까이 늘어난 것으로 나타났다.",
+    "경기남부청은 2일 정례 기자간담회에서 공소청 출범일인 10월 2일부터 같은 달 26일까지 접수된 보완수사 요구가 총 1천572건으로 집계됐다고 밝혔다.",
+    "이는 전년 같은 기간(1천57건)과 비교해 약 49% 증가한 수치다. 하루 평균 건수로 따지면 42건에서 63건으로 21건 늘었다.",
+    "이 같은 증가세는 개정 형사소송법 시행으로 검사의 수사권이 폐지되면서 사건 처리 방식이 바뀐 데 따른 결과로 풀이된다.",
+    "과거 검찰청 체제에서는 송치 사건에 미진한 부분이 있을 경우 검사가 직접 보완수사를 거쳐 기소 여부를 결정할 수 있었으나, 공소청 전환 이후에는 공소 유지를 위해 추가 확인이 필요한 사항은 물론 서류 형식 미비 등 사소한 문제까지 직접 손을 대지 않고 경찰에 보완수사 요구 형태로 되돌려 보내고 있기 때문이다."
+  ];
+
+  const DATA = {
+    dark: {
+      source: "연합뉴스",
+      time: "12:17",
+      counter: "3 / 20",
+      paused: false,
+      title: "보완수사 요구 49% 늘어난 경기남부청…수사 초임 인력 약 10%",
+      paragraphs: PARAGRAPHS
+    },
+    light: {
+      source: "연합뉴스",
+      time: "12:17",
+      counter: "3 / 20",
+      paused: true,
+      title: "보완수사 요구 49% 늘어난 경기남부청…수사 초임 인력 약 10%",
+      paragraphs: PARAGRAPHS
+    }
+  };
+
+  function render(el, data) {
+    el.innerHTML = document.getElementById("news-screen").innerHTML;
+    const card = el.querySelector("[data-card]");
+    if (data.paused) card.classList.add("paused");
+    el.querySelector("[data-source]").textContent = data.source;
+    el.querySelector("[data-time]").textContent = data.time;
+    el.querySelector("[data-counter]").textContent = data.counter;
+    el.querySelector("[data-title]").textContent = data.title;
+    el.querySelector("[data-article]").innerHTML =
+      data.paragraphs.map(p => `<p>${p}</p>`).join("");
+  }
+
+  const params = new URLSearchParams(location.search);
+  const shot = params.get("shot");
+  if (shot) {
+    document.body.classList.add("shot");
+    const frame = document.querySelector(`.frame[data-shot="${shot}"]`);
+    if (frame) frame.classList.add("on");
+  }
+  render(document.getElementById("f-dark"), DATA.dark);
+  render(document.getElementById("f-light"), DATA.light);
+</script>
+</body>
+</html>

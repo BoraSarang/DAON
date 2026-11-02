@@ -247,7 +247,7 @@ private fun TimeColumn(item: NewsItem, now: LocalDateTime, korean: Boolean) {
 }
 
 @Composable
-private fun SourceChip(source: NewsSource, korean: Boolean) {
+internal fun SourceChip(source: NewsSource, korean: Boolean) {
     val sbs = source == NewsSource.SBS
     Surface(
         color = if (sbs) Kiosk.color.accentSoft else Kiosk.color.surfaceAlt,

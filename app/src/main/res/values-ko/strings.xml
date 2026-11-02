@@ -6,24 +6,28 @@
     <!-- 설정 -->
     <string name="label_settings">설정</string>
     <string name="screen_calendar">달력</string>
+    <string name="screen_news">뉴스</string>
     <string name="screen_weather">날씨</string>
     <string name="screen_clock">시계</string>
     <string name="rotation_paused">자동 전환 멈춤 · 화면을 다시 누르면 시작합니다</string>
     <string name="screen_touch_home">화면을 누르면 달력으로 돌아갑니다</string>
     <string name="screen_touch_resume">화면을 누르면 자동 전환이 다시 시작됩니다</string>
     <string name="screen_touch_stop">화면을 누르면 자동 전환이 멈춥니다</string>
+    <string name="screen_touch_fixed">화면을 두 번 누르면 달력으로 돌아갑니다</string>
 
     <!-- 설정 -->
     <string name="settings_rotation">화면 자동 전환</string>
-    <string name="settings_rotation_desc">손대지 않으면 달력 → 라디오 → TV → 날씨 → 시계 순서로 바뀝니다. 라디오·TV 화면은 빼거나 화면마다 머무는 시간을 정할 수 있습니다.</string>
+    <string name="settings_rotation_desc">손대지 않으면 달력 → 뉴스 → 라디오 → TV → 날씨 → 시계 순서로 바뀝니다. 뉴스·라디오·TV 화면은 빼거나 화면마다 머무는 시간을 정할 수 있습니다.</string>
     <string name="settings_rotation_on">자동 전환 켜짐</string>
     <string name="settings_rotation_off">자동 전환 꺼짐</string>
     <string name="dwell_seconds">%1$d초</string>
     <string name="settings_touch">화면을 누르면</string>
     <string name="touch_dashboard">대시보드로 복귀</string>
     <string name="touch_pause">그 화면에서 멈추기</string>
-    <string name="touch_note_dashboard">날씨·시계 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다.</string>
-    <string name="touch_note_pause">날씨·시계 화면을 누르면 그 화면에 그대로 멈춥니다. 다시 누르면 자동 전환이 시작되고, `달력` 버튼을 누르면 대시보드로 돌아갑니다.</string>
+    <string name="touch_fixed">그 화면에 고정</string>
+    <string name="touch_note_dashboard">날씨·시계·뉴스 화면을 누르면 달력으로 돌아가고 자동 전환이 다시 시작됩니다. 두 번 눌러도 달력으로 돌아옵니다.</string>
+    <string name="touch_note_pause">화면을 누르면 그 화면에 멈춥니다. 다시 누르면 자동 전환이 시작되고, `달력` 버튼을 누르면 대시보드로 돌아갑니다. 두 번 누르면 언제나 달력으로 돌아옵니다.</string>
+    <string name="touch_note_fixed">화면을 누르면 그 화면에 그대로 머뭅니다. 두 번 누르거나 `달력` 버튼을 누르면 대시보드로 돌아갑니다. (라디오·TV는 원래 조작을 그대로 씁니다.)</string>
     <string name="settings_screen">화면</string>
     <string name="settings_screen_note">화면이 고정된 상태에서도 여기서 바꿀 수 있습니다.</string>
     <string name="settings_theme">테마</string>
@@ -311,9 +315,17 @@
     <string name="news_article_previous">‹ 이전 기사</string>
     <string name="news_article_next">다음 기사 ›</string>
     <string name="news_article_index">%1$d / %2$d</string>
+    <string name="news_feed_paused">멈춤</string>
+    <string name="news_feed_progress">10초마다 다음 기사 · 아래로 스크롤</string>
+    <string name="news_feed_swipe_hint">← → 좌우로 밀어 이전·다음 기사</string>
+    <string name="news_feed_resume">▶ 자동 넘김 다시 시작</string>
+    <string name="news_feed_empty">보여 줄 기사가 아직 없습니다</string>
 
     <!-- 뉴스 설정 -->
     <string name="settings_news">뉴스</string>
+    <string name="settings_news_screen">뉴스 화면 자동 전환</string>
+    <string name="settings_news_screen_desc">달력 다음에 기사 한 건을 큰 글씨로 보여 줍니다. 제목 아래에 기사 전문이 나오고, 10초마다 다음 기사로 바뀝니다.</string>
+    <string name="settings_news_screen_note">본문을 위아래로 밀어 읽으면 자동 전환이 멈춥니다. 멈춘 상태에서 좌우로 밀면 이전·다음 기사를 봅니다.</string>
     <string name="settings_news_ticker">뉴스 티커</string>
     <string name="settings_news_ticker_desc">달력 위에 최신 소식을 천천히 흘려 보냅니다.</string>
     <string name="settings_news_interval">새로 고침 간격</string>

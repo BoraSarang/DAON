@@ -66,6 +66,7 @@ import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.KioskMode
 import com.borasarang.daon.core.LocaleController
 import com.borasarang.daon.core.ScreenBrightness
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.PlaceResult
 import com.borasarang.daon.data.news.NewsSchedule
@@ -218,23 +219,30 @@ fun SettingsPanel(
                             fontWeight = FontWeight.SemiBold,
                             color = Kiosk.color.textPrimary,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Kiosk.sm)) {
                             SettingChip(
-                                selected = !vm.touchStop,
+                                selected = vm.touchAction == TouchAction.DASHBOARD,
                                 label = stringResource(R.string.touch_dashboard),
-                                onClick = { vm.updateTouchStop(false) },
-                                modifier = Modifier.weight(1f),
+                                onClick = { vm.updateTouchAction(TouchAction.DASHBOARD) },
                             )
                             SettingChip(
-                                selected = vm.touchStop,
+                                selected = vm.touchAction == TouchAction.PAUSE_TOGGLE,
                                 label = stringResource(R.string.touch_pause),
-                                onClick = { vm.updateTouchStop(true) },
-                                modifier = Modifier.weight(1f),
+                                onClick = { vm.updateTouchAction(TouchAction.PAUSE_TOGGLE) },
+                            )
+                            SettingChip(
+                                selected = vm.touchAction == TouchAction.FIXED,
+                                label = stringResource(R.string.touch_fixed),
+                                onClick = { vm.updateTouchAction(TouchAction.FIXED) },
                             )
                         }
                         Text(
                             text = stringResource(
-                                if (vm.touchStop) R.string.touch_note_pause else R.string.touch_note_dashboard,
+                                when (vm.touchAction) {
+                                    TouchAction.DASHBOARD -> R.string.touch_note_dashboard
+                                    TouchAction.PAUSE_TOGGLE -> R.string.touch_note_pause
+                                    TouchAction.FIXED -> R.string.touch_note_fixed
+                                },
                             ),
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
@@ -356,6 +364,29 @@ fun SettingsPanel(
                             ),
                         )
                         if (news.enabled) {
+                            ToggleRow(
+                                title = stringResource(R.string.settings_news_screen),
+                                desc = stringResource(R.string.settings_news_screen_desc),
+                                checked = vm.newsInRotation,
+                                onToggle = { vm.updateNewsInRotation(it) },
+                                stateText = stringResource(
+                                    if (vm.newsInRotation) R.string.motion_on else R.string.motion_off,
+                                ),
+                            )
+                            if (vm.newsInRotation) {
+                                DwellRow(
+                                    label = stringResource(R.string.screen_news),
+                                    seconds = vm.dwellNews,
+                                    options = AppPrefs.NEWS_DWELL_OPTIONS,
+                                    onSelect = { vm.updateDwell(ScreenMode.NEWS, it) },
+                                )
+                                Text(
+                                    text = stringResource(R.string.settings_news_screen_note),
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp,
+                                    color = Kiosk.color.textMuted,
+                                )
+                            }
                             Text(
                                 text = stringResource(R.string.settings_news_interval),
                                 fontSize = 18.sp,

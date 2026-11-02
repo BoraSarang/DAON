@@ -65,6 +65,7 @@ fun RadioScreen(
     volume: Int,
     includeRadio: Boolean,
     includeTv: Boolean,
+    includeNews: Boolean = true,
     onSelectChannel: (RadioChannel) -> Unit,
     onTogglePlay: () -> Unit,
     onSetVolume: (Int) -> Unit,
@@ -88,6 +89,7 @@ fun RadioScreen(
             onGoHome = onGoHome,
             includeRadio = includeRadio,
             includeTv = includeTv,
+            includeNews = includeNews,
         )
         Spacer(Modifier.height(Home.panelGap))
 

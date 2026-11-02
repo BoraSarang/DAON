@@ -36,16 +36,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.annotation.StringRes
 import com.borasarang.daon.R
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.event.CalendarEvent
 import com.borasarang.daon.ui.theme.Home
 import com.borasarang.daon.ui.theme.Kiosk
 
-/** 화면 점. [includeRadio]·[includeTv] 가 false 면 그 화면을 뺀다. */
+/** 화면 점. [includeNews]·[includeRadio]·[includeTv] 가 false 면 그 화면을 뺀다. */
 @Composable
-fun ScreenDots(current: ScreenMode, includeRadio: Boolean = true, includeTv: Boolean = true) {
+fun ScreenDots(
+    current: ScreenMode,
+    includeRadio: Boolean = true,
+    includeTv: Boolean = true,
+    includeNews: Boolean = true,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        ScreenMode.order(includeRadio, includeTv).forEach { mode ->
+        ScreenMode.order(includeRadio, includeTv, includeNews).forEach { mode ->
             Box(
                 Modifier
                     .size(Home.dot)
@@ -54,6 +61,17 @@ fun ScreenDots(current: ScreenMode, includeRadio: Boolean = true, includeTv: Boo
             )
         }
     }
+}
+
+/**
+ * 화면 아래에 띄우는 터치 안내. 설정한 [TouchAction] 과 현재 멈춤 상태에 맞는 문구를 고른다.
+ */
+@StringRes
+fun rotationHintRes(action: TouchAction, stopped: Boolean): Int = when (action) {
+    TouchAction.DASHBOARD -> R.string.screen_touch_home
+    TouchAction.PAUSE_TOGGLE ->
+        if (stopped) R.string.screen_touch_resume else R.string.screen_touch_stop
+    TouchAction.FIXED -> R.string.screen_touch_fixed
 }
 
 /** 상단 바 오른쪽 설정 버튼. 세 화면이 같은 크기·위치를 쓴다. */
@@ -125,6 +143,7 @@ fun ScreenHeader(
     onGoHome: (() -> Unit)? = null,
     includeRadio: Boolean = true,
     includeTv: Boolean = true,
+    includeNews: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = Home.topBar),
@@ -152,7 +171,7 @@ fun ScreenHeader(
             HomeButton(onClick = onGoHome)
             Spacer(Modifier.width(10.dp))
         }
-        ScreenDots(current, includeRadio, includeTv)
+        ScreenDots(current, includeRadio, includeTv, includeNews)
         Spacer(Modifier.width(18.dp))
         SettingsButton(onClick = onOpenSettings)
     }

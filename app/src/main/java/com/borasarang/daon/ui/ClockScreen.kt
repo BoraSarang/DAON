@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
 import com.borasarang.daon.core.ClockFace
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.calendar.CalendarData
 import com.borasarang.daon.data.calendar.displayName
@@ -112,10 +113,11 @@ fun ClockScreen(
     weather: WeatherUiState,
     celsius: Boolean,
     clockFace: ClockFace,
-    touchStop: Boolean,
+    touchAction: TouchAction,
     stopped: Boolean,
     includeRadio: Boolean = true,
     includeTv: Boolean = true,
+    includeNews: Boolean = true,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
 ) {
@@ -157,6 +159,7 @@ fun ClockScreen(
             onGoHome = onGoHome,
             includeRadio = includeRadio,
             includeTv = includeTv,
+            includeNews = includeNews,
         )
         Spacer(Modifier.height(Home.panelGap))
 
@@ -194,9 +197,7 @@ fun ClockScreen(
         Spacer(Modifier.height(12.dp))
 
         if (!stopped) {
-            RotationHint(
-                stringResource(if (touchStop) R.string.screen_touch_stop else R.string.screen_touch_home),
-            )
+            RotationHint(stringResource(rotationHintRes(touchAction, false)))
         }
     }
 }

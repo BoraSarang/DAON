@@ -13,8 +13,8 @@ android {
         // Fire OS 7(Android 9, API 28) 대상. java.time 사용을 위해 26 이상 유지.
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.9.0-dev"
+        versionCode = 8
+        versionName = "0.11.0-dev"
     }
 
     androidResources {
