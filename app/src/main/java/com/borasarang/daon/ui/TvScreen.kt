@@ -75,6 +75,7 @@ fun TvScreen(
     player: ExoPlayer?,
     includeRadio: Boolean,
     includeTv: Boolean,
+    includeNews: Boolean = true,
     onSelectChannel: (TvChannel) -> Unit,
     onTogglePlay: () -> Unit,
     onSetFullscreen: (Boolean) -> Unit,
@@ -129,6 +130,7 @@ fun TvScreen(
             onGoHome = onGoHome,
             includeRadio = includeRadio,
             includeTv = includeTv,
+            includeNews = includeNews,
         )
         Spacer(Modifier.height(Home.panelGap))
 

@@ -13,6 +13,7 @@ import com.borasarang.daon.core.AppPrefs
 import com.borasarang.daon.core.ClockFace
 import com.borasarang.daon.core.DebugLogger
 import com.borasarang.daon.core.ErrorCode
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.City
 import com.borasarang.daon.data.DeviceLocation
 import com.borasarang.daon.data.Place
@@ -236,7 +237,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var dwellClock by mutableStateOf(AppPrefs.dwellClock)
         private set
-    var touchStop by mutableStateOf(AppPrefs.touchStop)
+    var touchAction by mutableStateOf(AppPrefs.touchAction)
         private set
     var textScale by mutableStateOf(AppPrefs.textScale)
         private set
@@ -263,6 +264,11 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     var tvInRotation by mutableStateOf(AppPrefs.tvInRotation)
         private set
     var dwellTv by mutableStateOf(AppPrefs.dwellTv)
+        private set
+
+    var newsInRotation by mutableStateOf(AppPrefs.newsInRotation)
+        private set
+    var dwellNews by mutableStateOf(AppPrefs.dwellNews)
         private set
     var tvChannelId by mutableStateOf(AppPrefs.tvChannelId)
         private set
@@ -299,8 +305,16 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
     private val _newsArticle = MutableStateFlow<NewsArticleUiState?>(null)
     val newsArticle: StateFlow<NewsArticleUiState?> = _newsArticle.asStateFlow()
 
+    /** 뉴스 전용 화면이 보여 줄 기사. 패널 기사와 따로 둬서 서로 덮어쓰지 않는다. */
+    private val _newsFeedArticle = MutableStateFlow<NewsArticleUiState?>(null)
+    val newsFeedArticle: StateFlow<NewsArticleUiState?> = _newsFeedArticle.asStateFlow()
+
+    /** 한 번 받은 본문은 기사 주소로 기억한다. 화면이 돌아와도 다시 받지 않는다. */
+    private val articleCache = mutableMapOf<String, ArticleExtractor.ArticleContent>()
+
     private var newsJob: Job? = null
     private var articleJob: Job? = null
+    private var feedArticleJob: Job? = null
     private var newsStored: List<NewsItem> = emptyList()
     private var newsFailures = 0
 
@@ -837,6 +851,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         val allowed = when (mode) {
             ScreenMode.RADIO -> AppPrefs.RADIO_DWELL_OPTIONS
             ScreenMode.TV -> AppPrefs.TV_DWELL_OPTIONS
+            ScreenMode.NEWS -> AppPrefs.NEWS_DWELL_OPTIONS
             else -> AppPrefs.DWELL_OPTIONS
         }
         if (seconds !in allowed) return
@@ -861,14 +876,24 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                 AppPrefs.dwellClock = seconds
                 dwellClock = seconds
             }
+            ScreenMode.NEWS -> {
+                AppPrefs.dwellNews = seconds
+                dwellNews = seconds
+            }
         }
         DebugLogger.i("SETTINGS", "dwell ${mode.name}=$seconds")
     }
 
-    fun updateTouchStop(enabled: Boolean) {
-        AppPrefs.touchStop = enabled
-        touchStop = enabled
-        DebugLogger.i("SETTINGS", "touchStop=$enabled")
+    fun updateTouchAction(action: TouchAction) {
+        AppPrefs.touchAction = action
+        touchAction = action
+        DebugLogger.i("SETTINGS", "touchAction=${action.name}")
+    }
+
+    fun updateNewsInRotation(enabled: Boolean) {
+        AppPrefs.newsInRotation = enabled
+        newsInRotation = enabled
+        DebugLogger.i("SETTINGS", "newsInRotation=$enabled")
     }
 
     /** [percent]는 [AppPrefs.TEXT_SCALE_OPTIONS] 중 하나만 허용한다. */
@@ -1312,6 +1337,39 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         articleJob?.cancel()
         articleJob = null
         _newsArticle.value = null
+    }
+
+    /**
+     * 뉴스 전용 화면의 기사 본문. 받은 적이 있으면 메모리에서 바로 보여 준다.
+     * 화면이 자동으로 넘어가도 다음 기사만 새로 받으므로 네트워크를 아끼고 깜빡임을 줄인다.
+     */
+    fun loadNewsFeedArticle(item: NewsItem) {
+        val cached = articleCache[item.id]
+        if (cached != null) {
+            if (_newsFeedArticle.value?.item?.id == item.id && !_newsFeedArticle.value!!.loading) return
+            feedArticleJob?.cancel()
+            _newsFeedArticle.value = NewsArticleUiState(item = item, loading = false, content = cached)
+            return
+        }
+        // 같은 기사를 이미 받는 중이면 그대로 둔다.
+        if (_newsFeedArticle.value?.item?.id == item.id && _newsFeedArticle.value?.loading == true) {
+            return
+        }
+        feedArticleJob?.cancel()
+        _newsFeedArticle.value = NewsArticleUiState(item = item, loading = true)
+        DebugLogger.i("NEWS", "feed article open ${item.source.id}")
+        feedArticleJob = viewModelScope.launch {
+            val content = withContext(Dispatchers.IO) { newsRepository.fetchArticle(item) }
+            // 기사 20건을 여러 번 갱신해도 캐시가 끝없이 커지지 않게 한다.
+            if (articleCache.size >= 40) articleCache.clear()
+            articleCache[item.id] = content
+            if (_newsFeedArticle.value?.item?.id != item.id) return@launch
+            _newsFeedArticle.value = NewsArticleUiState(item = item, loading = false, content = content)
+            DebugLogger.perf(
+                "NEWS",
+                "feed article done chars=${content.paragraphs.sumOf { it.length }} summary=${content.usedSummary}",
+            )
+        }
     }
 
     private fun loadNewsCache(): List<NewsItem> {

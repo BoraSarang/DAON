@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.borasarang.daon.R
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.DailyForecast
 import com.borasarang.daon.data.HourlyForecast
@@ -116,10 +117,11 @@ fun WeatherScreen(
     celsius: Boolean,
     locale: Locale,
     weatherMotion: Boolean,
-    touchStop: Boolean,
+    touchAction: TouchAction,
     stopped: Boolean,
     includeRadio: Boolean = true,
     includeTv: Boolean = true,
+    includeNews: Boolean = true,
     onOpenSettings: () -> Unit,
     onGoHome: () -> Unit,
     onRefresh: () -> Unit,
@@ -154,6 +156,7 @@ fun WeatherScreen(
                 onGoHome = onGoHome,
                 includeRadio = includeRadio,
                 includeTv = includeTv,
+                includeNews = includeNews,
             )
             Spacer(Modifier.height(Home.panelGap))
 
@@ -196,9 +199,7 @@ fun WeatherScreen(
 
             Spacer(Modifier.height(10.dp))
             if (!stopped) {
-                RotationHint(
-                    stringResource(if (touchStop) R.string.screen_touch_stop else R.string.screen_touch_home),
-                )
+                RotationHint(stringResource(rotationHintRes(touchAction, false)))
             }
         }
     }

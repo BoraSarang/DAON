@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.borasarang.daon.R
 import com.borasarang.daon.core.AppPrefs
+import com.borasarang.daon.core.TouchAction
 import com.borasarang.daon.data.DailyForecast
 import com.borasarang.daon.data.Place
 import com.borasarang.daon.data.WeatherSnapshot
@@ -74,6 +75,9 @@ import java.time.LocalDateTime
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
+
+/** 뉴스 화면에서 한 기사를 보여 주는 시간. 화면 머무는 시간과 별개로 이 간격마다 다음 기사로 넘어간다. */
+private const val NEWS_ARTICLE_MS = 10_000L
 
 /**
  * 키오스크 홈. 달력 → 라디오 → TV → 날씨 → 시계 화면을 자동 전환한다(라디오·TV는 설정에서 제외 가능).
@@ -91,6 +95,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
     val tvChannels by vm.tvChannels.collectAsStateWithLifecycle()
     val news by vm.news.collectAsStateWithLifecycle()
     val newsArticle by vm.newsArticle.collectAsStateWithLifecycle()
+    val newsFeedArticle by vm.newsFeedArticle.collectAsStateWithLifecycle()
     val locale = Locale.getDefault()
     val korean = locale.language == "ko"
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -126,6 +131,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
     var detailDate by remember { mutableStateOf<LocalDate?>(null) }
     var settingsOpen by remember { mutableStateOf(false) }
     var newsPanelOpen by remember { mutableStateOf(false) }
+    /** 뉴스 화면이 지금 보여 주는 기사 번호. 화면에 들어올 때 첫 기사부터 시작한다. */
+    var newsIndex by rememberSaveable { mutableStateOf(0) }
     /** 터치 동작이 `그 화면에서 멈추기`일 때 사용자가 직접 멈춘 상태. */
     var rotationStopped by remember { mutableStateOf(false) }
 
@@ -152,8 +159,11 @@ fun DashboardScreen(vm: DashboardViewModel) {
     /** TV 영상이 나오는 동안에는 화면을 넘기지 않는다(전체 화면 포함). */
     val tvActive = tv.playing || tv.buffering
     val paused = settingsOpen || detailDate != null || newsPanelOpen || tvActive || tv.fullscreen
+    // 뉴스를 끄면 화면도 순서에서 빠진다. 기사가 없으면 보여 줄 것도 없다.
+    val newsInRotation = vm.newsInRotation && news.enabled
     val dwell = when (screen) {
         ScreenMode.CALENDAR -> vm.dwellCalendar
+        ScreenMode.NEWS -> vm.dwellNews
         ScreenMode.RADIO -> vm.dwellRadio
         ScreenMode.TV -> vm.dwellTv
         ScreenMode.WEATHER -> vm.dwellWeather
@@ -166,14 +176,31 @@ fun DashboardScreen(vm: DashboardViewModel) {
         vm.rotationEnabled,
         vm.radioInRotation,
         vm.tvInRotation,
+        newsInRotation,
         paused,
         rotationStopped,
     ) {
         if (!vm.rotationEnabled || paused || rotationStopped) return@LaunchedEffect
         delay(dwell * 1_000L)
-        val next = screen.next(vm.radioInRotation, vm.tvInRotation)
+        val next = screen.next(vm.radioInRotation, vm.tvInRotation, newsInRotation)
         DebugLogger.i("ROTATE", "auto ${screen.name} -> ${next.name} after ${dwell}s")
         screen = next
+    }
+
+    // 뉴스 화면에 들어오면 첫 기사부터. 기사는 10초마다 다음으로 넘어간다.
+    LaunchedEffect(screen) {
+        if (screen == ScreenMode.NEWS) newsIndex = 0
+    }
+    val newsCount = news.items.size
+    val newsItem = if (newsCount == 0) null else news.items[newsIndex % newsCount]
+    LaunchedEffect(screen, newsIndex, newsCount, paused, rotationStopped, vm.rotationEnabled) {
+        if (screen != ScreenMode.NEWS || newsCount == 0) return@LaunchedEffect
+        if (paused || rotationStopped || !vm.rotationEnabled) return@LaunchedEffect
+        delay(NEWS_ARTICLE_MS)
+        newsIndex = (newsIndex + 1) % newsCount
+    }
+    LaunchedEffect(screen, newsItem?.id) {
+        if (screen == ScreenMode.NEWS && newsItem != null) vm.loadNewsFeedArticle(newsItem)
     }
 
     // TV 화면을 떠나면 재생을 멈춘다. 라디오처럼 백그라운드 재생은 두지 않는다.
@@ -224,21 +251,44 @@ fun DashboardScreen(vm: DashboardViewModel) {
             Modifier
                 .fillMaxSize()
                 .background(Kiosk.color.bg)
-                .pointerInput(vm.touchStop, screen, settingsOpen, detailDate, newsPanelOpen) {
-                    detectTapGestures {
-                        // 설정·날짜 상세·뉴스 패널이 열려 있으면 화면 전환 터치로 보지 않는다.
-                        if (settingsOpen || detailDate != null || newsPanelOpen) return@detectTapGestures
-                        // 라디오·TV 는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
-                        if (screen == ScreenMode.RADIO || screen == ScreenMode.TV) {
-                            return@detectTapGestures
-                        }
-                        DebugLogger.i("ROTATE", "tap screen=${screen.name} touchStop=${vm.touchStop} stopped=$rotationStopped")
-                        if (vm.touchStop) {
-                            rotationStopped = !rotationStopped
-                        } else if (screen != ScreenMode.CALENDAR) {
-                            screen = ScreenMode.CALENDAR
-                        }
-                    }
+                .pointerInput(vm.touchAction, screen, settingsOpen, detailDate, newsPanelOpen) {
+                    detectTapGestures(
+                        // 두 번 탭하면 어느 설정에서든 달력으로 돌아간다.
+                        // 라디오·TV 는 채널·재생 조작이 우선이라 제외한다.
+                        onDoubleTap = {
+                            if (settingsOpen || detailDate != null || newsPanelOpen) {
+                                return@detectTapGestures
+                            }
+                            if (screen == ScreenMode.RADIO || screen == ScreenMode.TV) {
+                                return@detectTapGestures
+                            }
+                            DebugLogger.i("ROTATE", "double tap screen=${screen.name} -> calendar")
+                            rotationStopped = false
+                            if (screen != ScreenMode.CALENDAR) screen = ScreenMode.CALENDAR
+                        },
+                        onTap = {
+                            // 설정·날짜 상세·뉴스 패널이 열려 있으면 화면 전환 터치로 보지 않는다.
+                            if (settingsOpen || detailDate != null || newsPanelOpen) {
+                                return@detectTapGestures
+                            }
+                            // 라디오·TV 는 빈 곳을 눌러도 아무 일도 하지 않는다. 터치는 채널·재생에만 쓴다.
+                            if (screen == ScreenMode.RADIO || screen == ScreenMode.TV) {
+                                return@detectTapGestures
+                            }
+                            DebugLogger.i(
+                                "ROTATE",
+                                "tap screen=${screen.name} action=${vm.touchAction.name} stopped=$rotationStopped",
+                            )
+                            when (vm.touchAction) {
+                                TouchAction.DASHBOARD -> if (screen != ScreenMode.CALENDAR) {
+                                    rotationStopped = false
+                                    screen = ScreenMode.CALENDAR
+                                }
+                                TouchAction.PAUSE_TOGGLE -> rotationStopped = !rotationStopped
+                                TouchAction.FIXED -> rotationStopped = true
+                            }
+                        },
+                    )
                 },
         ) {
             Crossfade(targetState = screen, animationSpec = tween(250), label = "screen") { mode ->
@@ -276,6 +326,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         radioName = radio.channel?.displayName(korean)?.takeIf { radio.playing },
                         includeRadio = vm.radioInRotation,
                         includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
                         onOpenRadio = {
                             rotationStopped = false
                             screen = ScreenMode.RADIO
@@ -285,6 +336,30 @@ fun DashboardScreen(vm: DashboardViewModel) {
                             screen = ScreenMode.TV
                         },
                     )
+                    ScreenMode.NEWS -> NewsScreen(
+                        nowState = nowState,
+                        news = news,
+                        article = newsFeedArticle,
+                        index = newsIndex,
+                        paused = rotationStopped,
+                        korean = korean,
+                        includeRadio = vm.radioInRotation,
+                        includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
+                        onOpenSettings = { settingsOpen = true },
+                        onGoHome = {
+                            rotationStopped = false
+                            screen = ScreenMode.CALENDAR
+                        },
+                        onPause = { rotationStopped = true },
+                        onResume = { rotationStopped = false },
+                        onPrevious = {
+                            if (newsCount > 0) newsIndex = (newsIndex - 1 + newsCount) % newsCount
+                        },
+                        onNext = {
+                            if (newsCount > 0) newsIndex = (newsIndex + 1) % newsCount
+                        },
+                    )
                     ScreenMode.RADIO -> RadioScreen(
                         channels = radioChannels,
                         state = radio,
@@ -292,6 +367,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         volume = vm.radioVolume,
                         includeRadio = vm.radioInRotation,
                         includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
                         onSelectChannel = { vm.playChannel(it) },
                         onTogglePlay = { vm.toggleRadio() },
                         onSetVolume = { vm.updateRadioVolume(it) },
@@ -309,6 +385,7 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         player = vm.tvPlayerInstance,
                         includeRadio = vm.radioInRotation,
                         includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
                         onSelectChannel = { vm.playTvChannel(it) },
                         onTogglePlay = { vm.toggleTv() },
                         onSetFullscreen = { vm.setTvFullscreen(it) },
@@ -327,10 +404,11 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         celsius = vm.celsius,
                         locale = locale,
                         weatherMotion = vm.weatherMotion && !settingsOpen,
-                        touchStop = vm.touchStop,
+                        touchAction = vm.touchAction,
                         stopped = rotationStopped,
                         includeRadio = vm.radioInRotation,
                         includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -348,10 +426,11 @@ fun DashboardScreen(vm: DashboardViewModel) {
                         weather = weather,
                         celsius = vm.celsius,
                         clockFace = vm.clockFace,
-                        touchStop = vm.touchStop,
+                        touchAction = vm.touchAction,
                         stopped = rotationStopped,
                         includeRadio = vm.radioInRotation,
                         includeTv = vm.tvInRotation,
+                        includeNews = newsInRotation,
                         onOpenSettings = { settingsOpen = true },
                         onGoHome = {
                             rotationStopped = false
@@ -361,7 +440,8 @@ fun DashboardScreen(vm: DashboardViewModel) {
                 }
             }
 
-            if (rotationStopped) {
+            // 뉴스 화면은 자체 하단 안내(좌우 넘김·다시 시작)가 있어 겹치지 않게 한다.
+            if (rotationStopped && screen != ScreenMode.NEWS) {
                 Box(Modifier.align(Alignment.BottomCenter)) {
                     RotationHint(stringResource(R.string.rotation_paused))
                 }
@@ -444,6 +524,7 @@ private fun CalendarHome(
     radioName: String?,
     includeRadio: Boolean,
     includeTv: Boolean,
+    includeNews: Boolean,
     onOpenRadio: () -> Unit,
     onOpenTv: () -> Unit,
 ) {
@@ -465,6 +546,7 @@ private fun CalendarHome(
             radioName = radioName,
             includeRadio = includeRadio,
             includeTv = includeTv,
+            includeNews = includeNews,
             onOpenRadio = onOpenRadio,
             onOpenTv = onOpenTv,
             onOpenSettings = onOpenSettings,
@@ -522,6 +604,7 @@ private fun HomeTopBar(
     radioName: String?,
     includeRadio: Boolean,
     includeTv: Boolean,
+    includeNews: Boolean,
     onOpenRadio: () -> Unit,
     onOpenTv: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -632,7 +715,7 @@ private fun HomeTopBar(
             RadioPill(name = radioName, onClick = onOpenRadio)
             Spacer(Modifier.width(12.dp))
         }
-        ScreenDots(ScreenMode.CALENDAR, includeRadio, includeTv)
+        ScreenDots(ScreenMode.CALENDAR, includeRadio, includeTv, includeNews)
         Spacer(Modifier.width(18.dp))
         // 자동 전환이 꺼져 있어도 라디오·TV 로 들어갈 길을 항상 남긴다.
         NavButton(

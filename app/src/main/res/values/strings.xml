@@ -6,24 +6,28 @@
     <!-- Settings -->
     <string name="label_settings">Settings</string>
     <string name="screen_calendar">Calendar</string>
+    <string name="screen_news">News</string>
     <string name="screen_weather">Weather</string>
     <string name="screen_clock">Clock</string>
     <string name="rotation_paused">Auto-rotate paused · tap the screen to resume</string>
     <string name="screen_touch_home">Tap the screen to return to the calendar</string>
     <string name="screen_touch_resume">Tap the screen to resume auto-rotation</string>
     <string name="screen_touch_stop">Tap the screen to pause auto-rotation</string>
+    <string name="screen_touch_fixed">Double-tap the screen to return to the calendar</string>
 
     <!-- Settings -->
     <string name="settings_rotation">Screen rotation</string>
-    <string name="settings_rotation_desc">When idle, the screen changes calendar → radio → TV → weather → clock. You can leave the radio or TV screen out and set how long each screen stays.</string>
+    <string name="settings_rotation_desc">When idle, the screen changes calendar → news → radio → TV → weather → clock. You can leave the news, radio, or TV screen out and set how long each screen stays.</string>
     <string name="settings_rotation_on">Rotation on</string>
     <string name="settings_rotation_off">Rotation off</string>
     <string name="dwell_seconds">%1$ds</string>
     <string name="settings_touch">When the screen is tapped</string>
     <string name="touch_dashboard">Return to dashboard</string>
     <string name="touch_pause">Pause on this screen</string>
-    <string name="touch_note_dashboard">Tapping the weather or clock screen returns to the calendar and restarts auto-rotation.</string>
-    <string name="touch_note_pause">Tapping the weather or clock screen pauses there. Tap again to resume auto-rotation, or tap the Calendar button to return to the dashboard.</string>
+    <string name="touch_fixed">Stay on this screen</string>
+    <string name="touch_note_dashboard">Tapping the weather, clock, or news screen returns to the calendar and restarts auto-rotation. A double tap also returns to the calendar.</string>
+    <string name="touch_note_pause">Tapping the screen pauses there. Tap again to resume auto-rotation, or tap the Calendar button to return to the dashboard. A double tap always returns to the calendar.</string>
+    <string name="touch_note_fixed">Tapping the screen keeps it there. A double tap or the Calendar button returns to the dashboard. (Radio and TV keep their own controls.)</string>
     <string name="settings_screen">Screen</string>
     <string name="settings_screen_note">You can change these here even while the screen is pinned.</string>
     <string name="settings_theme">Theme</string>
@@ -311,9 +315,17 @@
     <string name="news_article_previous">‹ Previous</string>
     <string name="news_article_next">Next ›</string>
     <string name="news_article_index">%1$d / %2$d</string>
+    <string name="news_feed_paused">Paused</string>
+    <string name="news_feed_progress">Next article in 10s · scroll for more</string>
+    <string name="news_feed_swipe_hint">← → Swipe for previous or next article</string>
+    <string name="news_feed_resume">▶ Resume auto-rotation</string>
+    <string name="news_feed_empty">No news to show yet</string>
 
     <!-- 뉴스 설정 -->
     <string name="settings_news">News</string>
+    <string name="settings_news_screen">News screen in rotation</string>
+    <string name="settings_news_screen_desc">Shows one article at a time after the calendar, with the full text in large type. Articles change every 10 seconds.</string>
+    <string name="settings_news_screen_note">Scroll the article body to read; auto-rotation pauses. While paused, swipe left or right for the previous or next article.</string>
     <string name="settings_news_ticker">News ticker</string>
     <string name="settings_news_ticker_desc">Slowly scrolls the latest headlines across the top of the calendar.</string>
     <string name="settings_news_interval">Refresh interval</string>

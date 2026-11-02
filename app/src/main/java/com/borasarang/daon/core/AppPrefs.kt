@@ -28,6 +28,7 @@ object AppPrefs {
     private const val KEY_DWELL_TV = "dwell_tv"
     private const val KEY_TV_CHANNEL = "tv_channel"
     private const val KEY_TOUCH_STOP = "touch_stop"
+    private const val KEY_TOUCH_ACTION = "touch_action"
     private const val KEY_TEXT_SCALE = "text_scale"
     private const val KEY_WEATHER_MOTION = "weather_motion"
     private const val KEY_CLOCK_FACE = "clock_face"
@@ -47,6 +48,8 @@ object AppPrefs {
     private const val KEY_KIOSK_LOCK = "kiosk_lock"
     private const val KEY_KIOSK_BOOT = "kiosk_boot"
     private const val KEY_NEWS_ENABLED = "news_enabled"
+    private const val KEY_NEWS_IN_ROTATION = "news_in_rotation"
+    private const val KEY_DWELL_NEWS = "dwell_news"
     private const val KEY_NEWS_INTERVAL = "news_interval_min"
     private const val KEY_NEWS_ITEMS = "news_items"
 
@@ -129,15 +132,40 @@ object AppPrefs {
         get() = prefs.getInt(KEY_DWELL_TV, DEFAULT_DWELL_TV)
         set(value) = write { putInt(KEY_DWELL_TV, value) }
 
+    /** 뉴스 화면을 자동 전환에 넣을지. 기본 켬. */
+    var newsInRotation: Boolean
+        get() = prefs.getBoolean(KEY_NEWS_IN_ROTATION, true)
+        set(value) = write { putBoolean(KEY_NEWS_IN_ROTATION, value) }
+
+    /** 뉴스 화면에 머무는 시간(초). 허용값 10·30·60. */
+    var dwellNews: Int
+        get() = prefs.getInt(KEY_DWELL_NEWS, DEFAULT_DWELL_NEWS)
+        set(value) = write { putInt(KEY_DWELL_NEWS, value) }
+
     /** 마지막으로 고른 TV 채널 id. */
     var tvChannelId: String
         get() = prefs.getString(KEY_TV_CHANNEL, DEFAULT_TV_CHANNEL) ?: DEFAULT_TV_CHANNEL
         set(value) = writeString(KEY_TV_CHANNEL, value)
 
-    /** true면 터치 시 현재 화면에서 멈춤, false면 대시보드(달력)로 복귀. */
-    var touchStop: Boolean
-        get() = prefs.getBoolean(KEY_TOUCH_STOP, false)
-        set(value) = write { putBoolean(KEY_TOUCH_STOP, value) }
+    /**
+     * 자동 전환 중 화면을 한 번 탭했을 때의 동작.
+     *
+     * 예전 `touch_stop`(true=멈춤, false=달력)만 있는 기기는 그 값으로 옮겨 읽는다.
+     * 새 키가 생기면 `touch_action` 이 우선이다.
+     */
+    var touchAction: TouchAction
+        get() {
+            val saved = prefs.getString(KEY_TOUCH_ACTION, null)
+            if (saved != null) {
+                TouchAction.entries.firstOrNull { it.name == saved }?.let { return it }
+            }
+            return if (prefs.getBoolean(KEY_TOUCH_STOP, false)) {
+                TouchAction.PAUSE_TOGGLE
+            } else {
+                TouchAction.DASHBOARD
+            }
+        }
+        set(value) = writeString(KEY_TOUCH_ACTION, value.name)
 
     /** 글씨 배율(%). 90·100·115. 100이 승인 목업 크기다. */
     var textScale: Int
@@ -312,6 +340,7 @@ object AppPrefs {
     const val DEFAULT_RADIO_VOLUME = 6
     const val DEFAULT_DWELL_TV = 30
     const val DEFAULT_TV_CHANNEL = "kbs1"
+    const val DEFAULT_DWELL_NEWS = 30
     const val DEFAULT_NEWS_INTERVAL_MIN = 60
 
     /** 설정에서 고를 수 있는 머무는 시간(초). */
@@ -322,6 +351,9 @@ object AppPrefs {
 
     /** TV 화면도 10·30·60초만 고른다. */
     val TV_DWELL_OPTIONS = listOf(10, 30, 60)
+
+    /** 뉴스 화면도 10·30·60초만 고른다. 30초면 기사 3건(10초씩)을 본다. */
+    val NEWS_DWELL_OPTIONS = listOf(10, 30, 60)
 
     /** 글씨 배율 선택지(%). */
     val TEXT_SCALE_OPTIONS = listOf(90, 100, 115)
