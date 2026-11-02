@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -190,7 +191,11 @@ private fun Marquee(
             },
     ) {
         Row(
-            modifier = Modifier.graphicsLayer { translationX = -offset },
+            // 부모 폭으로 제한하면 첫 화면에 들어가는 1~2건만 측정되고 나머지는 잘린다.
+            // 폭을 무제한으로 측정해 두 벌 전체 제목 폭을 확보한 뒤, 바깥 Box 가 잘라 낸다.
+            modifier = Modifier
+                .wrapContentWidth(unbounded = true, align = Alignment.Start)
+                .graphicsLayer { translationX = -offset },
         ) {
             MarqueeHalf(
                 items = items,

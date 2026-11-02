@@ -2,6 +2,23 @@
 
 형식: `[platform] version — 날짜 — 요약 (error_code / perf / cache 영향)`
 
+## [android] 0.10.0-dev — 2026-11-02 — 뉴스 티커 전체 흐름 + TV 탭·화질
+
+### 뉴스 티커 (T-059)
+- **원인**: 마퀴 내용 Row 가 부모(티커) 폭 제약 안에서 측정돼 첫 화면 폭만큼만 글자가 배치됐고, `halfWidth` 도 그 폭이라 1~2건만 잘려 반복됐다
+- **수정**: 내용 Row 에 `wrapContentWidth(unbounded = true, align = Alignment.Start)` 를 적용해 두 벌 전체 제목 폭을 측정한다. 바깥 Box 의 `clipToBounds` 가 화면 밖을 자르고, 30fps `graphicsLayer.translationX` 방식은 그대로다
+- 실기기(Fire HD 10)에서 8초 간격 캡처 2장으로 서로 다른 헤드라인이 이어서 흐르는 것을 확인
+
+### TV 탭·전체화면 (T-060)
+- 영상 판 위에 `VideoTapGuard` 오버레이를 올렸다. **싱글 탭은 소비만 하고 아무 동작도 하지 않으며, 더블 탭이 전체화면 진입/나가기**를 토글한다. 기존 `전체 화면`·`전체 화면 나가기` 버튼은 그대로 동작한다
+- YouTube WebView 가 탭을 재생/일시정지로 처리하던 경로를 막았다: `controls:0`, `disablekb:1`, `vq:"small"`, `setPlaybackQuality("small")`, iframe `pointer-events:none`
+- 실기기 확인: KBS1 HLS 재생 중 싱글 탭 후 경과 타이머가 계속 증가, YTN YouTube 재생·컨트롤 숨김·싱글 탭 무반응. 더블 탭 전체화면은 사용자 눈 확인 대기
+
+### HLS 화질 상한 (T-060)
+- `DefaultTrackSelector` 로 640×360·800kbps 상한 + 최저 비트레이트 우선. 낮은 화질이 없는 단일 스트림은 `setExceedVideoConstraintsIfNecessary(true)` 로 원본을 유지해 검은 화면을 막는다
+- `[PERF] [TV] video=WxH` 로그 추가. KBS1 원본이 1280×720 한 가지뿐이라 실측도 `1280x720` — 하향은 스트림에 낮은 rendition 이 있을 때만 적용된다
+- 테스트 92건 통과 · `assembleDebug` 성공 · Fire HD 10 설치·실행 확인
+
 ## [android] 0.9.0-dev — 2026-11-01 — 오늘의 뉴스 티커
 
 ### 티커 (T-052~T-056)
