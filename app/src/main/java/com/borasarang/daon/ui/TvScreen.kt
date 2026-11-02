@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -106,6 +108,7 @@ fun TvScreen(
             player = player,
             youtube = youtube,
             onExit = { onSetFullscreen(false) },
+            onDoubleTap = { onSetFullscreen(false) },
         )
         return
     }
@@ -136,6 +139,7 @@ fun TvScreen(
                     korean = korean,
                     player = player,
                     youtube = youtube,
+                    onDoubleTap = { onSetFullscreen(true) },
                     modifier = Modifier.fillMaxWidth().weight(1f),
                 )
                 Spacer(Modifier.height(Home.panelGap))
@@ -203,6 +207,7 @@ private fun VideoStage(
     korean: Boolean,
     player: ExoPlayer?,
     youtube: YouTubePlayer?,
+    onDoubleTap: () -> Unit,
     modifier: Modifier,
 ) {
     val shape = RoundedCornerShape(Home.panelRadiusLarge)
@@ -256,6 +261,12 @@ private fun VideoStage(
                         )
                     }
                 }
+                // 영상 판 위의 싱글 탭은 먹기만 하고, 더블 탭만 전체화면으로 쓴다.
+                // YouTube WebView 가 탭을 재생/일시정지로 처리하던 문제를 막는다.
+                VideoTapGuard(
+                    onDoubleTap = onDoubleTap,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
@@ -561,6 +572,7 @@ private fun TvFullscreen(
     player: ExoPlayer?,
     youtube: YouTubePlayer?,
     onExit: () -> Unit,
+    onDoubleTap: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (youtube != null) {
@@ -578,6 +590,11 @@ private fun TvFullscreen(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        // 전체화면에서도 싱글 탭은 무시하고 더블 탭으로 나간다. 나가기 버튼은 위에 남는다.
+        VideoTapGuard(
+            onDoubleTap = onDoubleTap,
+            modifier = Modifier.fillMaxSize(),
+        )
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -618,6 +635,22 @@ private fun TvFullscreen(
             )
         }
     }
+}
+
+/**
+ * 영상 위를 덮어 탭을 소비한다. 싱글 탭은 아무 일도 하지 않고, 더블 탭만 [onDoubleTap] 을
+ * 부른다. YouTube WebView·ExoPlayer 가 탭을 재생/일시정지로 처리하지 못하게 하는 막이다.
+ */
+@Composable
+private fun VideoTapGuard(onDoubleTap: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.pointerInput(onDoubleTap) {
+            detectTapGestures(
+                onTap = { /* 싱글 탭은 무시한다. */ },
+                onDoubleTap = { onDoubleTap() },
+            )
+        },
+    )
 }
 
 private fun formatTvElapsed(totalSeconds: Long): String {
